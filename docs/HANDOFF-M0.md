@@ -65,8 +65,9 @@ Feature.md
 
 ## Files to Read
 
-1. `docs/product-brief.md` - Product vision, use cases, milestones
-2. `brainstorming-session-2025-12-17-chatgpt-apps-and-more.md` - Technical architecture details
+1. `_bmad-output/workflow-status.yaml` - Current workflow state
+2. `docs/product-brief.md` - Product vision, use cases, milestones
+3. `brainstorming-session-2025-12-17-chatgpt-apps-and-more.md` - Technical architecture details
 
 ---
 

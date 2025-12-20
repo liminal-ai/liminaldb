@@ -1,0 +1,44 @@
+# PromptDB Workflow Status
+# Hybrid approach: BMAD product thinking + custom Feature.md format
+
+generated: "2025-12-20"
+project: "promptdb"
+project_type: "greenfield"
+approach: "hybrid-bmad"
+notes: "Using BMAD for product/planning, custom Feature.md format for implementation specs"
+
+# Phase 0: Discovery
+discovery:
+  brainstorming:
+    status: "completed"
+    output: "brainstorming-session-2025-12-17-chatgpt-apps-and-more.md"
+
+  research:
+    status: "completed"
+    output: "openai-chatgpt-app-store-research.md"
+
+  product_brief:
+    status: "completed"
+    output: "docs/product-brief.md"
+
+# Phase 1: Feature Specs (custom format - not BMAD PRD)
+feature_specs:
+  m0_stack_standup:
+    status: "pending"
+    description: "Production hello world - infrastructure only"
+    output: "docs/features/m0-stack-standup.md"
+    handoff: "docs/HANDOFF-M0.md"
+
+  m1_dogfood:
+    status: "pending"
+    description: "First real function - CRUD, harvest"
+    output: "docs/features/m1-dogfood.md"
+
+  m2_app_store:
+    status: "pending"
+    description: "ChatGPT widget, web UI, Stripe, submission"
+    output: "docs/features/m2-app-store.md"
+
+# Current focus
+current_milestone: "m0_stack_standup"
+next_action: "Create Feature.md for M0"
