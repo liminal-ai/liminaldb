@@ -44,3 +44,17 @@ coverage/
 # Misc
 .tmp/
 temp/
+
+# BMad Method
+_bmad/
+.mcp.json
+*.mcp.json
+
+# AgentVibes - Personal preferences only
+.claude/tts-provider.txt
+.claude/tts-voice.txt
+.claude/tts-verbosity.txt
+.claude/config/*.cfg
+.claude/config/background-music-position.txt
+.claude/config/background-music-volume.txt
+.claude/audio/
