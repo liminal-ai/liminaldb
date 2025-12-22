@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>PromptDB</title>
+	<style>
+		body {
+			font-family: system-ui, -apple-system, sans-serif;
+			max-width: 800px;
+			margin: 40px auto;
+			padding: 0 20px;
+			background: #1a1a1a;
+			color: #e0e0e0;
+		}
+		h1 { color: #fff; }
+		h2 { color: #aaa; margin-top: 30px; }
+		pre {
+			background: #2a2a2a;
+			padding: 15px;
+			border-radius: 6px;
+			overflow-x: auto;
+			font-size: 14px;
+		}
+		.btn {
+			display: inline-block;
+			padding: 12px 24px;
+			background: #3b82f6;
+			color: white;
+			text-decoration: none;
+			border-radius: 6px;
+			font-weight: 500;
+		}
+		.btn:hover { background: #2563eb; }
+		.btn-logout {
+			background: #666;
+			font-size: 14px;
+			padding: 8px 16px;
+		}
+		.btn-logout:hover { background: #555; }
+		.status { margin: 10px 0; }
+		.status.ok { color: #4ade80; }
+		.status.error { color: #f87171; }
+		#logged-out { display: none; }
+		#logged-in { display: none; }
+	</style>
+</head>
+<body>
+	<h1>PromptDB</h1>
+
+	<div id="loading">Loading...</div>
+
+	<div id="logged-out">
+		<p>You are not logged in.</p>
+		<a href="/auth/login" class="btn">Log in with WorkOS</a>
+	</div>
+
+	<div id="logged-in">
+		<p>
+			<a href="/auth/logout" class="btn btn-logout">Logout</a>
+		</p>
+
+		<h2>User Info (/auth/me)</h2>
+		<pre id="user-info">Loading...</pre>
+
+		<h2>Health Check (/api/health)</h2>
+		<pre id="health-info">Loading...</pre>
+
+		<h2>MCP Tools (/mcp/tools)</h2>
+		<pre id="mcp-info">Loading...</pre>
+	</div>
+
+	<script>
+		async function checkAuth() {
+			try {
+				const res = await fetch('/auth/me');
+				if (res.ok) {
+					return await res.json();
+				}
+				return null;
+			} catch {
+				return null;
+			}
+		}
+
+		async function fetchHealth() {
+			try {
+				const res = await fetch('/api/health');
+				return await res.json();
+			} catch (e) {
+				return { error: e.message };
+			}
+		}
+
+		async function fetchMcpTools() {
+			try {
+				const res = await fetch('/mcp/tools');
+				return await res.json();
+			} catch (e) {
+				return { error: e.message };
+			}
+		}
+
+		async function init() {
+			const user = await checkAuth();
+
+			document.getElementById('loading').style.display = 'none';
+
+			if (user) {
+				// Check if Convex auth actually works
+				const health = await fetchHealth();
+
+				if (health.convex === 'auth-failed') {
+					// Token expired - treat as logged out
+					document.getElementById('logged-out').style.display = 'block';
+					return;
+				}
+
+				document.getElementById('logged-in').style.display = 'block';
+				document.getElementById('user-info').textContent = JSON.stringify(user, null, 2);
+				document.getElementById('health-info').textContent = JSON.stringify(health, null, 2);
+
+				const mcp = await fetchMcpTools();
+				document.getElementById('mcp-info').textContent = JSON.stringify(mcp, null, 2);
+			} else {
+				document.getElementById('logged-out').style.display = 'block';
+			}
+		}
+
+		init();
+	</script>
+</body>
+</html>
