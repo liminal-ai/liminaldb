@@ -4,7 +4,7 @@ import cors from "@fastify/cors";
 import fastifyStatic from "@fastify/static";
 import { join } from "node:path";
 import { registerHealthRoutes } from "./api/health";
-import { registerAuthRoutes } from "./api/auth";
+import { registerAuthRoutes } from "./routes/auth";
 import { registerMcpRoutes } from "./api/mcp";
 
 const fastify = Fastify({

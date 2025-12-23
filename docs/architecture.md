@@ -94,7 +94,7 @@ The **AI Power User**: uses AI daily across surfaces, crafts prompts carefully, 
 
 ### 2.4 Architectural Limitations
 
-1. **No service accounts or system tokens** - JWT passthrough architecture means all MCP, API, and Convex calls require a user identity token. Background jobs or system-level operations without user context are not supported without workarounds (e.g., creating a dedicated "system user" in WorkOS).
+1. **All Convex operations require userId** - API key + userId architecture means all Convex calls are scoped to a specific user. Background jobs or system-level operations without user context require workarounds (e.g., internal Convex functions that bypass RLS, or a dedicated "system user").
 
 <!-- END SHARD: requirements -->
 
@@ -123,7 +123,8 @@ flowchart TB
     end
 
     subgraph Data[Convex - Edge Data Layer]
-        ConvexAuth[JWT Validation]
+        APIKeyAuth[API Key + userId]
+        RLS[Row-Level Security]
         Queries[Queries]
         Mutations[Mutations]
         Schema[Schema]
@@ -138,11 +139,12 @@ flowchart TB
     Auth --> RESTApi
     Auth --> StaticFiles
 
-    MCPEndpoint -->|JWT passthrough| ConvexAuth
-    RESTApi -->|JWT passthrough| ConvexAuth
+    MCPEndpoint -->|API key + userId| APIKeyAuth
+    RESTApi -->|API key + userId| APIKeyAuth
 
-    ConvexAuth --> Queries
-    ConvexAuth --> Mutations
+    APIKeyAuth --> RLS
+    RLS --> Queries
+    RLS --> Mutations
     Queries --> Schema
     Mutations --> Schema
 ```
@@ -274,12 +276,14 @@ Fastify natively uses JSON Schema via AJV. To use Zod, the `fastify-type-provide
 
 ### 5.1 Auth Design Choices
 
-1. **Auth validated at edge** - Fastify validates before any processing
-2. **JWT passthrough to Convex** - Same token, Convex re-validates for defense in depth
-3. **User-scoped data** - Convex functions use `ctx.auth.getUserIdentity()`
+1. **Auth validated at edge** - Fastify validates JWT before any processing
+2. **API key + userId to Convex** - Fastify authenticates to Convex with API key, passes userId for RLS
+3. **User-scoped data** - Convex RLS enforces user can only access their own data
 4. **HttpOnly cookies** - Tokens never exposed to client JavaScript
 
-**Limitation:** All access requires user authentication. No service accounts or system tokens are available for MCP, API, or Convex calls. This is a constraint of our JWT passthrough architecture, not a design choice. See Section 5.7 for trade-off analysis.
+**Separation of concerns:** Fastify handles all JWT validation (WorkOS SDK). Convex doesn't know about JWTs - it trusts Fastify (via API key) and enforces data access via RLS based on userId.
+
+**Limitation:** All access requires userId. Background jobs or system operations without user context require workarounds. See Section 5.7.
 
 ### 5.2 Auth Environments
 
@@ -306,12 +310,13 @@ sequenceDiagram
     B->>F: GET /auth/callback?code=...
     F->>W: Exchange code
     W-->>F: Access token + Refresh token
-    F-->>B: Set-Cookie (sealed, HttpOnly), 302 Redirect
+    F-->>B: Set-Cookie (JWT, HttpOnly), 302 Redirect
     B->>F: GET /api/prompts (cookie auto-sent)
-    F->>F: Validate cookie (WorkOS SDK)
-    F->>C: convex.setAuth(accessToken)
-    C->>C: Validate JWT, getUserIdentity()
-    C-->>F: Query results
+    F->>F: Validate JWT (WorkOS SDK)
+    F->>F: Extract userId from claims
+    F->>C: query(prompts.list, {apiKey, userId})
+    C->>C: Validate API key, apply RLS
+    C-->>F: Query results (user's data only)
     F-->>B: 200 JSON
 ```
 
@@ -329,10 +334,11 @@ sequenceDiagram
     M->>W: OAuth flow (browser popup/redirect)
     W-->>M: Access token returned
     M->>F: POST /mcp with Bearer token
-    F->>F: Validate JWT
-    F->>C: convex.setAuth(token)
-    C->>C: Validate JWT, scope to user
-    C-->>F: Query/mutation result
+    F->>F: Validate JWT (WorkOS SDK)
+    F->>F: Extract userId from claims
+    F->>C: mutation(prompts.create, {apiKey, userId, ...})
+    C->>C: Validate API key, apply RLS
+    C-->>F: Mutation result
     F-->>M: MCP response
 ```
 
@@ -356,28 +362,28 @@ flowchart TD
 
 ### 5.6 Convex Auth Configuration
 
-Convex validates WorkOS JWTs using the `customJwt` provider type. Configuration requires:
+Convex does not validate JWTs. Instead, it uses API key + userId authentication:
 
-- **JWKS endpoint** - WorkOS public keys for RS256 signature validation
-- **Issuer validation** - Both SSO and User Management issuers must be configured
-- **Client ID binding** - Tokens scoped to the specific WorkOS application
+- **API key** - Environment variable shared between Fastify and Convex, proves request came from trusted Fastify server
+- **userId** - WorkOS user ID passed from Fastify after JWT validation, used for RLS
+- **RLS wrapper** - All queries/mutations wrapped with row-level security that filters by userId
 
-This enables Convex functions to call `ctx.auth.getUserIdentity()` and receive the validated user from the JWT claims.
+Convex functions receive userId as an argument and use RLS to ensure users can only access their own data. No JWKS or JWT validation needed in Convex.
 
-### 5.7 Why No Service Accounts
+### 5.7 Why User-Scoped Operations
 
-**Constraint:** All Convex calls require a user JWT. No deploy key or system token for runtime calls.
+**Design choice:** All Convex operations require a userId. The API key authenticates Fastify as a trusted caller, but operations are still scoped to a user via RLS.
 
 **Trade-offs:**
 
 | Aspect | Impact |
 |--------|--------|
-| Security | Higher - blast radius limited to single user if token compromised |
-| Coupling | Higher - Convex must understand WorkOS JWT format |
+| Security | Higher - RLS limits blast radius to single user's data if API key compromised |
+| Coupling | Lower - Convex doesn't need to understand JWTs or WorkOS |
 | Simplicity | Lower - can't have background jobs without user context |
 | Audit | Better - all actions traceable to specific user |
 
-**Mitigation for background jobs (future):** If needed, create a "system user" in WorkOS and use that user's token for scheduled tasks. Still user-scoped, still auditable.
+**Mitigation for background jobs (future):** Internal Convex functions that bypass RLS for system operations, or a dedicated "system user" ID for scheduled tasks.
 
 <!-- END SHARD: auth-architecture -->
 
@@ -423,9 +429,9 @@ The MCP server is created using `@modelcontextprotocol/sdk` and integrated with 
 MCP clients pass the user's access token in the Authorization header. Auth integration:
 
 - **Bearer token extraction** - Middleware extracts JWT from Authorization header
-- **Token validation** - JWT validated against WorkOS JWKS before tool execution
-- **User context injection** - Validated user attached to request for tool handlers
-- **Convex passthrough** - Same token passed to Convex via `setAuth()` for data access
+- **Token validation** - JWT validated via WorkOS SDK `isValidJwt()` before tool execution
+- **User context injection** - userId extracted from claims, attached to request for tool handlers
+- **Convex calls** - API key + userId passed to Convex functions, RLS enforces data access
 
 <!-- END SHARD: mcp-architecture -->
 
@@ -684,7 +690,7 @@ _Detailed CI/CD configuration will be specified during M0 implementation._
 | Decision | Trade-off | Rationale |
 |----------|-----------|-----------|
 | Fastify between client and Convex | Extra layer, more code | MCP control, no cold starts |
-| JWT passthrough (not deploy key) | Coupling to WorkOS | User-scoped security at DB level |
+| API key + userId (not JWT passthrough) | Fastify must be trusted | Clean separation, Convex doesn't need JWT knowledge |
 | VPS over serverless | Must manage scaling manually | Predictable performance, cost |
 | Vanilla JS over React | Less component reuse | Simpler build, faster load |
 | Biome over ESLint | Smaller plugin ecosystem | 20x faster, one config |
@@ -693,14 +699,14 @@ _Detailed CI/CD configuration will be specified during M0 implementation._
 
 | Decision | Security Impact | Usability Impact |
 |----------|-----------------|------------------|
-| No service accounts | All actions auditable | Can't have unattended jobs |
+| API key + userId | RLS limits blast radius per-user | Convex trusts Fastify |
 | HttpOnly cookies | XSS-proof tokens | No client-side token access |
 | Short token expiry | Limited blast radius | More frequent auth |
 
 ### 13.3 Constraints Accepted
 
-1. **All MCP/API calls require user token** - No system-level access
-2. **Convex coupled to WorkOS** - Must reconfigure if auth changes
+1. **All Convex calls require userId** - No system-level access without workarounds
+2. **Fastify is auth boundary** - If Fastify compromised, Convex trusts it
 3. **Widget complexity limited** - No React means no component libraries
 4. **E2E testing deferred** - Playwright adds weight, defer to M1
 
@@ -744,17 +750,17 @@ _Detailed CI/CD configuration will be specified during M0 implementation._
 
 The following topics require architectural decisions in subsequent reviews. They are not blockers for M0-M2 but will need resolution as the system evolves.
 
-### 15.1 Machine-to-Machine Auth (Fastify → Convex)
+### 15.1 System Operations Without User Context
 
-Current architecture uses JWT passthrough with user tokens. Future needs may include:
+Current architecture requires userId for all Convex operations. Future needs may include:
 
 - **Background jobs** - Scheduled tasks without user context
 - **Webhook handlers** - External services calling our API
 - **Admin operations** - System-level data management
 
 Options to evaluate:
-- Dedicated "system user" in WorkOS
-- Convex deploy keys for specific operations
+- Internal Convex functions that bypass RLS
+- Dedicated "system user" ID for scheduled tasks
 - Separate admin API with different auth model
 
 ### 15.2 Redis Integration
@@ -837,15 +843,13 @@ NODE_ENV=development|staging|production
 # Convex
 CONVEX_URL=https://your-deployment.convex.cloud
 CONVEX_DEPLOY_KEY=prod:your-deploy-key
+CONVEX_API_KEY=pdb_live_your-64-char-hex-key  # Shared with Convex for auth
 
 # WorkOS
 WORKOS_CLIENT_ID=client_01XXXXX
 WORKOS_API_KEY=sk_test_XXXXX
 WORKOS_REDIRECT_URI=http://localhost:3000/auth/callback
 COOKIE_SECRET=your-32-character-minimum-secret
-
-# Feature Flags (local dev only)
-REAL_AUTH=true  # Set to use real WorkOS instead of mock
 ```
 
 ---
