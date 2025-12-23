@@ -12,7 +12,9 @@ const convexUrl: string = _convexUrl;
 export const convex = new ConvexHttpClient(convexUrl);
 
 // Create authenticated client for a specific request
-export function createAuthenticatedClient(accessToken: string): ConvexHttpClient {
+export function createAuthenticatedClient(
+	accessToken: string,
+): ConvexHttpClient {
 	const client = new ConvexHttpClient(convexUrl);
 	client.setAuth(accessToken);
 	return client;

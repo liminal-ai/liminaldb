@@ -8,6 +8,9 @@
  * @module
  */
 
+import type * as auth_apiKey from "../auth/apiKey.js";
+import type * as auth_rls from "../auth/rls.js";
+import type * as auth_types from "../auth/types.js";
 import type * as health from "../health.js";
 import type * as healthAuth from "../healthAuth.js";
 
@@ -18,6 +21,9 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "auth/apiKey": typeof auth_apiKey;
+  "auth/rls": typeof auth_rls;
+  "auth/types": typeof auth_types;
   health: typeof health;
   healthAuth: typeof healthAuth;
 }>;

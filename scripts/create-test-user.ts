@@ -59,13 +59,12 @@ async function main() {
 	console.log("Verifying authentication...");
 
 	try {
-		const { accessToken } = await workos.userManagement.authenticateWithPassword(
-			{
+		const { accessToken } =
+			await workos.userManagement.authenticateWithPassword({
 				email: TEST_EMAIL,
 				password: TEST_PASSWORD,
 				clientId,
-			},
-		);
+			});
 
 		console.log("Authentication successful!");
 		console.log("");
