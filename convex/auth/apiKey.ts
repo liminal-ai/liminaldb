@@ -1,4 +1,4 @@
-import type { ApiKeyConfig, ConvexAuthContext } from "./types";
+import type { ApiKeyConfig } from "./types";
 
 /**
  * Performs constant-time string comparison to prevent timing attacks.
@@ -43,10 +43,14 @@ export function validateApiKey(
 	return matches.includes(true);
 }
 
-export function withApiKeyAuth<TArgs extends { apiKey?: string }, TResult>(
-	handler: (ctx: ConvexAuthContext, args: TArgs) => Promise<TResult> | TResult,
+export function withApiKeyAuth<
+	TCtx,
+	TArgs extends { apiKey?: string },
+	TResult,
+>(
+	handler: (ctx: TCtx, args: TArgs) => Promise<TResult> | TResult,
 	config?: ApiKeyConfig,
-): (ctx: ConvexAuthContext, args: TArgs) => Promise<TResult> | TResult {
+): (ctx: TCtx, args: TArgs) => Promise<TResult> | TResult {
 	return async (ctx, args) => {
 		const valid = validateApiKey(args.apiKey, config);
 		if (!valid) {
