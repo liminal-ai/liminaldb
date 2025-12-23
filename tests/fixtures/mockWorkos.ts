@@ -11,6 +11,7 @@ type MockWorkosOptions = {
 	authorizationUrl?: string;
 	getUserResult?: { id: string; email: string };
 	getUserError?: Error;
+	revokeSessionError?: Error;
 };
 
 export function createMockWorkos(opts: MockWorkosOptions = {}) {
@@ -35,8 +36,16 @@ export function createMockWorkos(opts: MockWorkosOptions = {}) {
 				}
 			);
 		}),
-		getAuthorizationUrl: mock(() => {
-			return opts.authorizationUrl ?? "https://auth.example.com";
+		getAuthorizationUrl: mock((params?: Record<string, string>) => {
+			if (opts.authorizationUrl) {
+				return `${opts.authorizationUrl}${
+					params?.state ? `&state=${params.state}` : ""
+				}`;
+			}
+			const client = params?.clientId ?? "client_mock";
+			const redirect = params?.redirectUri ?? "http://localhost/callback";
+			const state = params?.state ? `&state=${params.state}` : "";
+			return `https://workos.com/oauth?client_id=${client}&redirect_uri=${redirect}${state}`;
 		}),
 		getUser: mock(async (id: string) => {
 			if (opts.getUserError) {
@@ -48,6 +57,12 @@ export function createMockWorkos(opts: MockWorkosOptions = {}) {
 					email: "user@example.com",
 				}
 			);
+		}),
+		revokeSession: mock(async (_params: { sessionId: string }) => {
+			if (opts.revokeSessionError) {
+				throw opts.revokeSessionError;
+			}
+			return { success: true };
 		}),
 	};
 

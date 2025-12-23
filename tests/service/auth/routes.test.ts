@@ -15,6 +15,17 @@ mock.module("../../../src/lib/workos", () => ({
 	redirectUri: "http://localhost:5001/auth/callback",
 }));
 
+// Mock JWT validation to accept test tokens (which have no real signature)
+mock.module("../../../src/lib/auth/jwtValidator", () => ({
+	validateJwt: mock(async (token: string) => {
+		if (token && token.includes(".")) {
+			return { valid: true };
+		}
+		return { valid: false, error: "Invalid token" };
+	}),
+	clearJwksCache: mock(() => {}),
+}));
+
 const { registerAuthRoutes } = await import("../../../src/routes/auth");
 
 process.env.COOKIE_SECRET ??= "test_cookie_secret";
@@ -142,25 +153,35 @@ describe("Auth Routes", () => {
 	});
 
 	test("GET /auth/logout clears cookies and redirects", async () => {
+		// Now that logout requires auth middleware, we need to send a valid token
+		const token = createTestJwt();
+		const signedToken = app.signCookie(token);
+
 		const response = await app.inject({
 			method: "GET",
 			url: "/auth/logout",
+			cookies: {
+				accessToken: signedToken,
+			},
 		});
 
 		expect(response.statusCode).toBe(302);
 		expect(
-			response.cookies.find((c: any) => c.name === "accessToken")?.value,
+			response.cookies.find((c: { name: string }) => c.name === "accessToken")
+				?.value,
 		).toBe("");
 		expect(response.headers.location).toBe("/");
 	});
 
 	test("GET /auth/me returns user info when authenticated", async () => {
 		const token = createTestJwt();
+		// Sign the cookie as Fastify would when setting signed cookies
+		const signedToken = app.signCookie(token);
 		const response = await app.inject({
 			method: "GET",
 			url: "/auth/me",
 			cookies: {
-				accessToken: token,
+				accessToken: signedToken,
 			},
 		});
 
@@ -177,4 +198,50 @@ describe("Auth Routes", () => {
 
 		expect(response.statusCode).toBe(401);
 	});
+
+	test("GET /auth/logout revokes WorkOS session", async () => {
+		const token = createTestJwt();
+		const signedToken = app.signCookie(token);
+
+		const response = await app.inject({
+			method: "GET",
+			url: "/auth/logout",
+			cookies: {
+				accessToken: signedToken,
+			},
+		});
+
+		expect(response.statusCode).toBe(302);
+		// sessionId comes from the JWT's sid claim (session_test123 from createTestJwt)
+		expect(workosMock.userManagement.revokeSession).toHaveBeenCalledWith({
+			sessionId: "session_test123",
+		});
+	});
+
+	test("GET /auth/logout clears cookie even if session revocation fails", async () => {
+		workosMock.userManagement.revokeSession.mockImplementationOnce(async () => {
+			throw new Error("WorkOS API error");
+		});
+
+		const token = createTestJwt();
+		const signedToken = app.signCookie(token);
+
+		const response = await app.inject({
+			method: "GET",
+			url: "/auth/logout",
+			cookies: {
+				accessToken: signedToken,
+			},
+		});
+
+		expect(response.statusCode).toBe(302);
+		expect(
+			response.cookies.find((c: { name: string }) => c.name === "accessToken")
+				?.value,
+		).toBe("");
+		expect(response.headers.location).toBe("/");
+	});
+
+	// Note: Testing JWT with missing claims is covered in middleware.test.ts
+	// The auth middleware correctly rejects tokens missing required claims (sub, email, sid)
 });

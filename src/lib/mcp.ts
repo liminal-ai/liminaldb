@@ -1,8 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { createAuthenticatedClient } from "./convex";
+import { convex } from "./convex";
 import { api } from "../../convex/_generated/api";
+import { config } from "./config";
 
-export function createMcpServer() {
+export function createMcpServer(): McpServer {
 	const server = new McpServer({
 		name: "promptdb",
 		version: "1.0.0",
@@ -15,26 +16,30 @@ export function createMcpServer() {
 		{},
 		async (_args, extra) => {
 			try {
-				// Get access token from session data (passed via transport)
-				const accessToken = extra.sessionId;
+				// Get user ID from session data (passed via transport)
+				// Note: In the new architecture, the userId should be extracted from JWT
+				// and passed through the session. For now, sessionId contains the userId.
+				const userId = extra.sessionId;
 
-				if (!accessToken) {
+				if (!userId) {
 					return {
 						content: [
 							{
 								type: "text" as const,
 								text: JSON.stringify({
 									status: "error",
-									error: "No access token available",
+									error: "No user ID available",
 								}),
 							},
 						],
 					};
 				}
 
-				// Call Convex with authenticated client
-				const authClient = createAuthenticatedClient(accessToken);
-				const result = await authClient.query(api.healthAuth.check);
+				// Use new pattern: pass apiKey + userId to Convex
+				const result = await convex.query(api.healthAuth.check, {
+					apiKey: config.convexApiKey,
+					userId,
+				});
 
 				return {
 					content: [

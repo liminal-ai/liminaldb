@@ -14,11 +14,29 @@ export async function authMiddleware(
 	request: FastifyRequest,
 	reply: FastifyReply,
 ): Promise<void> {
-	void request;
-	void reply;
-	void extractToken;
-	void validateJwt;
-	void decodeJwtClaims;
+	const { token } = extractToken(request);
 
-	throw new Error("Not implemented: authMiddleware");
+	if (!token) {
+		return reply.code(401).send({ error: "Not authenticated" });
+	}
+
+	const validation = await validateJwt(token);
+	if (!validation.valid) {
+		return reply.code(401).send({ error: validation.error ?? "Invalid token" });
+	}
+
+	try {
+		const claims = decodeJwtClaims(token);
+		const user: AuthUser = {
+			id: claims.sub,
+			email: claims.email,
+			sessionId: claims.sid,
+		};
+		request.user = user;
+		request.accessToken = token;
+	} catch (error) {
+		const message =
+			error instanceof Error && error.message ? error.message : "Invalid token";
+		return reply.code(401).send({ error: message });
+	}
 }

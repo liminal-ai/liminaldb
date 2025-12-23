@@ -1,31 +1,31 @@
 import { describe, expect, test } from "bun:test";
 
-import { createTestJwt } from "../fixtures/jwt";
 import { getTestAuth, hasTestAuth } from "../fixtures/auth";
 
 const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:5001";
 
 describe("MCP Integration Auth", () => {
-	test.skipIf(!hasTestAuth())(
-		"MCP accepts Bearer token and returns data",
-		async () => {
-			const auth = await getTestAuth();
-			if (!auth) throw new Error("Test auth not available");
+	test("MCP accepts Bearer token and returns data", async () => {
+		if (!hasTestAuth()) {
+			throw new Error("Test auth not configured");
+		}
+		const auth = await getTestAuth();
+		if (!auth) throw new Error("Test auth not available");
 
-			const res = await fetch(`${BASE_URL}/mcp`, {
-				method: "POST",
-				headers: {
-					Authorization: `Bearer ${auth.accessToken}`,
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ jsonrpc: "2.0", method: "health_check", id: 1 }),
-			});
+		const res = await fetch(`${BASE_URL}/mcp`, {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${auth.accessToken}`,
+				"Content-Type": "application/json",
+				Accept: "application/json, text/event-stream",
+			},
+			body: JSON.stringify({ jsonrpc: "2.0", method: "health_check", id: 1 }),
+		});
 
-			expect(res.ok).toBe(true);
-			const text = await res.text();
-			expect(text.length).toBeGreaterThan(0);
-		},
-	);
+		expect(res.ok).toBe(true);
+		const text = await res.text();
+		expect(text.length).toBeGreaterThan(0);
+	});
 
 	test("MCP returns JSON error when unauthenticated", async () => {
 		const res = await fetch(`${BASE_URL}/mcp`, {
@@ -40,15 +40,19 @@ describe("MCP Integration Auth", () => {
 	});
 
 	test("MCP uses Bearer token over cookie", async () => {
-		const bearer = createTestJwt({ email: "bearer@example.com" });
-		const cookieToken = createTestJwt({ email: "cookie@example.com" });
+		if (!hasTestAuth()) {
+			throw new Error("Test auth not configured");
+		}
+		const auth = await getTestAuth();
+		if (!auth) throw new Error("Test auth not available");
 
 		const res = await fetch(`${BASE_URL}/mcp`, {
 			method: "POST",
 			headers: {
-				Authorization: `Bearer ${bearer}`,
-				cookie: `accessToken=${cookieToken}`,
+				Authorization: `Bearer ${auth.accessToken}`,
+				Cookie: `accessToken=other_token_value`,
 				"Content-Type": "application/json",
+				Accept: "application/json, text/event-stream",
 			},
 			body: JSON.stringify({ jsonrpc: "2.0", method: "health_check", id: 2 }),
 		});
@@ -57,12 +61,18 @@ describe("MCP Integration Auth", () => {
 	});
 
 	test("MCP tool respects RLS and returns scoped data", async () => {
-		const token = createTestJwt();
+		if (!hasTestAuth()) {
+			throw new Error("Test auth not configured");
+		}
+		const auth = await getTestAuth();
+		if (!auth) throw new Error("Test auth not available");
+
 		const res = await fetch(`${BASE_URL}/mcp`, {
 			method: "POST",
 			headers: {
-				Authorization: `Bearer ${token}`,
+				Authorization: `Bearer ${auth.accessToken}`,
 				"Content-Type": "application/json",
+				Accept: "application/json, text/event-stream",
 			},
 			body: JSON.stringify({ jsonrpc: "2.0", method: "health_check", id: 3 }),
 		});

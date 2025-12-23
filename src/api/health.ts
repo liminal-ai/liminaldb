@@ -1,7 +1,8 @@
 import type { FastifyInstance } from "fastify";
-import { convex, createAuthenticatedClient } from "../lib/convex";
+import { convex } from "../lib/convex";
 import { api } from "../../convex/_generated/api";
 import { authMiddleware } from "../middleware/auth";
+import { config } from "../lib/config";
 
 export function registerHealthRoutes(fastify: FastifyInstance): void {
 	// Public health check (no auth)
@@ -22,24 +23,26 @@ export function registerHealthRoutes(fastify: FastifyInstance): void {
 		}
 	});
 
-	// Auth-required health check - calls Convex with JWT passthrough
+	// Auth-required health check - calls Convex with API key + userId
 	fastify.get(
 		"/api/health",
 		{ preHandler: authMiddleware },
 		async (request, _reply) => {
 			try {
-				if (!request.accessToken) {
+				if (!request.user) {
 					return {
 						status: "ok",
 						timestamp: new Date().toISOString(),
-						user: request.user,
-						convex: "no-token",
+						user: null,
+						convex: "no-user",
 					};
 				}
 
-				// Create authenticated client and call healthAuth
-				const authClient = createAuthenticatedClient(request.accessToken);
-				const convexHealth = await authClient.query(api.healthAuth.check);
+				// Use new pattern: pass apiKey + userId to Convex
+				const convexHealth = await convex.query(api.healthAuth.check, {
+					apiKey: config.convexApiKey,
+					userId: request.user.id,
+				});
 
 				return {
 					status: "ok",

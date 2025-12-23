@@ -116,6 +116,7 @@ describe("RLS Rules", () => {
 	});
 
 	test("rejects delete when rule missing", async () => {
+		delete rlsRules.prompts?.delete;
 		const handler = withRLS<RlsArgs, string>(async () => "deleted");
 		await expect(
 			handler(ctx as any, {

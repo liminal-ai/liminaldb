@@ -313,7 +313,7 @@ The auth middleware performs these steps:
 
 1. **Extract JWT**: Check `Authorization: Bearer <token>` header first. If not present, extract from signed HttpOnly cookie.
 
-2. **Validate JWT**: Call `workos.userManagement.isValidJwt(token)`. This performs stateless validation using cached JWKS (public keys fetched from WorkOS's JWKS URL endpoint). Returns boolean.
+2. **Validate JWT**: Use the `jose` library's `jwtVerify()` with WorkOS's JWKS endpoint (`https://api.workos.com/sso/jwks/{clientId}`). This performs stateless validation using cached JWKS (public keys fetched from WorkOS). The `jose` library is used directly rather than WorkOS SDK's internal `isValidJwt()` method, which is not part of the public SDK API.
 
 3. **Decode Claims**: Base64 decode the JWT payload (already validated, just extracting data). Get `sub` (userId), `email`, `sid` (sessionId).
 
@@ -409,12 +409,14 @@ For API and MCP calls from different origins:
 
 **Accepted limitation:** Convex trusts Fastify. If Fastify is compromised and attacker has API key, they can impersonate any userId. Mitigated by API key security and RLS limiting blast radius to targeted user's data.
 
-### Trade-off 4: WorkOS SDK for JWT Validation
+### Trade-off 4: jose Library for JWT Validation
 
 | Option | Chose | Rationale |
 |--------|-------|-----------|
-| WorkOS SDK in Fastify | Yes | `isValidJwt()` handles JWKS caching, higher-level API |
-| jose directly | No | More code to maintain, SDK already uses jose internally |
+| jose directly | Yes | WorkOS SDK's `isValidJwt()` is internal/private API, not publicly documented |
+| WorkOS SDK `isValidJwt()` | No | Not part of public SDK API; may change without notice |
+
+**Implementation note**: We use `jose` library's `jwtVerify()` with `createRemoteJWKSet()` pointing to WorkOS's JWKS endpoint. This provides the same JWKS caching benefits while using a stable, documented API. Validation includes issuer and audience claims.
 
 ---
 

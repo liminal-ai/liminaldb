@@ -23,5 +23,5 @@ Show this command to the user. They must exit the current session and run that c
 
 **Verify service:**
 ```bash
-curl http://localhost:7331/health
+curl http://localhost:4010/health
 ```

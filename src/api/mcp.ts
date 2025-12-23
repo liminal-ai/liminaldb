@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { createMcpServer } from "../lib/mcp";
 import { authMiddleware } from "../middleware/auth";
+import { config } from "../lib/config";
 
 // Create a single MCP server instance
 const mcpServer = createMcpServer();
@@ -70,15 +71,18 @@ export function registerMcpRoutes(fastify: FastifyInstance): void {
 		"/mcp/tools",
 		{ preHandler: authMiddleware },
 		async (request, reply) => {
-			let convexStatus = "no-token";
+			let convexStatus = "no-user";
 			let convexUser = null;
 
-			if (request.accessToken) {
+			if (request.user) {
 				try {
-					const { createAuthenticatedClient } = await import("../lib/convex");
+					const { convex } = await import("../lib/convex");
 					const { api } = await import("../../convex/_generated/api");
-					const authClient = createAuthenticatedClient(request.accessToken);
-					const result = await authClient.query(api.healthAuth.check);
+					// Use new pattern: pass apiKey + userId to Convex
+					const result = await convex.query(api.healthAuth.check, {
+						apiKey: config.convexApiKey,
+						userId: request.user.id,
+					});
 					convexStatus = "authenticated";
 					convexUser = result.user;
 				} catch (error) {
