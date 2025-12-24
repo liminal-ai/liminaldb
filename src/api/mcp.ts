@@ -1,31 +1,81 @@
 import type { FastifyInstance } from "fastify";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createMcpServer } from "../lib/mcp";
 import { authMiddleware } from "../middleware/auth";
 import { config } from "../lib/config";
 
-// Create a single MCP server instance
-const mcpServer = createMcpServer();
+/**
+ * Builds SDK AuthInfo from Fastify request user.
+ * Skeleton: Returns minimal AuthInfo, user details go in extra field.
+ */
+export function buildAuthInfo(
+	token: string,
+	user: { id: string; email: string; sessionId: string },
+): AuthInfo {
+	// TODO: Populate with real values from WorkOS token
+	return {
+		token,
+		clientId: "unknown", // TODO: Get from token or config
+		scopes: [], // TODO: Get from token
+		expiresAt: undefined, // TODO: Get from token
+		extra: {
+			userId: user.id,
+			email: user.email,
+			sessionId: user.sessionId,
+		},
+	};
+}
 
-// Create transport in stateless mode (no session tracking needed per architecture)
-const transport = new WebStandardStreamableHTTPServerTransport({
-	sessionIdGenerator: undefined,
-});
+/**
+ * Interface for MCP transport - allows injection for testing
+ */
+export interface McpTransport {
+	handleRequest(
+		request: Request,
+		options?: { authInfo?: AuthInfo },
+	): Promise<Response>;
+}
 
-// Connect server to transport once at startup
-let connected = false;
+/**
+ * Dependencies for MCP routes - allows injection for testing
+ */
+export interface McpDependencies {
+	transport: McpTransport;
+	mcpServer: McpServer;
+}
 
-export function registerMcpRoutes(fastify: FastifyInstance): void {
+/**
+ * Creates default production dependencies
+ */
+function createDefaultDependencies(): McpDependencies {
+	return {
+		transport: new WebStandardStreamableHTTPServerTransport({
+			sessionIdGenerator: undefined,
+		}),
+		mcpServer: createMcpServer(),
+	};
+}
+
+// Track connections per transport instance
+const connectedTransports = new WeakSet<McpTransport>();
+
+export function registerMcpRoutes(
+	fastify: FastifyInstance,
+	deps: McpDependencies = createDefaultDependencies(),
+): void {
+	const { transport, mcpServer } = deps;
 	// MCP endpoint - requires auth
 	fastify.post(
 		"/mcp",
 		{ preHandler: authMiddleware },
 		async (request, reply) => {
 			try {
-				// Connect on first request
-				if (!connected) {
+				// Connect on first request for this transport
+				if (!connectedTransports.has(transport)) {
 					await mcpServer.connect(transport);
-					connected = true;
+					connectedTransports.add(transport);
 				}
 
 				// Build a web standard Request from Fastify's request
@@ -37,19 +87,24 @@ export function registerMcpRoutes(fastify: FastifyInstance): void {
 					}
 				}
 
-				// Add access token as custom header for the MCP server to use
-				if (request.accessToken) {
-					headers.set("x-access-token", request.accessToken);
-				}
-
 				const webRequest = new Request(url, {
 					method: "POST",
 					headers,
 					body: JSON.stringify(request.body),
 				});
 
+				// Build authInfo to pass to MCP SDK
+				// This flows to tool handlers via the extra parameter
+				const authInfo =
+					request.user && request.accessToken
+						? buildAuthInfo(request.accessToken, request.user)
+						: undefined;
+
 				// Handle request and get web standard Response
-				const webResponse = await transport.handleRequest(webRequest);
+				// Pass authInfo so tools can access it via extra.authInfo
+				const webResponse = await transport.handleRequest(webRequest, {
+					authInfo,
+				});
 
 				// Convert web Response back to Fastify reply
 				reply.status(webResponse.status);

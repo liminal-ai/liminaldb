@@ -10,16 +10,18 @@ export function createMcpServer(): McpServer {
 	});
 
 	// Register health_check tool
+	// Uses extra.authInfo to get user context (passed via transport.handleRequest)
 	server.tool(
 		"health_check",
 		"Verify PromptDB stack connectivity with authenticated user",
 		{},
 		async (_args, extra) => {
 			try {
-				// Get user ID from session data (passed via transport)
-				// Note: In the new architecture, the userId should be extracted from JWT
-				// and passed through the session. For now, sessionId contains the userId.
-				const userId = extra.sessionId;
+				// Get user ID from authInfo.extra (populated by buildAuthInfo in api/mcp.ts)
+				const userExtra = extra.authInfo?.extra as
+					| { userId?: string; email?: string; sessionId?: string }
+					| undefined;
+				const userId = userExtra?.userId;
 
 				if (!userId) {
 					return {
@@ -68,6 +70,43 @@ export function createMcpServer(): McpServer {
 					],
 				};
 			}
+		},
+	);
+
+	// Register test_auth tool
+	// Returns authenticated user context for testing OAuth integration
+	// Skeleton: Returns user info from extra.authInfo
+	server.tool(
+		"test_auth",
+		"Returns current authenticated user context for testing OAuth integration",
+		{},
+		async (_args, extra) => {
+			// Get user info from authInfo.extra (populated by buildAuthInfo)
+			const userExtra = extra.authInfo?.extra as
+				| { userId?: string; email?: string; sessionId?: string }
+				| undefined;
+
+			if (!userExtra?.userId) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Not authenticated",
+						},
+					],
+					isError: true,
+				};
+			}
+
+			// TODO: Implement full response with structured content
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: `Authenticated as ${userExtra.email}`,
+					},
+				],
+			};
 		},
 	);
 

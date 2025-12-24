@@ -1,34 +1,11 @@
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import { describe, expect, test, beforeEach, mock } from "bun:test";
+import type { McpDependencies } from "../../../src/api/mcp";
 
 // Mock JWT validator to always return valid
 mock.module("../../../src/lib/auth/jwtValidator", () => ({
 	validateJwt: mock(async () => ({ valid: true })),
-}));
-
-// Mock the MCP transport to avoid actual MCP SDK initialization
-const mockHandleRequest = mock(async () => {
-	return new Response(JSON.stringify({ jsonrpc: "2.0", result: "ok", id: 1 }), {
-		status: 200,
-		headers: { "content-type": "application/json" },
-	});
-});
-
-mock.module(
-	"@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js",
-	() => ({
-		WebStandardStreamableHTTPServerTransport: class {
-			handleRequest = mockHandleRequest;
-		},
-	}),
-);
-
-// Mock MCP server
-mock.module("../../../src/lib/mcp", () => ({
-	createMcpServer: () => ({
-		connect: mock(async () => {}),
-	}),
 }));
 
 // Mock config to avoid validation at import time
@@ -52,13 +29,33 @@ import { createTestJwt } from "../../fixtures";
 process.env.COOKIE_SECRET ??= "test_cookie_secret";
 process.env.CONVEX_URL ??= "http://localhost:9999";
 
+// Create mock transport directly - no mock.module needed
+const mockHandleRequest = mock(async () => {
+	return new Response(JSON.stringify({ jsonrpc: "2.0", result: "ok", id: 1 }), {
+		status: 200,
+		headers: { "content-type": "application/json" },
+	});
+});
+
+function createMockDeps(): McpDependencies {
+	return {
+		transport: {
+			handleRequest: mockHandleRequest,
+		},
+		mcpServer: {
+			connect: mock(async () => {}),
+		} as unknown as McpDependencies["mcpServer"],
+	};
+}
+
 describe("MCP Auth", () => {
 	let app: ReturnType<typeof Fastify>;
 
 	beforeEach(async () => {
+		mockHandleRequest.mockClear();
 		app = Fastify({ logger: false });
 		app.register(cookie, { secret: process.env.COOKIE_SECRET });
-		registerMcpRoutes(app);
+		registerMcpRoutes(app, createMockDeps());
 		await app.ready();
 	});
 

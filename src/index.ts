@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { registerHealthRoutes } from "./api/health";
 import { registerAuthRoutes } from "./routes/auth";
 import { registerMcpRoutes } from "./api/mcp";
+import { registerWellKnownRoutes } from "./routes/well-known";
 
 const fastify = Fastify({
 	logger: true,
@@ -38,6 +39,7 @@ fastify.register(fastifyStatic, {
 registerHealthRoutes(fastify);
 registerAuthRoutes(fastify);
 registerMcpRoutes(fastify);
+registerWellKnownRoutes(fastify);
 
 const start = async () => {
 	try {
