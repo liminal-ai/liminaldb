@@ -7,25 +7,23 @@ import { registerHealthRoutes } from "./api/health";
 import { registerAuthRoutes } from "./routes/auth";
 import { registerMcpRoutes } from "./api/mcp";
 import { registerWellKnownRoutes } from "./routes/well-known";
+import { config } from "./lib/config";
 
 const fastify = Fastify({
 	logger: true,
 });
 
 // Register cookie plugin
-const cookieSecret = process.env.COOKIE_SECRET;
-if (!cookieSecret) {
-	throw new Error("COOKIE_SECRET environment variable is required");
-}
-
 fastify.register(cookie, {
-	secret: cookieSecret,
+	secret: config.cookieSecret,
 	parseOptions: {},
 });
 
-// Configure CORS for local development
+// Configure CORS
+// In development/test: allow all origins
+// In production: explicitly list allowed origins from CORS_ALLOWED_ORIGINS env var
 fastify.register(cors, {
-	origin: true, // Allow all origins in development
+	origin: config.corsOrigins,
 	credentials: true, // Allow cookies
 });
 

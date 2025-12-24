@@ -20,14 +20,19 @@ export function decodeJwtClaims(token: string): JwtClaims {
 	}
 
 	const claims = decoded as Partial<JwtClaims>;
-	if (!claims.sub || !claims.email || !claims.sid) {
-		throw new Error("Missing required claims");
+
+	// Only sub is required - email and sid may not be present in MCP OAuth tokens
+	if (!claims.sub) {
+		throw new Error("Missing required claim (sub)");
 	}
 
 	return {
 		sub: claims.sub,
-		email: claims.email,
-		sid: claims.sid,
+		email: claims.email, // May be undefined for MCP tokens
+		sid: claims.sid, // May be undefined for MCP tokens
 		org_id: claims.org_id,
+		aud: claims.aud, // Audience (client ID) for AuthInfo
+		scope: claims.scope, // Scopes for AuthInfo
+		exp: claims.exp, // Expiration for AuthInfo
 	};
 }

@@ -15,15 +15,18 @@ export type JwtValidationResult = {
 
 export type JwtClaims = {
 	sub: string;
-	email: string;
-	sid: string;
+	email?: string; // Optional - not present in MCP OAuth tokens
+	sid?: string; // Optional - not present in MCP OAuth tokens
 	org_id?: string;
+	aud?: string; // Audience claim (client ID)
+	scope?: string; // Space-separated list of scopes
+	exp?: number; // Expiration timestamp (Unix seconds)
 };
 
 export type AuthUser = {
 	id: string;
-	email: string;
-	sessionId: string;
+	email?: string; // Optional - not present in MCP OAuth tokens
+	sessionId?: string; // Optional - not present in MCP OAuth tokens
 };
 
 export type AuthContext = {

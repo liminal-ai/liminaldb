@@ -58,22 +58,25 @@ describe("MCP OAuth Integration", () => {
 			const res = await fetch(
 				`${BASE_URL}/.well-known/oauth-protected-resource`,
 			);
-			const body = await res.json();
+			const body = (await res.json()) as {
+				resource?: string;
+				authorization_servers?: string[];
+			};
 
 			expect(body.resource).toBeDefined();
 			expect(typeof body.resource).toBe("string");
 			expect(body.authorization_servers).toBeDefined();
 			expect(Array.isArray(body.authorization_servers)).toBe(true);
-			expect(body.authorization_servers.length).toBeGreaterThan(0);
+			expect(body.authorization_servers?.length).toBeGreaterThan(0);
 		});
 
 		test("metadata authorization_servers contains valid URL", async () => {
 			const res = await fetch(
 				`${BASE_URL}/.well-known/oauth-protected-resource`,
 			);
-			const body = await res.json();
+			const body = (await res.json()) as { authorization_servers?: string[] };
 
-			const authServer = body.authorization_servers[0];
+			const authServer = body.authorization_servers?.[0];
 			expect(authServer).toMatch(/^https?:\/\//);
 		});
 	});
@@ -226,16 +229,14 @@ describe("MCP OAuth Integration", () => {
 			};
 			expect(body.result).toBeDefined();
 
-			// Parse the JSON content from the tool response
+			// The tool returns plain text, not JSON
 			if (body.result?.content) {
 				const textContent = body.result.content.find(
 					(c: { type: string }) => c.type === "text",
 				);
-				if (textContent?.text) {
-					const healthResult = JSON.parse(textContent.text);
-					expect(healthResult.status).toBe("ok");
-					expect(healthResult.convex).toBe("authenticated");
-				}
+				// Verify the response indicates successful connection
+				expect(textContent?.text).toContain("Health check passed");
+				expect(textContent?.text).toContain("Convex connected");
 			}
 		});
 	});

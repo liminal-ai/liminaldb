@@ -11,6 +11,40 @@ export function registerAuthRoutes(fastify: FastifyInstance): void {
 	fastify.get("/auth/me", { preHandler: authMiddleware }, meHandler);
 }
 
+/**
+ * Validates and sanitizes a redirect URL.
+ * Returns a safe relative path or undefined if invalid.
+ *
+ * Security: Uses URL parsing to prevent open redirect vulnerabilities.
+ * Only allows paths that resolve to the same origin.
+ */
+function validateRedirectUrl(redirect: string | undefined): string | undefined {
+	if (!redirect) {
+		return undefined;
+	}
+
+	try {
+		// Parse relative to a dummy base to validate structure
+		const url = new URL(redirect, "http://localhost");
+
+		// Reject if it resolves to a different host (catches //, /\, etc.)
+		if (url.host !== "localhost") {
+			return undefined;
+		}
+
+		// Reject if pathname doesn't start with / (shouldn't happen, but be safe)
+		if (!url.pathname.startsWith("/")) {
+			return undefined;
+		}
+
+		// Return only pathname + search (no hash, no protocol, no host)
+		return url.pathname + url.search;
+	} catch {
+		// Invalid URL format
+		return undefined;
+	}
+}
+
 async function loginHandler(
 	request: FastifyRequest,
 	reply: FastifyReply,
@@ -18,10 +52,7 @@ async function loginHandler(
 	const { redirect } = request.query as { redirect?: string };
 
 	// Validate redirect is a safe relative path
-	let safeRedirect: string | undefined;
-	if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) {
-		safeRedirect = redirect;
-	}
+	const safeRedirect = validateRedirectUrl(redirect);
 
 	const state = safeRedirect
 		? JSON.stringify({ redirect: safeRedirect })
@@ -68,11 +99,10 @@ async function callbackHandler(
 			try {
 				const parsed = JSON.parse(state);
 				if (parsed?.redirect && typeof parsed.redirect === "string") {
-					if (
-						parsed.redirect.startsWith("/") &&
-						!parsed.redirect.startsWith("//")
-					) {
-						redirectPath = parsed.redirect;
+					// Use the same validation as login handler
+					const safeRedirect = validateRedirectUrl(parsed.redirect);
+					if (safeRedirect) {
+						redirectPath = safeRedirect;
 					}
 				}
 			} catch {
@@ -94,7 +124,9 @@ async function logoutHandler(
 	request: FastifyRequest,
 	reply: FastifyReply,
 ): Promise<void> {
-	// Attempt to revoke WorkOS session if we have a sessionId
+	// Attempt to revoke WorkOS session if we have a sessionId.
+	// NOTE: MCP OAuth/DCR tokens don't include sessionId (sid claim),
+	// so session revocation only works for AuthKit web login tokens.
 	const sessionId = request.user?.sessionId;
 	if (sessionId) {
 		try {

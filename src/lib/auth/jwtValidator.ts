@@ -1,5 +1,6 @@
 import { jwtVerify, createRemoteJWKSet, errors as joseErrors } from "jose";
 import type { JwtValidationResult } from "./types";
+import { config } from "../config";
 
 // Lazily initialized JWKS for caching
 let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
@@ -9,30 +10,31 @@ function getJwks(): ReturnType<typeof createRemoteJWKSet> {
 		return jwks;
 	}
 
-	const clientId = process.env.WORKOS_CLIENT_ID;
-	if (!clientId) {
-		throw new Error("WORKOS_CLIENT_ID environment variable required");
-	}
-
-	const jwksUrl = new URL(`https://api.workos.com/sso/jwks/${clientId}`);
+	const jwksUrl = new URL(
+		`https://api.workos.com/sso/jwks/${config.workosClientId}`,
+	);
 	jwks = createRemoteJWKSet(jwksUrl);
 	return jwks;
 }
 
 /**
  * Returns the valid issuers for WorkOS JWT validation.
- * WorkOS may use either issuer format depending on the token type.
+ * WorkOS may use either issuer format depending on the token type:
+ * - User Management API tokens use api.workos.com issuers
+ * - AuthKit OAuth2 tokens (MCP/DCR) use the AuthKit server URL as issuer
  */
 function getValidIssuers(): string[] {
-	const clientId = process.env.WORKOS_CLIENT_ID;
-	if (!clientId) {
-		throw new Error("WORKOS_CLIENT_ID environment variable required");
+	const issuers = [
+		"https://api.workos.com/",
+		`https://api.workos.com/user_management/${config.workosClientId}`,
+	];
+
+	// Add AuthKit OAuth2 issuer for MCP/DCR tokens
+	if (config.workosAuthServerUrl) {
+		issuers.push(config.workosAuthServerUrl);
 	}
 
-	return [
-		"https://api.workos.com/",
-		`https://api.workos.com/user_management/${clientId}`,
-	];
+	return issuers;
 }
 
 export async function validateJwt(token: string): Promise<JwtValidationResult> {
@@ -43,15 +45,10 @@ export async function validateJwt(token: string): Promise<JwtValidationResult> {
 	try {
 		const keySet = getJwks();
 		const issuers = getValidIssuers();
-		const audience = process.env.WORKOS_CLIENT_ID;
-
-		if (!audience) {
-			throw new Error("WORKOS_CLIENT_ID environment variable required");
-		}
 
 		await jwtVerify(token, keySet, {
 			issuer: issuers,
-			audience,
+			audience: config.workosClientId,
 		});
 
 		return { valid: true };
