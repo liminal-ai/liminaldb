@@ -175,22 +175,27 @@ MCP clients will never send cookies. Bearer header is mandatory.
 
 **Solution**: Move all JWT validation to Fastify (Node.js). Convex receives an API key (proves trusted caller) and userId (identifies user for RLS). Convex doesn't need to know about JWTs, WorkOS, or JWKS. This cleanly separates auth (Fastify) from data access (Convex).
 
-#### Problem 3.4: ChatGPT App Store Integration
+#### Problem 3.4: MCP Client OAuth Integration (ChatGPT, Claude.ai, Claude Code)
 
-ChatGPT requires us to be an **OAuth Provider**, not just a consumer:
-- ChatGPT authenticates WITH our app
-- We must expose OAuth endpoints (authorize, token, discovery)
-- We issue tokens TO ChatGPT
+MCP clients need to authenticate users before making tool calls. The MCP spec (RFC 9728) defines how this works:
 
-**Solution approach**: Our OAuth provider endpoints wrap WorkOS authentication. User authenticates with WorkOS, we return the WorkOS JWT to ChatGPT. ChatGPT stores it and sends it back as Bearer on MCP calls. This approach requires validation during implementation.
+1. MCP client hits our `/mcp` endpoint without token
+2. We return 401 with `WWW-Authenticate` header pointing to metadata
+3. MCP client fetches `/.well-known/oauth-protected-resource` to discover our auth server
+4. MCP client handles OAuth flow directly with our auth server (WorkOS)
+5. MCP client sends Bearer token on subsequent requests
 
-**Required endpoints**:
-- `/.well-known/oauth-protected-resource` - Discovery endpoint telling ChatGPT where our auth server is
-- `/.well-known/openid-configuration` - OIDC discovery listing our endpoints
-- `/oauth2/authorize` - Authorization endpoint (redirects to WorkOS)
-- `/oauth2/token` - Token exchange (returns WorkOS JWT)
+**Key insight**: We don't need to be an OAuth provider. WorkOS handles the OAuth flow. We just:
+- Serve discovery metadata pointing to WorkOS as the authorization server
+- Validate the tokens WorkOS issues
+- Return proper `WWW-Authenticate` headers on 401s
 
-**Note**: Dynamic client registration (`/oauth2/register`) may or may not be required depending on ChatGPT's implementation. This needs verification against actual ChatGPT documentation during implementation.
+**Required endpoint**:
+- `/.well-known/oauth-protected-resource` - RFC 9728 protected resource metadata (implemented)
+
+**WorkOS configuration required**:
+- Enable Dynamic Client Registration (DCR) and/or Client ID Metadata Document (CIMD) in WorkOS Connect settings
+- Add redirect URIs for ChatGPT and other MCP clients
 
 #### Problem 3.5: Testing Without Special Auth Modes
 
@@ -209,7 +214,7 @@ ChatGPT requires us to be an **OAuth Provider**, not just a consumer:
 
 **Problem**: 60ms overhead on every authenticated request
 
-**Solution**: Use `isValidJwt()` for stateless validation (~0ms after JWKS cached)
+**Solution**: Use `jose` library's `jwtVerify()` with `createRemoteJWKSet()` for stateless validation (~0ms after JWKS cached)
 
 #### Problem 3.7: Refresh Token Handling
 
@@ -254,10 +259,11 @@ Signature: RS256 signed, verifiable via JWKS
 **Entry Points** (Web Browser, MCP Clients, API Calls, Tests) all converge at **Fastify Middleware**, which:
 
 1. Extracts JWT from Bearer header (preferred) or HttpOnly cookie (fallback)
-2. Validates JWT signature via WorkOS SDK's `isValidJwt()` (stateless, uses cached JWKS)
-3. Decodes claims to extract userId, email, sessionId
+2. Validates JWT signature via `jose` library's `jwtVerify()` with `createRemoteJWKSet()` (stateless, uses cached JWKS)
+3. Decodes claims to extract userId, email (optional), sessionId (optional)
 4. Attaches user info to request
-5. Calls Convex with API key + userId (not the user's JWT)
+5. For MCP 401s: Returns `WWW-Authenticate` header with metadata URL
+6. Calls Convex with API key + userId (not the user's JWT)
 
 **Convex** then:
 1. Validates API key (proves request came from trusted Fastify server)
@@ -285,23 +291,27 @@ Signature: RS256 signed, verifiable via JWKS
 2. Client sends requests with `Authorization: Bearer <JWT>` header
 3. Middleware extracts JWT from header, validates, proceeds
 
-#### Flow C: ChatGPT App Store OAuth Provider
+#### Flow C: MCP Client OAuth (ChatGPT, Claude.ai, Claude Code)
 
-This flow positions PromptDB as an OAuth provider to ChatGPT:
+MCP clients handle OAuth directly with WorkOS. We provide discovery metadata and validate tokens:
 
-1. User attempts to use PromptDB in ChatGPT
-2. ChatGPT calls our MCP endpoint, receives 401
-3. ChatGPT reads `/.well-known/oauth-protected-resource` to find our auth server
-4. ChatGPT redirects user to our `/oauth2/authorize`
-5. We redirect user to WorkOS for authentication
-6. User authenticates with WorkOS
-7. WorkOS redirects back to us with code
-8. We exchange code for JWT, redirect to ChatGPT with our authorization code
-9. ChatGPT calls our `/oauth2/token` endpoint
-10. We return the WorkOS JWT to ChatGPT
-11. ChatGPT stores it, sends as Bearer on all subsequent MCP calls
+1. User attempts to use PromptDB in MCP client
+2. MCP client calls our `/mcp` endpoint, receives 401 with `WWW-Authenticate` header
+3. MCP client fetches `/.well-known/oauth-protected-resource`
+4. Metadata points to WorkOS as `authorization_servers`
+5. MCP client handles OAuth with WorkOS directly (DCR, PKCE, etc.)
+6. User authenticates with WorkOS (Google, email/password, etc.)
+7. WorkOS returns access token to MCP client
+8. MCP client sends Bearer token on all subsequent `/mcp` requests
+9. We validate token via `jose` + WorkOS JWKS
 
-**Implementation note**: The exact flow depends on ChatGPT's OAuth implementation details. The above is the expected flow based on MCP spec and OAuth standards. Verify against actual ChatGPT behavior during implementation.
+**Key insight**: WorkOS acts as the authorization server. We don't proxy or issue tokens - we just validate what WorkOS issues.
+
+**Multi-issuer support**: Tokens can come from:
+- User Management API (`https://api.workos.com/user_management/{clientId}`) - web auth
+- AuthKit OAuth (`https://{subdomain}.authkit.app`) - MCP/DCR auth
+
+Both are validated using the same JWKS endpoint. The validator accepts both issuers.
 
 ---
 
@@ -313,13 +323,22 @@ The auth middleware performs these steps:
 
 1. **Extract JWT**: Check `Authorization: Bearer <token>` header first. If not present, extract from signed HttpOnly cookie.
 
-2. **Validate JWT**: Use the `jose` library's `jwtVerify()` with WorkOS's JWKS endpoint (`https://api.workos.com/sso/jwks/{clientId}`). This performs stateless validation using cached JWKS (public keys fetched from WorkOS). The `jose` library is used directly rather than WorkOS SDK's internal `isValidJwt()` method, which is not part of the public SDK API.
+2. **Validate JWT**: Use `jose` library's `jwtVerify()` with `createRemoteJWKSet()` pointing to WorkOS JWKS. Validation includes:
+   - Signature verification via JWKS (cached after first fetch)
+   - Issuer validation (accepts both User Management and AuthKit issuers)
+   - Audience validation (client ID)
+   - Expiry checking
 
-3. **Decode Claims**: Base64 decode the JWT payload (already validated, just extracting data). Get `sub` (userId), `email`, `sid` (sessionId).
+3. **Decode Claims**: Extract claims from validated JWT:
+   - `sub` (userId) - required
+   - `email` - optional (not present in DCR/MCP tokens)
+   - `sid` (sessionId) - optional (format differs for MCP tokens)
 
 4. **Attach to Request**: Set `request.user = { id, email, sessionId }` and `request.accessToken = token`.
 
-5. **Reject if Invalid**: Return 401 with appropriate error message.
+5. **MCP Auth Challenge**: For `/mcp` routes returning 401, include `WWW-Authenticate` header pointing to metadata endpoint.
+
+6. **Reject if Invalid**: Return 401 with appropriate error message.
 
 ### Cookie Configuration
 
@@ -489,13 +508,60 @@ Playwright can test MCP endpoints directly using the `request` fixture:
 
 ### Future: Test Chat Client
 
-For comprehensive OpenAI app store flow testing, build a minimal MCP chat client that:
+For comprehensive MCP flow testing, build a minimal MCP chat client that:
 - Implements MCP protocol
-- Handles OAuth provider flow (our authorize/token endpoints)
+- Handles OAuth discovery (`/.well-known/oauth-protected-resource`)
+- Performs OAuth with WorkOS
 - Renders widgets
 - Connects to an LLM
 
-This enables automated E2E tests covering the full OAuth → MCP → widget → response flow. Deferred to post-M0.
+This enables automated E2E tests covering the full OAuth discovery → MCP → widget → response flow. Deferred to post-M0.
+
+---
+
+## MCP OAuth Discovery (RFC 9728)
+
+MCP clients discover how to authenticate via RFC 9728 Protected Resource Metadata.
+
+### Discovery Endpoint
+
+**GET `/.well-known/oauth-protected-resource`**
+
+Returns:
+```json
+{
+  "resource": "https://example.com/mcp",
+  "authorization_servers": ["https://subdomain.authkit.app"],
+  "scopes_supported": ["openid", "email", "profile"],
+  "bearer_methods_supported": ["header"]
+}
+```
+
+### WWW-Authenticate Header
+
+When `/mcp` returns 401, it includes:
+```
+WWW-Authenticate: Bearer resource_metadata="https://example.com/.well-known/oauth-protected-resource", error="missing_token"
+```
+
+### WorkOS Configuration
+
+To support MCP OAuth, enable in WorkOS Dashboard → Connect → Configuration:
+- **Dynamic Client Registration (DCR)** - For clients without stable URLs (like local dev tools)
+- **Client ID Metadata Document (CIMD)** - For web clients with stable HTTPS URLs
+
+CIMD is lower risk (less state, domain-backed trust). DCR is needed for local tools.
+
+### ChatGPT Widgets
+
+ChatGPT supports widgets via MCP resources. When a tool returns `structuredContent` and references a widget via `_meta["openai/outputTemplate"]`:
+
+1. ChatGPT fetches the widget resource (`resources/read`)
+2. Widget HTML is rendered in sandboxed iframe
+3. `window.openai.toolOutput` contains the structured data
+4. Widget must listen for `openai:set_globals` event (data arrives async)
+
+Required CSP configuration via `openai/widgetCSP` metadata.
 
 ---
 
@@ -587,9 +653,13 @@ These are potential enhancements to consider. None are commitments - they repres
 | `WORKOS_API_KEY` | WorkOS API key for SDK calls |
 | `WORKOS_CLIENT_ID` | WorkOS client/application ID |
 | `WORKOS_REDIRECT_URI` | OAuth callback URL |
+| `WORKOS_AUTH_SERVER_URL` | AuthKit URL for MCP OAuth discovery (e.g., `https://subdomain.authkit.app`) |
 | `CONVEX_URL` | Convex deployment URL |
 | `CONVEX_API_KEY` | API key for authenticating to Convex |
 | `COOKIE_SECRET` | Secret for signing HttpOnly cookies |
+| `BASE_URL` | Public URL of the server (for MCP metadata) |
+| `MCP_RESOURCE_URL` | MCP resource URL (e.g., `https://example.com/mcp`) |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated allowed origins (production only) |
 
 ### Convex
 
@@ -605,3 +675,4 @@ These are potential enhancements to consider. None are commitments - they repres
 | Date | Version | Changes |
 |------|---------|---------|
 | 2025-12-22 | 1.0 | Initial auth architecture |
+| 2025-12-24 | 1.1 | Added MCP OAuth discovery (RFC 9728), multi-issuer JWT validation, ChatGPT widget support, updated to use jose library |

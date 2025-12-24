@@ -236,7 +236,7 @@ Fastify natively uses JSON Schema via AJV. To use Zod, the `fastify-type-provide
 |----------|--------|---------|-----------|
 | Auth Provider | WorkOS AuthKit | - | Free to 1M MAU, enterprise SSO path |
 | Node SDK | @workos-inc/node | 7.77.0 | OAuth flow, session management |
-| Convex Integration | @convex-dev/workos | latest | Native Convex + WorkOS |
+| JWT Validation | jose | 6.x | JWKS validation, multi-issuer support |
 | Session Storage | HttpOnly sealed cookie | - | XSS-proof, automatic with requests |
 
 ### 4.6 Frontend
@@ -426,12 +426,17 @@ The MCP server is created using `@modelcontextprotocol/sdk` and integrated with 
 
 ### 6.4 MCP + Auth Integration
 
-MCP clients pass the user's access token in the Authorization header. Auth integration:
+MCP clients discover how to authenticate via RFC 9728 OAuth discovery:
 
-- **Bearer token extraction** - Middleware extracts JWT from Authorization header
-- **Token validation** - JWT validated via WorkOS SDK `isValidJwt()` before tool execution
-- **User context injection** - userId extracted from claims, attached to request for tool handlers
-- **Convex calls** - API key + userId passed to Convex functions, RLS enforces data access
+1. **401 Response** - Unauthorized requests receive `WWW-Authenticate` header pointing to metadata
+2. **Discovery** - `/.well-known/oauth-protected-resource` returns WorkOS as authorization server
+3. **OAuth Flow** - MCP client handles OAuth directly with WorkOS (DCR/PKCE)
+4. **Bearer Token** - Subsequent requests include `Authorization: Bearer <token>`
+5. **Token Validation** - JWT validated via jose library with multi-issuer support
+6. **User Context** - userId extracted from claims, passed to Convex with API key
+7. **RLS** - Convex enforces user-scoped data access
+
+**Multi-issuer support**: Tokens may come from User Management API (web auth) or AuthKit OAuth (MCP/DCR). Both are validated against the same JWKS.
 
 <!-- END SHARD: mcp-architecture -->
 
@@ -484,11 +489,10 @@ MCP clients pass the user's access token in the Authorization header. Auth integ
 | `@fastify/static` | 8.x | Static file serving |
 | `@fastify/cookie` | 11.x | Cookie parsing/setting |
 | `fastify-type-provider-zod` | latest | Zod type provider (validatorCompiler + serializerCompiler) |
-| `fastify-mcp` | 2.1.0 | MCP protocol integration |
-| `@modelcontextprotocol/sdk` | 1.25.1 | MCP types and utilities |
+| `@modelcontextprotocol/sdk` | 1.25.1 | MCP SDK for tools and resources |
 | `convex` | 1.31.2 | Convex client |
-| `@convex-dev/workos` | latest | Convex + WorkOS integration |
-| `@workos-inc/node` | 7.77.0 | WorkOS SDK |
+| `@workos-inc/node` | 7.77.0 | WorkOS SDK for OAuth flow |
+| `jose` | 6.x | JWT validation with JWKS |
 | `zod` | 4.2.1 | Schema validation (MCP + API) |
 
 ### 8.2 Development Dependencies
@@ -878,9 +882,10 @@ For AI agents, these sections can be extracted as standalone context:
 
 ---
 
-**Architecture Status:** APPROVED (2025-12-21)
+**Architecture Status:** APPROVED (2025-12-21), Updated (2025-12-24)
 
 ---
 
 _Document generated: 2025-12-21_
+_Last updated: 2025-12-24 - Added MCP OAuth discovery, updated dependencies (jose, removed @convex-dev/workos)_
 _BMAD Workflow: create-architecture_

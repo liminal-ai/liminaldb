@@ -76,22 +76,27 @@ graph TB
 ```
 src/
 ├── lib/
-│   ├── workos.ts                 # WorkOS client (exists)
+│   ├── workos.ts                 # WorkOS client
+│   ├── config.ts                 # Environment configuration
 │   └── auth/
 │       ├── index.ts              # Re-exports
 │       ├── types.ts              # Auth types
 │       ├── tokenExtractor.ts     # Extract JWT from request
-│       ├── jwtValidator.ts       # Validate via WorkOS SDK
+│       ├── jwtValidator.ts       # Validate via jose library
 │       └── jwtDecoder.ts         # Decode JWT claims
 ├── middleware/
-│   └── auth.ts                   # Auth middleware (refactor)
+│   └── auth.ts                   # Auth middleware
+├── routes/
+│   ├── auth.ts                   # OAuth routes (login, callback, logout)
+│   └── well-known.ts             # MCP OAuth discovery endpoint
 ├── api/
-│   └── auth.ts                   # OAuth routes (refactor)
+│   ├── health.ts                 # Health check endpoint
+│   └── mcp.ts                    # MCP server and handlers
 └── index.ts                      # Fastify app
 
 convex/
-├── lib/
-│   ├── auth.ts                   # API key validation wrapper
+├── auth/
+│   ├── apiKey.ts                 # API key validation wrapper
 │   ├── rls.ts                    # RLS rules and wrapped functions
 │   └── types.ts                  # Convex auth types
 ├── schema.ts                     # Schema with userId fields
@@ -103,21 +108,24 @@ tests/
 │       ├── middleware.test.ts    # Handler-level with mocks
 │       ├── routes.test.ts        # OAuth route handlers
 │       └── mcp.test.ts           # MCP auth handlers
+│   └── mcp/
+│       ├── well-known.test.ts    # OAuth discovery endpoint tests
+│       ├── auth-challenge.test.ts # WWW-Authenticate tests
+│       ├── tools.test.ts         # MCP tool auth tests
+│       └── resources.test.ts     # MCP resource tests
 ├── convex/
 │   └── auth/
 │       ├── apiKey.test.ts        # API key validation
 │       └── rls.test.ts           # RLS rule enforcement
 ├── integration/
 │   ├── auth-api.test.ts          # Full API auth flow
+│   ├── auth-cookie.test.ts       # Cookie-based web auth flow
 │   └── auth-mcp.test.ts          # Full MCP auth flow
-├── unit/
-│   └── auth/                     # Deferred - add if needed
 ├── fixtures/
-│   ├── auth.ts                   # Real WorkOS tokens (exists)
+│   ├── auth.ts                   # Real WorkOS tokens
 │   ├── jwt.ts                    # Test JWT generator
 │   ├── mockRequest.ts            # Fastify request factory
-│   ├── mockReply.ts              # Fastify reply factory
-│   └── mockWorkos.ts             # WorkOS SDK mock
+│   └── mockReply.ts              # Fastify reply factory
 └── helpers/
     └── testUser.ts               # Test user management
 ```
@@ -181,12 +189,12 @@ classDiagram
 - `error`: Error message if validation failed
 
 **JwtClaims** (fields we extract and use)
-- `sub`: WorkOS user ID (e.g., `user_01KD3AV9594M4F6S0H8X47DB6P`)
-- `email`: User's email address
-- `sid`: WorkOS session ID (e.g., `session_01KD3EWJ8CWMZGV508J3YJVE8J`)
+- `sub`: WorkOS user ID (e.g., `user_01KD3AV9594M4F6S0H8X47DB6P`) - **required**
+- `email`: User's email address - **optional** (not present in DCR/MCP tokens)
+- `sid`: WorkOS session ID - **optional** (format differs for MCP tokens)
 - `org_id`: Optional organization ID
 
-Note: The full JWT contains additional fields (`aud`, `iss`, `iat`, `exp`) used for validation, but WorkOS SDK handles that. We only decode what we need.
+Note: The full JWT contains additional fields (`aud`, `iss`, `iat`, `exp`) used for validation by the jose library. Email and sessionId are optional because DCR tokens from MCP clients may not include them (the JWT template doesn't apply to DCR-issued tokens).
 
 **AuthUser**
 - `id`: WorkOS user ID (from `sub` claim)
@@ -242,11 +250,11 @@ sequenceDiagram
     Fastify->>Fastify: extractToken(request)
     Note over Fastify: Source: cookie
 
-    Fastify->>WorkOS: isValidJwt(token)
-    WorkOS-->>Fastify: true
+    Fastify->>Fastify: validateJwt(token) via jose
+    Note over Fastify: Verify signature, issuer, audience
 
     Fastify->>Fastify: decodeJwtClaims(token)
-    Note over Fastify: Extract sub, email, sid
+    Note over Fastify: Extract sub, email (optional), sid (optional)
 
     Fastify->>Convex: query(api.prompts.list, {<br/>  apiKey: env.CONVEX_API_KEY,<br/>  userId: claims.sub<br/>})
 
@@ -271,10 +279,11 @@ sequenceDiagram
     Fastify->>Fastify: extractToken(request)
     Note over Fastify: Source: bearer
 
-    Fastify->>WorkOS: isValidJwt(token)
-    WorkOS-->>Fastify: true
+    Fastify->>Fastify: validateJwt(token) via jose
+    Note over Fastify: Verify signature, multi-issuer support
 
     Fastify->>Fastify: decodeJwtClaims(token)
+    Note over Fastify: Extract sub (email/sid may be missing)
 
     Fastify->>Convex: mutation(api.prompts.create, {<br/>  apiKey: env.CONVEX_API_KEY,<br/>  userId: claims.sub,<br/>  text: "..."<br/>})
 
@@ -325,12 +334,14 @@ flowchart TD
     D -->|Yes| G[Extract token from cookie]
     D -->|No| H[401: Not authenticated]
 
-    E --> I[Validate JWT via WorkOS SDK]
+    E --> I[Validate JWT via jose]
     G --> I
 
     I --> J{Valid?}
 
-    J -->|No| K[401: Invalid or expired token]
+    J -->|No| K{MCP route?}
+    K -->|Yes| K2[401 + WWW-Authenticate header]
+    K -->|No| K3[401: Invalid or expired token]
     J -->|Yes| L[Decode JWT claims]
 
     L --> M[Attach AuthContext to request]
@@ -385,7 +396,7 @@ extractToken(request: FastifyRequest): TokenExtractionResult
 
 ### 5.2 JWT Validator (`src/lib/auth/jwtValidator.ts`)
 
-**Purpose:** Validate JWT using WorkOS SDK
+**Purpose:** Validate JWT signature, issuer, audience, and expiry
 
 **Method Signature:**
 ```
@@ -393,13 +404,19 @@ validateJwt(token: string): Promise<JwtValidationResult>
 ```
 
 **Logic:**
-1. Call `workos.userManagement.isValidJwt(token)`
-2. Return `{ valid: true }` or `{ valid: false, error: "..." }`
+1. Create JWKS keyset via `jose.createRemoteJWKSet()` pointing to WorkOS JWKS URL
+2. Call `jose.jwtVerify(token, keySet, { issuer, audience })`
+3. Return `{ valid: true }` or `{ valid: false, error: "..." }`
+
+**Multi-Issuer Support:**
+Accepts tokens from both:
+- User Management API: `https://api.workos.com/user_management/{clientId}`
+- AuthKit OAuth: `https://{subdomain}.authkit.app`
 
 **Notes:**
-- Wraps WorkOS SDK call
-- Easy to mock in tests
-- JWKS cached by SDK (~0ms after first call)
+- Uses `jose` library (not WorkOS SDK's internal methods)
+- JWKS cached after first fetch (~0ms subsequent calls)
+- Both issuers use the same JWKS endpoint
 
 ### 5.3 JWT Decoder (`src/lib/auth/jwtDecoder.ts`)
 
@@ -656,9 +673,13 @@ makeAuthenticatedRequest(method, path, options?)
 | `WORKOS_API_KEY` | WorkOS API key |
 | `WORKOS_CLIENT_ID` | WorkOS client ID |
 | `WORKOS_REDIRECT_URI` | OAuth callback URL |
+| `WORKOS_AUTH_SERVER_URL` | AuthKit URL for MCP OAuth discovery |
 | `CONVEX_URL` | Convex deployment URL |
 | `CONVEX_API_KEY` | API key for Convex calls |
 | `COOKIE_SECRET` | Secret for signing cookies |
+| `BASE_URL` | Public URL for MCP metadata |
+| `MCP_RESOURCE_URL` | MCP resource URL |
+| `CORS_ALLOWED_ORIGINS` | Allowed CORS origins (production) |
 
 ### Convex
 
@@ -669,5 +690,12 @@ makeAuthenticatedRequest(method, path, options?)
 
 ---
 
-*Document Version: 1.0*
-*Last Updated: 2025-12-22*
+*Document Version: 1.1*
+*Last Updated: 2025-12-24*
+
+**Changes in 1.1:**
+- Updated file paths to match actual implementation
+- Changed JWT validation from WorkOS SDK to jose library
+- Added multi-issuer support for MCP tokens
+- Added MCP OAuth discovery flow
+- Marked email and sessionId as optional claims
