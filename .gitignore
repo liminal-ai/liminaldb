@@ -1,0 +1,16 @@
+node_modules/
+.env*
+!.env.example
+dist/
+.convex/
+
+# BMAD workflows (installed per-machine)
+_bmad/
+
+# Claude Code local config
+.claude/audio/
+.claude/config/
+.claude/tts-*.txt
+
+# MCP config (machine-specific)
+.mcp.json
