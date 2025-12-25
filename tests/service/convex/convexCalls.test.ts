@@ -42,37 +42,31 @@ describe("Convex API Key Auth", () => {
 		},
 	);
 
-	test.skipIf(skipInCI)(
-		"healthAuth.check rejects invalid apiKey",
-		async () => {
-			const client = getConvexClient();
-			const invalidApiKey = "invalid_api_key_12345";
-			const testUserId = "user_test_123";
+	test.skipIf(skipInCI)("healthAuth.check rejects invalid apiKey", async () => {
+		const client = getConvexClient();
+		const invalidApiKey = "invalid_api_key_12345";
+		const testUserId = "user_test_123";
 
-			await expect(
-				client.query(api.healthAuth.check, {
-					apiKey: invalidApiKey,
-					userId: testUserId,
-				}),
-			).rejects.toThrow("Invalid API key");
-		},
-	);
+		await expect(
+			client.query(api.healthAuth.check, {
+				apiKey: invalidApiKey,
+				userId: testUserId,
+			}),
+		).rejects.toThrow("Invalid API key");
+	});
 
-	test.skipIf(skipInCI)(
-		"healthAuth.check rejects missing apiKey",
-		async () => {
-			const client = getConvexClient();
-			const testUserId = "user_test_123";
+	test.skipIf(skipInCI)("healthAuth.check rejects missing apiKey", async () => {
+		const client = getConvexClient();
+		const testUserId = "user_test_123";
 
-			// Calling without apiKey should fail validation
-			// Note: We cast to bypass TypeScript since we're testing runtime validation
-			await expect(
-				client.query(api.healthAuth.check, {
-					userId: testUserId,
-				} as { apiKey: string; userId: string }),
-			).rejects.toThrow();
-		},
-	);
+		// Calling without apiKey should fail validation
+		// Note: We cast to bypass TypeScript since we're testing runtime validation
+		await expect(
+			client.query(api.healthAuth.check, {
+				userId: testUserId,
+			} as { apiKey: string; userId: string }),
+		).rejects.toThrow();
+	});
 
 	test.skipIf(skipInCI || !hasApiKey())(
 		"healthAuth.check rejects missing userId",
