@@ -38,7 +38,7 @@ async function investigate() {
 
 	// 2. Tampered token (change one character)
 	console.log("\n2. Tampered token:");
-	const tamperedToken = accessToken.slice(0, -5) + "XXXXX";
+	const tamperedToken = `${accessToken.slice(0, -5)}XXXXX`;
 	try {
 		const tamperedResult = await um.isValidJwt(tamperedToken);
 		console.log("   Result:", tamperedResult);

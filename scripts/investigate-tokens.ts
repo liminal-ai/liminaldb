@@ -40,7 +40,7 @@ async function investigate() {
 	// 2. Analyze the access token
 	console.log("\n2. Access Token Analysis:");
 	console.log("   Length:", accessToken.length);
-	console.log("   Starts with:", accessToken.substring(0, 50) + "...");
+	console.log("   Starts with:", `${accessToken.substring(0, 50)}...`);
 
 	// Check if it's a JWT (three dot-separated parts)
 	const parts = accessToken.split(".");

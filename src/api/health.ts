@@ -28,26 +28,19 @@ export function registerHealthRoutes(fastify: FastifyInstance): void {
 		"/api/health",
 		{ preHandler: authMiddleware },
 		async (request, _reply) => {
+			// authMiddleware guarantees request.user exists (rejects with 401 otherwise)
+			const user = request.user!;
 			try {
-				if (!request.user) {
-					return {
-						status: "ok",
-						timestamp: new Date().toISOString(),
-						user: null,
-						convex: "no-user",
-					};
-				}
-
 				// Use new pattern: pass apiKey + userId to Convex
 				const convexHealth = await convex.query(api.healthAuth.check, {
 					apiKey: config.convexApiKey,
-					userId: request.user.id,
+					userId: user.id,
 				});
 
 				return {
 					status: "ok",
 					timestamp: new Date().toISOString(),
-					user: request.user,
+					user,
 					convex: "authenticated",
 					convexUser: convexHealth.user,
 				};
@@ -56,7 +49,7 @@ export function registerHealthRoutes(fastify: FastifyInstance): void {
 				return {
 					status: "ok",
 					timestamp: new Date().toISOString(),
-					user: request.user,
+					user,
 					convex: "auth-failed",
 					error: errorMessage,
 				};

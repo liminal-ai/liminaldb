@@ -59,7 +59,8 @@ async function main() {
 	console.log("Verifying authentication...");
 
 	try {
-		const { accessToken } =
+		// Destructure to verify auth works (token not needed, just confirming credentials)
+		const { accessToken: _token } =
 			await workos.userManagement.authenticateWithPassword({
 				email: TEST_EMAIL,
 				password: TEST_PASSWORD,

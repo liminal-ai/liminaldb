@@ -49,7 +49,8 @@ export function createMalformedJwt(
 		| "missing-claims",
 ): string {
 	const header = base64UrlEncode({ alg: "RS256", typ: "JWT" });
-	const payload = base64UrlEncode(defaultClaims);
+	// payload available for potential future malformed token types
+	const _payload = base64UrlEncode(defaultClaims);
 	switch (type) {
 		case "not-three-parts":
 			return "invalidtoken";
