@@ -64,10 +64,10 @@ graph TB
 
 | Entry Point | Token Transport | JWT Validation | Convex Auth |
 |-------------|-----------------|----------------|-------------|
-| Web Browser | HttpOnly Cookie | Fastify (WorkOS SDK) | API Key + userId |
-| MCP Client | Bearer Header | Fastify (WorkOS SDK) | API Key + userId |
-| API Client | Bearer Header | Fastify (WorkOS SDK) | API Key + userId |
-| Tests | Bearer Header | Fastify (WorkOS SDK) | API Key + userId |
+| Web Browser | HttpOnly Cookie | Fastify (jose) | API Key + userId |
+| MCP Client | Bearer Header | Fastify (jose) | API Key + userId |
+| API Client | Bearer Header | Fastify (jose) | API Key + userId |
+| Tests | Bearer Header | Fastify (jose) | API Key + userId |
 
 ---
 
@@ -161,7 +161,7 @@ classDiagram
         +string? org_id
     }
 
-    note for JwtClaims "Fields we extract and use.<br/>Full JWT has aud, iss, iat, exp<br/>but WorkOS SDK handles validation."
+    note for JwtClaims "Fields we extract and use.<br/>Full JWT has aud, iss, iat, exp<br/>validated by jose library."
 
     class AuthUser {
         +string id
@@ -471,7 +471,7 @@ declare module "fastify" {
 
 ## 6. Convex Auth Module
 
-### 6.1 API Key Validator (`convex/lib/auth.ts`)
+### 6.1 API Key Validator (`convex/auth/apiKey.ts`)
 
 **Purpose:** Validate API key and extract userId for RLS
 

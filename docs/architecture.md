@@ -281,7 +281,7 @@ Fastify natively uses JSON Schema via AJV. To use Zod, the `fastify-type-provide
 3. **User-scoped data** - Convex RLS enforces user can only access their own data
 4. **HttpOnly cookies** - Tokens never exposed to client JavaScript
 
-**Separation of concerns:** Fastify handles all JWT validation (WorkOS SDK). Convex doesn't know about JWTs - it trusts Fastify (via API key) and enforces data access via RLS based on userId.
+**Separation of concerns:** Fastify handles all JWT validation (jose library with WorkOS JWKS). Convex doesn't know about JWTs - it trusts Fastify (via API key) and enforces data access via RLS based on userId.
 
 **Limitation:** All access requires userId. Background jobs or system operations without user context require workarounds. See Section 5.7.
 
@@ -312,7 +312,7 @@ sequenceDiagram
     W-->>F: Access token + Refresh token
     F-->>B: Set-Cookie (JWT, HttpOnly), 302 Redirect
     B->>F: GET /api/prompts (cookie auto-sent)
-    F->>F: Validate JWT (WorkOS SDK)
+    F->>F: Validate JWT (jose)
     F->>F: Extract userId from claims
     F->>C: query(prompts.list, {apiKey, userId})
     C->>C: Validate API key, apply RLS
@@ -334,7 +334,7 @@ sequenceDiagram
     M->>W: OAuth flow (browser popup/redirect)
     W-->>M: Access token returned
     M->>F: POST /mcp with Bearer token
-    F->>F: Validate JWT (WorkOS SDK)
+    F->>F: Validate JWT (jose)
     F->>F: Extract userId from claims
     F->>C: mutation(prompts.create, {apiKey, userId, ...})
     C->>C: Validate API key, apply RLS
@@ -468,7 +468,8 @@ MCP clients discover how to authenticate via RFC 9728 OAuth discovery:
 | Fastify server entry | `src/index.ts` |
 | MCP server setup | `src/api/mcp.ts` |
 | Auth middleware | `src/middleware/auth.ts` |
-| Convex JWT config | `convex/auth.config.ts` |
+| JWT validation | `src/lib/auth/jwtValidator.ts` |
+| Convex API key auth | `convex/auth/apiKey.ts` |
 | Database schema | `convex/schema.ts` |
 | Deployment config | `fly.toml` |
 

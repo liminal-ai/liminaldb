@@ -432,10 +432,10 @@ For API and MCP calls from different origins:
 
 | Option | Chose | Rationale |
 |--------|-------|-----------|
-| jose directly | Yes | WorkOS SDK's `isValidJwt()` is internal/private API, not publicly documented |
-| WorkOS SDK `isValidJwt()` | No | Not part of public SDK API; may change without notice |
+| jose directly | Yes | WorkOS Node SDK does not provide a JWT validation method for this use case |
+| WorkOS SDK | No | SDK handles OAuth flows but not stateless JWT validation with JWKS |
 
-**Implementation note**: We use `jose` library's `jwtVerify()` with `createRemoteJWKSet()` pointing to WorkOS's JWKS endpoint. This provides the same JWKS caching benefits while using a stable, documented API. Validation includes issuer and audience claims.
+**Implementation note**: We use `jose` library's `jwtVerify()` with `createRemoteJWKSet()` pointing to WorkOS's JWKS endpoint. This provides JWKS caching (~0ms after first fetch) and is the standard approach for validating JWTs from any OIDC-compliant issuer. Validation includes issuer and audience claims.
 
 ---
 
@@ -614,9 +614,10 @@ These are potential enhancements to consider. None are commitments - they repres
 |--------|----------|-------------|
 | `authenticateWithCode()` | OAuth callback | One-time |
 | `authenticateWithPassword()` | Tests, API clients | One-time |
-| `isValidJwt()` | Request validation | ~0ms (cached JWKS) |
 | `getUser()` | Fetch full user profile | ~60ms (API call) |
 | `listSessions()` | Session management | ~80ms (API call) |
+
+**Note:** JWT validation uses the `jose` library (`jwtVerify()` with `createRemoteJWKSet()`), not the WorkOS SDK. This provides ~0ms validation after JWKS is cached.
 
 ## Appendix B: Cookie Attributes Reference
 
