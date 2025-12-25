@@ -117,7 +117,7 @@ jobs:
       - name: Run integration tests
         run: bun run test:integration
         env:
-          BASE_URL: https://promptdb-staging.fly.dev
+          TEST_BASE_URL: https://promptdb-staging.fly.dev
           CONVEX_URL: ${{ secrets.CONVEX_URL }}
           CONVEX_API_KEY: ${{ secrets.CONVEX_API_KEY }}
           TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
