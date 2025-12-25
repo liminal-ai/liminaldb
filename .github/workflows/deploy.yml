@@ -2,6 +2,8 @@
 #
 # Required GitHub Secrets:
 # - CONVEX_DEPLOY_KEY: Convex deployment key (from Convex dashboard)
+# - CONVEX_URL: Convex deployment URL (e.g., https://xxx.convex.cloud)
+# - CONVEX_API_KEY: Convex API key for integration tests
 # - FLY_API_TOKEN: Fly.io deploy token (from `fly tokens create deploy`)
 # - TEST_USER_EMAIL: Staging test user email (for integration tests)
 # - TEST_USER_PASSWORD: Staging test user password
@@ -75,7 +77,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: superfly/flyctl-actions/setup-flyctl@v1.5
+      # Pinned to specific commit - v1.5 tag doesn't work with subfolder syntax
+      - uses: superfly/flyctl-actions/setup-flyctl@63da3ecc5e27
 
       - name: Deploy to Fly.io
         run: flyctl deploy --remote-only
@@ -115,6 +118,8 @@ jobs:
         run: bun run test:integration
         env:
           BASE_URL: https://promptdb-staging.fly.dev
+          CONVEX_URL: ${{ secrets.CONVEX_URL }}
+          CONVEX_API_KEY: ${{ secrets.CONVEX_API_KEY }}
           TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
           WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
