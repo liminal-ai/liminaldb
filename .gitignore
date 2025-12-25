@@ -14,3 +14,4 @@ _bmad/
 
 # MCP config (machine-specific)
 .mcp.json
+.agent-threads/
