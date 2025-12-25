@@ -6,7 +6,9 @@
 
 // Skip check in CI - service tests use mocks, integration tests pass env vars explicitly
 if (process.env.CI) {
-	// CI environment - don't require local env vars
+	console.log(
+		"CI environment detected - skipping env var validation (tests use mocks)",
+	);
 } else {
 	const required = ["WORKOS_CLIENT_ID", "WORKOS_API_KEY", "COOKIE_SECRET"];
 	const missing = required.filter((key) => !process.env[key]);

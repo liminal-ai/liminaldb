@@ -6,19 +6,30 @@ import { config } from "../lib/config";
 
 export function registerHealthRoutes(fastify: FastifyInstance): void {
 	// Public health check (no auth)
-	fastify.get("/health", async (_request, _reply) => {
+	// Returns 503 if Convex is unavailable so Fly.io knows the app is unhealthy
+	fastify.get("/health", async (_request, reply) => {
 		try {
 			const convexHealth = await convex.query(api.health.check);
+			if (convexHealth.status !== "ok") {
+				reply.status(503);
+				return {
+					status: "unhealthy",
+					timestamp: new Date().toISOString(),
+					convex: "error",
+				};
+			}
 			return {
 				status: "ok",
 				timestamp: new Date().toISOString(),
-				convex: convexHealth.status === "ok" ? "connected" : "error",
+				convex: "connected",
 			};
-		} catch (_error) {
+		} catch (error) {
+			reply.status(503);
 			return {
-				status: "ok",
+				status: "unhealthy",
 				timestamp: new Date().toISOString(),
 				convex: "disconnected",
+				error: error instanceof Error ? error.message : "unknown",
 			};
 		}
 	});
