@@ -7,6 +7,97 @@
 
 ---
 
+> **Usage:** This document is designed as a starting prompt for new agent sessions. Paste the "How to Work With This User" and "Product Context" sections at minimum. Include technical sections as needed for the specific task.
+
+---
+
+## Candidates for Permanent Config Files
+
+Review these sections for extraction to project config files:
+
+### → CLAUDE.md (User Preferences & Working Style)
+These are stable principles for how to work with this user:
+- **"How to Work With This User"** section (entire thing)
+  - Verification Over Speculation
+  - No Arbitrary Deferral
+  - Working Style
+  - Friction examples as anti-patterns
+- **TDD approach**: Skeleton → Red → Green, never implementation-first
+- **Quality gates**: lint, typecheck, test before commit
+
+### → AGENT.md (Project Standards for Subagents)
+These are stable project-specific standards:
+- **Tech stack**: Bun, Fastify (port 5001), Convex, WorkOS AuthKit, MCP
+- **Auth architecture**: 3 paths (Web/cookies, API/Bearer, MCP/OAuth)
+- **Testing patterns**: Service tests (inject + mocks) vs Integration tests (real HTTP + tokens)
+- **File structure**: src/routes/, src/middleware/, src/lib/auth/, convex/auth/
+- **Dependency injection**: Required for testability (no module-level singletons)
+
+### Not for Config Files (Transient)
+These are session/phase specific and belong in handoffs or checklists:
+- Current status, phase, commits
+- Debugging lessons from specific sessions
+- Known issues / tech debt lists
+- Manual testing status
+- Environment setup steps
+
+---
+
+## Role and Context
+
+**Your Role:** DevOps planner and partner to the user. You will work closely together to fully stand up the staging environment.
+
+**Immediate Goal:** Complete Part 2 of M0 (Staging Deployment) - deploy the validated local stack to Fly.io with Convex cloud and staging WorkOS environment.
+
+**Project Summary:**
+- **PromptDB** - Prompt management and knowledge worker tool providing MCP access across AI chat surfaces (ChatGPT, Claude.ai, Claude Code)
+- **Current Phase:** M0 - Stack Architecture Standup (production hello world with full auth before any product features)
+- **What's Done:** Local environment fully validated - Bun/Fastify server, Convex local backend, WorkOS auth (3 paths), MCP with ChatGPT widgets, 130 tests passing
+- **What's Next:** Staging deployment (Fly.io, Convex cloud, WorkOS staging, CI/CD)
+
+**Key Files to Reference:**
+- `docs/M0-Checklist-ACTIVE.md` - Part 2 has staging deployment steps
+- `docs/architecture.md` - Full stack architecture
+- `docs/auth-architecture.md` - Auth design and security model
+- `.env.example` - Required environment variables
+
+---
+
+## How to Work With This User
+
+**Read this section carefully. It defines working expectations.**
+
+### Verification Over Speculation
+- If you don't know something but it's easily verifiable (reading a file, checking types, running a command), **verify it first** before responding
+- Saying "probably" or "maybe" about verifiable things causes friction - it creates unnecessary assumptions or discussion churn for something that takes seconds to confirm
+- Say "I don't know" only when you genuinely can't verify, then research it
+
+### No Arbitrary Deferral
+- Don't bucket work into "critical / high / later" by default - this is a low-entropy pattern that creates unnecessary tracking overhead
+- If something is small and easy (1-2 minutes), just do it now rather than adding it to a list
+- Defer only when there's a real constraint (dependency, missing info, explicit user decision needed)
+- Tech debt during standup phase = compounding interest on everything that follows
+
+### Working Style
+- **Work incrementally** - One piece at a time, check in frequently
+- **Ask permission before making changes** - Especially for auth code or architectural decisions
+- **Present options** - Give choices, don't assume decisions
+- **Be direct** - Clear yes/no answers, acknowledge mistakes without excessive apology
+- **Follow TDD strictly** - Skeleton → Red → Green, never implementation-first
+- **Track progress** - Use TodoWrite for multi-step work
+
+### What Caused Friction in Previous Session
+- Agent repeatedly started coding without approval
+- Agent guessed about things instead of verifying
+- Agent defaulted to "later" bucket without real justification
+- Agent used placeholders instead of correct values ("we'll fix it later")
+- Agent built custom OAuth infrastructure without first checking if SDK provided it
+
+### Key Quote
+*"I have a bit of an allergy to autopilot"* - The user expects calibrated, intentional decisions, not pattern-matching defaults.
+
+---
+
 ## Product Context
 
 **PromptDB** - Prompt management and knowledge worker tool providing MCP access across all AI chat surfaces.
@@ -54,9 +145,15 @@
 - ✅ ChatGPT widget support (`text/html+skybridge`)
 - ✅ Verified with Claude.ai and ChatGPT
 
+### Local Testing Requirements
+- **ngrok required** for MCP testing with Claude.ai/ChatGPT (they need public URL)
+- Start with: `ngrok http 5001`
+- Use the ngrok URL for connector/app setup in Claude.ai and ChatGPT
+
 ### Testing
-- Service tests (93): Fastify `inject()` with mocked dependencies
-- Integration tests (37): Real HTTP, real WorkOS tokens
+- 130 tests total passing
+- Service tests: Fastify `inject()` with mocked dependencies
+- Integration tests: Real HTTP, real WorkOS tokens (requires running server)
 - Fixtures: Test user authentication, JWT generation, mock builders
 - Quality gates: lint, typecheck, test
 
@@ -86,29 +183,67 @@
 ## Critical Lessons Learned
 
 ### AuthKit OAuth ≠ User Management Tokens
-- Web auth uses WorkOS User Management API
-- MCP uses AuthKit OAuth2 endpoints (DCR/CIMD)
-- **Different issuers, same JWKS**
-- JWT validator must accept both issuers
+
+**This caused hours of debugging.** Understanding this will save you pain in staging.
+
+The issue: After DCR tokens were issued, all requests returned 401. Debugging steps that led to the fix:
+
+1. Added logging to JWT validator → discovered "unexpected iss claim value"
+2. Web auth tokens have issuer: `https://api.workos.com/user_management/${clientId}`
+3. DCR/MCP tokens have issuer: `https://${subdomain}.authkit.app`
+4. **Different issuers, same JWKS keys** (fortunate - signature validation still worked)
+5. Fix: Add AuthKit issuer URL to allowed issuers list in `jwtValidator.ts`
+
+**For staging:** The AuthKit subdomain will be different. You MUST:
+- Get the staging AuthKit subdomain from WorkOS dashboard
+- Set `WORKOS_AUTH_SERVER_URL` to the staging authkit.app URL
+- The JWT validator uses this env var for issuer validation
 
 ### JWT Template Doesn't Apply to DCR
 - Custom JWT claims only work for User Management tokens
 - DCR tokens use standard claims only (`sub`, `aud`, `iss`, `exp`, `iat`)
-- `email` claim missing from DCR tokens
-- Make optional claims truly optional
+- `email` claim missing from DCR tokens - this caused more 401s until we made it optional
+- Make optional claims truly optional in type definitions
 
 ### ChatGPT Widget Gotchas
-- `window.openai.toolOutput` may be null on load
-- **Must listen for `openai:set_globals` event**
-- `_meta["openai/outputTemplate"]` goes in tool descriptor, not response
-- `openai/widgetCSP` required for app submission
-- Refresh connector to pick up metadata changes
+
+Widget took significant debugging to get working. Key discoveries:
+
+1. **Data hydration is async** - `window.openai.toolOutput` is null when widget loads
+   - Must listen for `openai:set_globals` event
+   - Render "Loading..." state first, then re-render on event
+
+2. **Metadata placement matters**
+   - `_meta["openai/outputTemplate"]` must be in **tool descriptor** (when registering the tool)
+   - Not just in the response - ChatGPT reads it from tools/list, not from tool responses
+
+3. **ChatGPT caches tool definitions**
+   - After adding `_meta` to tool descriptor, must **refresh the connector** in ChatGPT settings
+   - Otherwise ChatGPT uses stale tool definitions without the output template
+
+4. **registerTool callback signature changes**
+   - When tool has no `inputSchema`, callback receives `(extra)` not `(args, extra)`
+   - This caused "undefined is not an object" errors in tool handlers
+
+5. **CSP required for submission**
+   - `openai/widgetCSP` must be set on resource (even with empty arrays for inlined content)
+   - Widget renders without it in dev mode, but app submission will fail
+
+6. **Widget resource must be discoverable**
+   - Registered via `registerResource()` with `mimeType: "text/html+skybridge"`
+   - ChatGPT fetches via `resources/read` when tool with output template is called
 
 ### Test Infrastructure
-- `bun test` vs `bun run test` - preload catches this
+- `bun test` vs `bun run test` - preload catches this (wasted significant debugging time twice)
 - Module-level singletons break mocking - use DI
 - Service tests = `inject()` + mocked deps
 - Integration tests = real HTTP + real tokens
+
+### SDK Usage Pitfall
+
+Early in the session, the agent built custom OAuth infrastructure (metadata endpoint, WWW-Authenticate headers, requestContext module) **without first checking if the MCP SDK provided it**. The SDK did provide it. All that custom code was thrown away.
+
+**Lesson:** When integrating with an SDK, thoroughly review what it provides before building custom solutions. Check the SDK source code if needed.
 
 ---
 
@@ -162,9 +297,7 @@ TEST_USER_PASSWORD=xxx
 - RLS scaffolding empty (functional work, not M0)
 - Lint warnings in investigation scripts (`as any` for private API testing)
 - Non-null assertions where middleware guarantees values exist
-- API
-
-KeyConfig type duplicated (convex + src)
+- ApiKeyConfig type duplicated (convex + src)
 
 ### Deferred Decisions
 - Rate limiting for auth endpoints (needs traffic analysis first)
@@ -193,8 +326,8 @@ KeyConfig type duplicated (convex + src)
 
 **Branch:** `main`
 **Last Commit:** 4baf1de (Merge PR #1)
-**Tests:** 130 pass (87 service, 43 integration - integration needs running server)
-**Lint:** 48 warnings (investigation scripts, acceptable for dev)
+**Tests:** 130 pass (integration tests need running server)
+**Lint:** 48 warnings (mostly in investigation scripts - needs decision on how to handle)
 **TypeCheck:** Clean
 
 **GitHub:** https://github.com/praxen-ai/promptdb
@@ -204,22 +337,31 @@ KeyConfig type duplicated (convex + src)
 
 ## Manual Testing Performed
 
-### Web Flow
+### Web Flow (Worked First Try)
 - Login via WorkOS → Google OAuth → callback → cookie set ✅
 - `/api/health` returns user + Convex authenticated ✅
 - Logout clears cookie ✅
 
-### MCP Integration (via ngrok)
-- **Claude.ai connector:**
-  - OAuth flow with WorkOS ✅
-  - `health_check` tool returns authenticated user ✅
-  - Convex connectivity confirmed ✅
+### Claude.ai Connector (Worked After JWT Fix)
+- Initial connection: 401 failures (issuer mismatch)
+- After adding AuthKit issuer to validator: worked ✅
+- `health_check` tool returns authenticated user ✅
+- Convex connectivity confirmed ✅
 
-- **ChatGPT app (developer mode):**
-  - OAuth flow with WorkOS ✅
-  - Tools visible (health_check, test_auth) ✅
-  - Widget renders with styled card UI ✅
-  - Full Convex integration working ✅
+### ChatGPT App (Required Significant Debugging)
+Required multiple iterations to get fully working:
+1. Initial connection: 401 (same issuer issue as Claude.ai)
+2. After issuer fix: tools worked, widget didn't render
+3. Added `_meta` to tool descriptor: still no widget (ChatGPT had cached old tool definitions)
+4. Refreshed connector in ChatGPT settings: widget attempted to load but blank
+5. Added `openai:set_globals` event listener: widget renders ✅
+6. Added CSP configuration for completeness
+
+Final state:
+- OAuth flow with WorkOS ✅
+- Tools visible (health_check, test_auth) ✅
+- Widget renders with styled card UI ✅
+- Full Convex integration working ✅
 
 ---
 
@@ -282,3 +424,19 @@ KeyConfig type duplicated (convex + src)
 **Session completed:** 2025-12-24
 **Ready for:** Staging deployment (Part 2)
 **Template status:** Clean foundation for reuse across future projects
+
+---
+
+## Full Conversation History
+
+For complete context including all debugging sessions, user feedback, and decision rationale:
+
+**File:** `.agent-threads/extended-arch-standup.txt` (7.3k lines)
+
+This shows:
+- The actual debugging process for each issue
+- Where the agent made mistakes and was corrected
+- User expectations communicated through the session
+- Trade-off discussions and decisions
+
+The conversation itself is the most complete record of what happened and why.
