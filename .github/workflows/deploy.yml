@@ -78,7 +78,7 @@ jobs:
       - uses: actions/checkout@v4
 
       # Pinned to specific commit - v1.5 tag doesn't work with subfolder syntax
-      - uses: superfly/flyctl-actions/setup-flyctl@63da3ecc5e27
+      - uses: superfly/flyctl-actions/setup-flyctl@63da3ecc5e2793b98a3f2519b3d75d4f4c11cec2
 
       - name: Deploy to Fly.io
         run: flyctl deploy --remote-only
