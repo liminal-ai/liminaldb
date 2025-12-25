@@ -41,7 +41,7 @@ registerWellKnownRoutes(fastify);
 
 const start = async () => {
 	try {
-		await fastify.listen({ port: 5001 });
+		await fastify.listen({ port: 5001, host: '0.0.0.0' });
 		fastify.log.info("PromptDB server running on port 5001");
 	} catch (err) {
 		fastify.log.error(err);

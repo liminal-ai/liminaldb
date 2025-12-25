@@ -1,0 +1,49 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+.convex
+
+# Environment files
+.env*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Test artifacts
+coverage
+.nyc_output
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Development files
+tests
+*.test.ts
+*.spec.ts
+biome.json
+tsconfig.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Agent/debug files
+.agent-threads
+scripts
