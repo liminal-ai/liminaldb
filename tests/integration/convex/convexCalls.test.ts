@@ -61,7 +61,7 @@ describe("Convex API Key Auth", () => {
 			client.query(api.healthAuth.check, {
 				userId: testUserId,
 			} as { apiKey: string; userId: string }),
-		).rejects.toThrow();
+		).rejects.toThrow(/missing the required field `apiKey`/);
 	});
 
 	test("healthAuth.check rejects missing userId", async () => {
@@ -76,6 +76,6 @@ describe("Convex API Key Auth", () => {
 			client.query(api.healthAuth.check, {
 				apiKey,
 			} as { apiKey: string; userId: string }),
-		).rejects.toThrow();
+		).rejects.toThrow(/missing the required field `userId`/);
 	});
 });
