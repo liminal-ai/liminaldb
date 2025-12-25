@@ -1,14 +1,19 @@
 # Deploy to staging on push to main
 #
-# Required GitHub Secrets:
-# - CONVEX_DEPLOY_KEY: Convex deployment key (from Convex dashboard)
-# - CONVEX_URL: Convex deployment URL (e.g., https://xxx.convex.cloud)
-# - CONVEX_API_KEY: Convex API key for integration tests
-# - FLY_API_TOKEN: Fly.io deploy token (from `fly tokens create deploy`)
-# - TEST_USER_EMAIL: Staging test user email (for integration tests)
-# - TEST_USER_PASSWORD: Staging test user password
-# - WORKOS_CLIENT_ID: WorkOS staging client ID
-# - WORKOS_API_KEY: WorkOS staging API key
+# Uses GitHub Environment: staging
+#
+# Environment Variables (non-sensitive):
+# - CONVEX_URL: Convex deployment URL
+# - TEST_USER_EMAIL: Test user email
+# - TEST_BASE_URL: Staging server URL
+#
+# Environment Secrets (sensitive):
+# - CONVEX_DEPLOY_KEY: Convex deployment key
+# - CONVEX_API_KEY: Convex API key for auth
+# - FLY_API_TOKEN: Fly.io deploy token
+# - WORKOS_CLIENT_ID: WorkOS client ID
+# - WORKOS_API_KEY: WorkOS API key
+# - TEST_USER_PASSWORD: Test user password
 
 name: Deploy Staging
 
@@ -52,6 +57,7 @@ jobs:
     name: Deploy Convex
     needs: quality
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    environment: staging
 
     steps:
       - uses: actions/checkout@v4
@@ -73,6 +79,7 @@ jobs:
     name: Deploy Fly.io
     needs: [quality, deploy-convex]
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    environment: staging
 
     steps:
       - uses: actions/checkout@v4
@@ -89,6 +96,7 @@ jobs:
     name: Integration Tests
     needs: deploy-fly
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    environment: staging
 
     steps:
       - uses: actions/checkout@v4
@@ -104,7 +112,7 @@ jobs:
       - name: Wait for deployment readiness
         run: |
           for i in {1..30}; do
-            if curl -sf https://promptdb-staging.fly.dev/health > /dev/null; then
+            if curl -sf ${{ vars.TEST_BASE_URL }}/health > /dev/null; then
               echo "Deployment ready"
               exit 0
             fi
@@ -117,10 +125,10 @@ jobs:
       - name: Run integration tests
         run: bun run test:integration
         env:
-          TEST_BASE_URL: https://promptdb-staging.fly.dev
-          CONVEX_URL: ${{ secrets.CONVEX_URL }}
+          TEST_BASE_URL: ${{ vars.TEST_BASE_URL }}
+          CONVEX_URL: ${{ vars.CONVEX_URL }}
           CONVEX_API_KEY: ${{ secrets.CONVEX_API_KEY }}
-          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_EMAIL: ${{ vars.TEST_USER_EMAIL }}
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
           WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
           WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}
