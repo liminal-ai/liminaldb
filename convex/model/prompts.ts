@@ -5,6 +5,19 @@ import { findOrCreateTag } from "./tags";
 // Slug validation: lowercase, numbers, dashes only. No colons (reserved for namespacing).
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+// Tag name validation: alphanumeric, dashes, underscores, forward slashes (for hierarchy)
+const TAG_NAME_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9\-_/]*$/;
+
+// Validation limits
+const LIMITS = {
+	NAME_MAX_LENGTH: 200,
+	DESCRIPTION_MAX_LENGTH: 2000,
+	CONTENT_MAX_LENGTH: 100000,
+	TAG_NAME_MAX_LENGTH: 100,
+	MAX_TAGS_PER_PROMPT: 50,
+	SLUG_MAX_LENGTH: 200,
+} as const;
+
 export interface PromptInput {
 	slug: string;
 	name: string;
@@ -38,11 +51,86 @@ export interface PromptDTO {
  * Throws if invalid.
  */
 export function validateSlug(slug: string): void {
+	if (!slug || !slug.trim()) {
+		throw new Error("Slug is required and cannot be empty");
+	}
+	if (slug.length > LIMITS.SLUG_MAX_LENGTH) {
+		throw new Error(
+			`Slug too long: ${slug.length} chars (max ${LIMITS.SLUG_MAX_LENGTH})`,
+		);
+	}
 	if (!SLUG_REGEX.test(slug)) {
 		throw new Error(
 			`Invalid slug: "${slug}". Use lowercase letters, numbers, and dashes only. (Colons are reserved for namespacing.)`,
 		);
 	}
+}
+
+/**
+ * Validate tag name format.
+ * Throws if invalid.
+ */
+export function validateTagName(tagName: string): void {
+	if (!tagName || !tagName.trim()) {
+		throw new Error("Tag name is required and cannot be empty");
+	}
+	if (tagName.length > LIMITS.TAG_NAME_MAX_LENGTH) {
+		throw new Error(
+			`Tag name too long: "${tagName}" is ${tagName.length} chars (max ${LIMITS.TAG_NAME_MAX_LENGTH})`,
+		);
+	}
+	if (!TAG_NAME_REGEX.test(tagName)) {
+		throw new Error(
+			`Invalid tag name: "${tagName}". Use letters, numbers, dashes, underscores, or forward slashes.`,
+		);
+	}
+}
+
+/**
+ * Validate a single prompt input.
+ * Throws with specific error message if validation fails.
+ */
+export function validatePromptInput(prompt: PromptInput): void {
+	// Required fields - check for empty strings
+	if (!prompt.name || !prompt.name.trim()) {
+		throw new Error("Prompt name is required and cannot be empty");
+	}
+	if (!prompt.description || !prompt.description.trim()) {
+		throw new Error("Prompt description is required and cannot be empty");
+	}
+	if (!prompt.content || !prompt.content.trim()) {
+		throw new Error("Prompt content is required and cannot be empty");
+	}
+
+	// Length limits
+	if (prompt.name.length > LIMITS.NAME_MAX_LENGTH) {
+		throw new Error(
+			`Prompt name too long: ${prompt.name.length} chars (max ${LIMITS.NAME_MAX_LENGTH})`,
+		);
+	}
+	if (prompt.description.length > LIMITS.DESCRIPTION_MAX_LENGTH) {
+		throw new Error(
+			`Prompt description too long: ${prompt.description.length} chars (max ${LIMITS.DESCRIPTION_MAX_LENGTH})`,
+		);
+	}
+	if (prompt.content.length > LIMITS.CONTENT_MAX_LENGTH) {
+		throw new Error(
+			`Prompt content too long: ${prompt.content.length} chars (max ${LIMITS.CONTENT_MAX_LENGTH})`,
+		);
+	}
+
+	// Tags validation
+	if (prompt.tags.length > LIMITS.MAX_TAGS_PER_PROMPT) {
+		throw new Error(
+			`Too many tags: ${prompt.tags.length} (max ${LIMITS.MAX_TAGS_PER_PROMPT})`,
+		);
+	}
+	for (const tag of prompt.tags) {
+		validateTagName(tag);
+	}
+
+	// Slug validation (includes empty check and format check)
+	validateSlug(prompt.slug);
 }
 
 /**
@@ -65,7 +153,9 @@ export async function slugExists(
  * Insert multiple prompts for a user.
  * Creates tags as needed, creates junction records, sets denormalized tagNames.
  *
- * Atomic: If any prompt fails validation, entire batch fails.
+ * Atomic: All operations run within a single Convex mutation, which provides
+ * serializable isolation. If any prompt fails validation, entire batch fails
+ * and no changes are persisted. Convex automatically retries on OCC conflicts.
  *
  * Returns array of prompt IDs.
  */
@@ -74,9 +164,10 @@ export async function insertMany(
 	userId: string,
 	prompts: PromptInput[],
 ): Promise<Id<"prompts">[]> {
-	// Phase 1: Validate all slugs and check for duplicates BEFORE any inserts
+	// Phase 1: Validate ALL prompts BEFORE any inserts
+	// This ensures atomic behavior: fail fast, nothing written on error
 	for (const prompt of prompts) {
-		validateSlug(prompt.slug);
+		validatePromptInput(prompt);
 
 		const exists = await slugExists(ctx, userId, prompt.slug);
 		if (exists) {
@@ -166,7 +257,7 @@ export async function getBySlug(
 
 /**
  * Delete prompt by slug for user.
- * Also cleans up orphaned promptTags.
+ * Cleans up junction records and orphaned tags (tags no longer referenced by any prompt).
  * Returns true if deleted, false if not found.
  */
 export async function deleteBySlug(
@@ -184,18 +275,35 @@ export async function deleteBySlug(
 		return false;
 	}
 
-	// Delete all junction records for this prompt
+	// Get all junction records for this prompt (we'll need the tagIds for orphan check)
 	const junctions = await ctx.db
 		.query("promptTags")
 		.withIndex("by_prompt", (q) => q.eq("promptId", prompt._id))
 		.collect();
 
+	// Collect tag IDs before deleting junctions
+	const tagIdsToCheck = junctions.map((j) => j.tagId);
+
+	// Delete all junction records for this prompt
 	for (const junction of junctions) {
 		await ctx.db.delete(junction._id);
 	}
 
 	// Delete the prompt
 	await ctx.db.delete(prompt._id);
+
+	// Clean up orphaned tags: delete tags that have no remaining junction records
+	for (const tagId of tagIdsToCheck) {
+		const remainingRefs = await ctx.db
+			.query("promptTags")
+			.withIndex("by_tag", (q) => q.eq("tagId", tagId))
+			.first();
+
+		if (!remainingRefs) {
+			// No other prompts reference this tag, delete it
+			await ctx.db.delete(tagId);
+		}
+	}
 
 	return true;
 }

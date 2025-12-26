@@ -85,12 +85,18 @@ export function mockSequentialReturns<T>(
 	});
 }
 
+type AnyTableName = "users" | "tags" | "promptTags" | "prompts";
+
 /**
  * Helper to set up mock returns for insert, tracking IDs.
+ * Use generic type parameter to specify the table type for type-safe IDs.
  */
-export function mockInsertSequence(ctx: MockCtx, ids: string[]): void {
+export function mockInsertSequence<T extends AnyTableName = "prompts">(
+	ctx: MockCtx,
+	ids: string[],
+): void {
 	mockSequentialReturns(
 		ctx.db.insert,
-		ids.map((id) => id as Id<"prompts">),
+		ids.map((id) => id as Id<T>),
 	);
 }

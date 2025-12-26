@@ -37,6 +37,12 @@ export const insertPrompts = mutation({
 	handler: async (ctx, { apiKey, userId, prompts }) => {
 		const config = await getApiKeyConfig(ctx);
 		if (!validateApiKey(apiKey, config)) {
+			console.error("API key validation failed", {
+				userId,
+				hasApiKey: !!apiKey,
+				keyLength: apiKey?.length,
+				operation: "insertPrompts",
+			});
 			throw new Error("Invalid API key");
 		}
 		return Prompts.insertMany(ctx, userId, prompts);
@@ -63,6 +69,13 @@ export const getPromptBySlug = query({
 	handler: async (ctx, { apiKey, userId, slug }) => {
 		const config = await getApiKeyConfig(ctx);
 		if (!validateApiKey(apiKey, config)) {
+			console.error("API key validation failed", {
+				userId,
+				hasApiKey: !!apiKey,
+				keyLength: apiKey?.length,
+				operation: "getPromptBySlug",
+				slug,
+			});
 			throw new Error("Invalid API key");
 		}
 		return Prompts.getBySlug(ctx, userId, slug);
@@ -79,6 +92,13 @@ export const deletePromptBySlug = mutation({
 	handler: async (ctx, { apiKey, userId, slug }) => {
 		const config = await getApiKeyConfig(ctx);
 		if (!validateApiKey(apiKey, config)) {
+			console.error("API key validation failed", {
+				userId,
+				hasApiKey: !!apiKey,
+				keyLength: apiKey?.length,
+				operation: "deletePromptBySlug",
+				slug,
+			});
 			throw new Error("Invalid API key");
 		}
 		return Prompts.deleteBySlug(ctx, userId, slug);

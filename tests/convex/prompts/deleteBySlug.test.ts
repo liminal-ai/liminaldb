@@ -74,6 +74,13 @@ describe("deleteBySlug", () => {
 				{ _id: "pt_2", promptId: "prompt_1", tagId: "tag_2" },
 			]);
 
+			// Tags are still referenced by other prompts (orphan check returns a match)
+			getQueryBuilder(ctx, "promptTags").first.mockResolvedValue({
+				_id: "pt_other",
+				promptId: "prompt_other",
+				tagId: "tag_1",
+			});
+
 			await Prompts.deleteBySlug(ctx as any, userId, "ai-meta-check");
 
 			// Should delete junction records first
@@ -81,7 +88,39 @@ describe("deleteBySlug", () => {
 			expect(ctx.db.delete).toHaveBeenCalledWith("pt_2");
 			// Then delete the prompt
 			expect(ctx.db.delete).toHaveBeenCalledWith("prompt_1");
-			// Total of 3 deletes
+			// Total of 3 deletes (no orphaned tags since they're still referenced)
+			expect(ctx.db.delete).toHaveBeenCalledTimes(3);
+		});
+
+		test("deletes orphaned tags when no other prompts reference them", async () => {
+			const ctx = createMockCtx();
+			const userId = "user_123";
+
+			// Prompt exists
+			getQueryBuilder(ctx, "prompts").unique.mockResolvedValue({
+				_id: "prompt_1",
+				userId,
+				slug: "orphan-test",
+				name: "Orphan Test",
+				description: "...",
+				content: "...",
+				tagNames: ["orphan-tag"],
+			});
+
+			// Has junction records
+			getQueryBuilder(ctx, "promptTags").collect.mockResolvedValue([
+				{ _id: "pt_1", promptId: "prompt_1", tagId: "tag_orphan" },
+			]);
+
+			// Tag is NOT referenced by other prompts (orphan check returns null)
+			getQueryBuilder(ctx, "promptTags").first.mockResolvedValue(null);
+
+			await Prompts.deleteBySlug(ctx as any, userId, "orphan-test");
+
+			// Should delete: junction record, prompt, and orphaned tag
+			expect(ctx.db.delete).toHaveBeenCalledWith("pt_1");
+			expect(ctx.db.delete).toHaveBeenCalledWith("prompt_1");
+			expect(ctx.db.delete).toHaveBeenCalledWith("tag_orphan");
 			expect(ctx.db.delete).toHaveBeenCalledTimes(3);
 		});
 	});

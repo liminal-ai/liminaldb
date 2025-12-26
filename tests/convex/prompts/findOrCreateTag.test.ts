@@ -48,4 +48,51 @@ describe("findOrCreateTag", () => {
 			expect.any(Function),
 		);
 	});
+
+	test("handles race condition by keeping oldest tag and deleting duplicate", async () => {
+		const ctx = createMockCtx();
+		const userId = "user_123";
+
+		// First lookup returns null (tag doesn't exist)
+		getQueryBuilder(ctx, "tags").unique.mockResolvedValueOnce(null);
+
+		// Mock insert returns new ID
+		ctx.db.insert.mockResolvedValue("tag_new");
+
+		// Second query (race check via collect) returns multiple tags - simulate race condition
+		getQueryBuilder(ctx, "tags").collect.mockResolvedValue([
+			{ _id: "tag_oldest", userId, name: "test", _creationTime: 1000 },
+			{ _id: "tag_new", userId, name: "test", _creationTime: 2000 },
+		]);
+
+		const result = await findOrCreateTag(ctx as any, userId, "test");
+
+		// Should return the oldest tag
+		expect(result).toBe("tag_oldest" as Id<"tags">);
+		// Should delete the newly created duplicate
+		expect(ctx.db.delete).toHaveBeenCalledWith("tag_new");
+	});
+
+	test("keeps newly created tag when no race condition detected", async () => {
+		const ctx = createMockCtx();
+		const userId = "user_123";
+
+		// First lookup returns null (tag doesn't exist)
+		getQueryBuilder(ctx, "tags").unique.mockResolvedValueOnce(null);
+
+		// Mock insert returns new ID
+		ctx.db.insert.mockResolvedValue("tag_new");
+
+		// Race check returns only the new tag (no duplicates)
+		getQueryBuilder(ctx, "tags").collect.mockResolvedValue([
+			{ _id: "tag_new", userId, name: "test", _creationTime: 1000 },
+		]);
+
+		const result = await findOrCreateTag(ctx as any, userId, "test");
+
+		// Should return the newly created tag
+		expect(result).toBe("tag_new" as Id<"tags">);
+		// Should NOT delete anything
+		expect(ctx.db.delete).not.toHaveBeenCalled();
+	});
 });
