@@ -186,6 +186,31 @@ describe("Convex Prompts Integration", () => {
 				}),
 			).rejects.toThrow(/Invalid slug|colons/);
 		});
+
+		test("rejects duplicate slugs within same batch", async () => {
+			await expect(
+				client.mutation(api.prompts.insertPrompts, {
+					apiKey,
+					userId: testUserId,
+					prompts: [
+						{
+							slug: "dupe-in-batch",
+							name: "First",
+							description: "...",
+							content: "...",
+							tags: [],
+						},
+						{
+							slug: "dupe-in-batch",
+							name: "Second",
+							description: "...",
+							content: "...",
+							tags: [],
+						},
+					],
+				}),
+			).rejects.toThrow(/Duplicate slug in batch/);
+		});
 	});
 
 	describe("non-existent slug", () => {

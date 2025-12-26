@@ -77,6 +77,9 @@ export function mockSequentialReturns<T>(
 	mockFn: ReturnType<typeof mock>,
 	values: T[],
 ): void {
+	if (values.length === 0) {
+		throw new Error("mockSequentialReturns requires at least one value");
+	}
 	let callIndex = 0;
 	mockFn.mockImplementation(() => {
 		const value = values[callIndex] ?? values[values.length - 1];

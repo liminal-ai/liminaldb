@@ -278,6 +278,38 @@ describe("insertPrompts", () => {
 			// Atomic: nothing should be inserted
 			expect(ctx.db.insert).not.toHaveBeenCalled();
 		});
+
+		test("batch fails if same slug appears twice in input", async () => {
+			const ctx = createMockCtx();
+			const userId = "user_123";
+
+			// First slug check passes (doesn't exist in DB)
+			getQueryBuilder(ctx, "prompts").unique.mockResolvedValue(null);
+
+			const input: Prompts.PromptInput[] = [
+				{
+					slug: "same-slug",
+					name: "First",
+					description: "...",
+					content: "...",
+					tags: [],
+				},
+				{
+					slug: "same-slug", // duplicate within batch
+					name: "Second",
+					description: "...",
+					content: "...",
+					tags: [],
+				},
+			];
+
+			await expect(
+				Prompts.insertMany(ctx as any, userId, input),
+			).rejects.toThrow(/Duplicate slug in batch: "same-slug"/);
+
+			// Atomic: nothing should be inserted
+			expect(ctx.db.insert).not.toHaveBeenCalled();
+		});
 	});
 
 	describe("empty tags", () => {

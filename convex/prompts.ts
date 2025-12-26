@@ -39,9 +39,8 @@ export const insertPrompts = mutation({
 		if (!validateApiKey(apiKey, config)) {
 			console.error("API key validation failed", {
 				userId,
-				hasApiKey: !!apiKey,
-				keyLength: apiKey?.length,
 				operation: "insertPrompts",
+				timestamp: Date.now(),
 			});
 			throw new Error("Invalid API key");
 		}
@@ -71,10 +70,8 @@ export const getPromptBySlug = query({
 		if (!validateApiKey(apiKey, config)) {
 			console.error("API key validation failed", {
 				userId,
-				hasApiKey: !!apiKey,
-				keyLength: apiKey?.length,
 				operation: "getPromptBySlug",
-				slug,
+				timestamp: Date.now(),
 			});
 			throw new Error("Invalid API key");
 		}
@@ -94,10 +91,8 @@ export const deletePromptBySlug = mutation({
 		if (!validateApiKey(apiKey, config)) {
 			console.error("API key validation failed", {
 				userId,
-				hasApiKey: !!apiKey,
-				keyLength: apiKey?.length,
 				operation: "deletePromptBySlug",
-				slug,
+				timestamp: Date.now(),
 			});
 			throw new Error("Invalid API key");
 		}

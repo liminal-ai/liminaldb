@@ -166,8 +166,15 @@ export async function insertMany(
 ): Promise<Id<"prompts">[]> {
 	// Phase 1: Validate ALL prompts BEFORE any inserts
 	// This ensures atomic behavior: fail fast, nothing written on error
+	const slugsInBatch = new Set<string>();
 	for (const prompt of prompts) {
 		validatePromptInput(prompt);
+
+		// Check for duplicates within the batch itself
+		if (slugsInBatch.has(prompt.slug)) {
+			throw new Error(`Duplicate slug in batch: "${prompt.slug}"`);
+		}
+		slugsInBatch.add(prompt.slug);
 
 		const exists = await slugExists(ctx, userId, prompt.slug);
 		if (exists) {
