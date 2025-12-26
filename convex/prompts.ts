@@ -3,6 +3,21 @@ import { v } from "convex/values";
 import * as Prompts from "./model/prompts";
 import { validateApiKey, getApiKeyConfig } from "./auth/apiKey";
 
+/** Shared schema for prompt parameters */
+const parameterSchema = v.array(
+	v.object({
+		name: v.string(),
+		type: v.union(
+			v.literal("string"),
+			v.literal("string[]"),
+			v.literal("number"),
+			v.literal("boolean"),
+		),
+		required: v.boolean(),
+		description: v.optional(v.string()),
+	}),
+);
+
 export const insertPrompts = mutation({
 	args: {
 		apiKey: v.string(),
@@ -14,21 +29,7 @@ export const insertPrompts = mutation({
 				description: v.string(),
 				content: v.string(),
 				tags: v.array(v.string()),
-				parameters: v.optional(
-					v.array(
-						v.object({
-							name: v.string(),
-							type: v.union(
-								v.literal("string"),
-								v.literal("string[]"),
-								v.literal("number"),
-								v.literal("boolean"),
-							),
-							required: v.boolean(),
-							description: v.optional(v.string()),
-						}),
-					),
-				),
+				parameters: v.optional(parameterSchema),
 			}),
 		),
 	},
@@ -56,21 +57,7 @@ export const getPromptBySlug = query({
 			description: v.string(),
 			content: v.string(),
 			tags: v.array(v.string()),
-			parameters: v.optional(
-				v.array(
-					v.object({
-						name: v.string(),
-						type: v.union(
-							v.literal("string"),
-							v.literal("string[]"),
-							v.literal("number"),
-							v.literal("boolean"),
-						),
-						required: v.boolean(),
-						description: v.optional(v.string()),
-					}),
-				),
-			),
+			parameters: v.optional(parameterSchema),
 		}),
 	),
 	handler: async (ctx, { apiKey, userId, slug }) => {

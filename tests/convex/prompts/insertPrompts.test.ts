@@ -29,7 +29,7 @@ describe("insertPrompts", () => {
 		});
 
 		test("validateSlug rejects colons", () => {
-			expect(() => Prompts.validateSlug("team:prompt")).toThrow(/colons/);
+			expect(() => Prompts.validateSlug("team:prompt")).toThrow(/colons/i);
 		});
 
 		test("validateSlug rejects spaces", () => {

@@ -1,11 +1,4 @@
-import {
-	describe,
-	test,
-	expect,
-	beforeAll,
-	afterAll,
-	afterEach,
-} from "bun:test";
+import { describe, test, expect, beforeAll, afterEach } from "bun:test";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../convex/_generated/api";
 
@@ -234,6 +227,209 @@ describe("Convex Prompts Integration", () => {
 			});
 
 			expect(result).toBeNull();
+		});
+	});
+
+	describe("large batch operations", () => {
+		test("handles batch of 10 prompts", async () => {
+			const prompts = Array.from({ length: 10 }, (_, i) => ({
+				slug: trackSlug(`batch-${Date.now()}-${i}`),
+				name: `Batch Prompt ${i}`,
+				description: `Description ${i}`,
+				content: `Content ${i}`,
+				tags: ["batch-test"],
+			}));
+
+			const ids = await client.mutation(api.prompts.insertPrompts, {
+				apiKey,
+				userId: testUserId,
+				prompts,
+			});
+
+			expect(ids).toHaveLength(10);
+
+			// Verify all were created
+			for (const prompt of prompts) {
+				const result = await client.query(api.prompts.getPromptBySlug, {
+					apiKey,
+					userId: testUserId,
+					slug: prompt.slug,
+				});
+				expect(result).not.toBeNull();
+			}
+		});
+
+		test("shared tags in batch are deduplicated", async () => {
+			const sharedTag = `shared-${Date.now()}`;
+			const prompts = [
+				{
+					slug: trackSlug(`batch-shared-a-${Date.now()}`),
+					name: "A",
+					description: "...",
+					content: "...",
+					tags: [sharedTag, "unique-a"],
+				},
+				{
+					slug: trackSlug(`batch-shared-b-${Date.now()}`),
+					name: "B",
+					description: "...",
+					content: "...",
+					tags: [sharedTag, "unique-b"],
+				},
+			];
+
+			const ids = await client.mutation(api.prompts.insertPrompts, {
+				apiKey,
+				userId: testUserId,
+				prompts,
+			});
+
+			expect(ids).toHaveLength(2);
+
+			// Both should have the shared tag
+			for (const prompt of prompts) {
+				const result = await client.query(api.prompts.getPromptBySlug, {
+					apiKey,
+					userId: testUserId,
+					slug: prompt.slug,
+				});
+				expect(result?.tags).toContain(sharedTag);
+			}
+		});
+	});
+
+	describe("parameter edge cases", () => {
+		test("handles all parameter types", async () => {
+			const testSlug = trackSlug(`all-params-${Date.now()}`);
+
+			await client.mutation(api.prompts.insertPrompts, {
+				apiKey,
+				userId: testUserId,
+				prompts: [
+					{
+						slug: testSlug,
+						name: "All Params",
+						description: "Has all parameter types",
+						content: "{{str}} {{arr}} {{num}} {{bool}}",
+						tags: [],
+						parameters: [
+							{ name: "str", type: "string", required: true },
+							{ name: "arr", type: "string[]", required: false },
+							{ name: "num", type: "number", required: true },
+							{ name: "bool", type: "boolean", required: false },
+						],
+					},
+				],
+			});
+
+			const prompt = await client.query(api.prompts.getPromptBySlug, {
+				apiKey,
+				userId: testUserId,
+				slug: testSlug,
+			});
+
+			expect(prompt?.parameters).toHaveLength(4);
+			expect(prompt?.parameters?.map((p) => p.type)).toEqual([
+				"string",
+				"string[]",
+				"number",
+				"boolean",
+			]);
+		});
+
+		test("handles empty parameters array", async () => {
+			const testSlug = trackSlug(`empty-params-${Date.now()}`);
+
+			await client.mutation(api.prompts.insertPrompts, {
+				apiKey,
+				userId: testUserId,
+				prompts: [
+					{
+						slug: testSlug,
+						name: "Empty Params",
+						description: "...",
+						content: "...",
+						tags: [],
+						parameters: [],
+					},
+				],
+			});
+
+			const prompt = await client.query(api.prompts.getPromptBySlug, {
+				apiKey,
+				userId: testUserId,
+				slug: testSlug,
+			});
+
+			expect(prompt?.parameters).toEqual([]);
+		});
+
+		test("handles prompt without parameters", async () => {
+			const testSlug = trackSlug(`no-params-${Date.now()}`);
+
+			await client.mutation(api.prompts.insertPrompts, {
+				apiKey,
+				userId: testUserId,
+				prompts: [
+					{
+						slug: testSlug,
+						name: "No Params",
+						description: "...",
+						content: "...",
+						tags: [],
+						// parameters field omitted
+					},
+				],
+			});
+
+			const prompt = await client.query(api.prompts.getPromptBySlug, {
+				apiKey,
+				userId: testUserId,
+				slug: testSlug,
+			});
+
+			expect(prompt?.parameters).toBeUndefined();
+		});
+
+		test("handles parameters with optional description", async () => {
+			const testSlug = trackSlug(`param-desc-${Date.now()}`);
+
+			await client.mutation(api.prompts.insertPrompts, {
+				apiKey,
+				userId: testUserId,
+				prompts: [
+					{
+						slug: testSlug,
+						name: "Param Descriptions",
+						description: "...",
+						content: "{{with}} {{without}}",
+						tags: [],
+						parameters: [
+							{
+								name: "with",
+								type: "string",
+								required: true,
+								description: "Has a description",
+							},
+							{
+								name: "without",
+								type: "string",
+								required: false,
+								// description omitted
+							},
+						],
+					},
+				],
+			});
+
+			const prompt = await client.query(api.prompts.getPromptBySlug, {
+				apiKey,
+				userId: testUserId,
+				slug: testSlug,
+			});
+
+			expect(prompt?.parameters?.[0]?.description).toBe("Has a description");
+			expect(prompt?.parameters?.[1]?.description).toBeUndefined();
 		});
 	});
 

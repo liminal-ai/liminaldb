@@ -30,7 +30,6 @@ Within each phase: **Skeleton → TDD-Red → TDD-Green**
 interface Prompt {
   slug: string;           // unique per user, URL-safe, no colons (reserved for namespacing)
   name: string;           // human-readable title
-  category: string;       // broad bucket (string for MVP, could normalize later)
   tags: string[];         // for filtering
   description: string;    // for vector search - written for "when to use this"
   parameters?: Parameter[]; // optional template variables
@@ -72,32 +71,29 @@ import { v } from "convex/values";
 
 export default defineSchema({
   users: defineTable({
-    userId: v.string(),
+    userId: v.string(),      // External auth ID (e.g., from WorkOS)
     email: v.string(),
   }).index("by_userId", ["userId"]),
 
   tags: defineTable({
-    userId: v.id("users"),
+    userId: v.string(),      // External auth ID
     name: v.string(),
   }).index("by_user_name", ["userId", "name"]),
 
   promptTags: defineTable({
     promptId: v.id("prompts"),
     tagId: v.id("tags"),
-    userId: v.id("users"),  // tagger's userId, not prompt owner
   })
     .index("by_prompt", ["promptId"])
-    .index("by_tag", ["tagId"])
-    .index("by_user", ["userId"]),
+    .index("by_tag", ["tagId"]),
 
   prompts: defineTable({
-    userId: v.id("users"),
+    userId: v.string(),      // External auth ID
     slug: v.string(),
     name: v.string(),
     description: v.string(),
     content: v.string(),
     tagNames: v.array(v.string()),        // denormalized for reads
-    folderPath: v.optional(v.string()),   // materialized path, optional
     parameters: v.optional(v.array(v.object({
       name: v.string(),
       type: v.union(
@@ -111,7 +107,7 @@ export default defineSchema({
     }))),
   })
     .index("by_user_slug", ["userId", "slug"])
-    .index("by_user_tags", ["userId", "tagNames"]),
+    .index("by_user", ["userId"]),
 });
 ```
 

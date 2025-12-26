@@ -3,11 +3,6 @@ import type { Id } from "../../convex/_generated/dataModel";
 
 type TableName = "users" | "tags" | "promptTags" | "prompts";
 
-interface MockDoc {
-	_id: string;
-	[key: string]: unknown;
-}
-
 interface MockQueryBuilder {
 	withIndex: ReturnType<typeof mock>;
 	filter: ReturnType<typeof mock>;

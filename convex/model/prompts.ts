@@ -38,13 +38,9 @@ export interface PromptDTO {
  * Throws if invalid.
  */
 export function validateSlug(slug: string): void {
-	// Check colons first to give a more specific error message
-	if (slug.includes(":")) {
-		throw new Error(`Slug cannot contain colons (reserved for namespacing)`);
-	}
 	if (!SLUG_REGEX.test(slug)) {
 		throw new Error(
-			`Invalid slug: "${slug}". Use lowercase letters, numbers, and dashes only.`,
+			`Invalid slug: "${slug}". Use lowercase letters, numbers, and dashes only. (Colons are reserved for namespacing.)`,
 		);
 	}
 }
