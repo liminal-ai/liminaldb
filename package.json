@@ -12,9 +12,9 @@
 		"format:check": "biome format .",
 		"typecheck": "tsc --noEmit",
 		"test": "bun test --env-file .env.local",
-		"test:unit": "bun test tests/unit",
-		"test:service": "bun test tests/service",
-		"test:convex": "bun test tests/convex",
+		"test:unit": "bun test --env-file .env.local tests/unit",
+		"test:service": "bun test --env-file .env.local tests/service tests/convex",
+		"test:convex": "bun test --env-file .env.local tests/convex",
 		"test:integration": "bun test --env-file .env.local tests/integration",
 		"check": "bun run format && bun run lint:fix && bun run typecheck && bun run test",
 		"quick-clean": "curl -s -X POST http://localhost:4010/api/v2/clone -H 'Content-Type: application/json' -d '{\"sessionId\":\"'\"$1\"'\",\"toolRemoval\":\"100\",\"thinkingRemoval\":\"100\"}' | node -e \"const d=JSON.parse(require('fs').readFileSync(0,'utf8')); if(d.success){const id=d.outputPath.split('/').pop().replace('.jsonl',''); console.log('claude --dangerously-skip-permissions --resume '+id)}else{console.log('Error: '+(d.error||'unknown'))}\""
