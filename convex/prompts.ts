@@ -38,7 +38,6 @@ export const insertPrompts = mutation({
 		const config = await getApiKeyConfig(ctx);
 		if (!validateApiKey(apiKey, config)) {
 			console.error("API key validation failed", {
-				userId,
 				operation: "insertPrompts",
 				timestamp: Date.now(),
 			});
@@ -69,7 +68,6 @@ export const getPromptBySlug = query({
 		const config = await getApiKeyConfig(ctx);
 		if (!validateApiKey(apiKey, config)) {
 			console.error("API key validation failed", {
-				userId,
 				operation: "getPromptBySlug",
 				timestamp: Date.now(),
 			});
@@ -90,7 +88,6 @@ export const deletePromptBySlug = mutation({
 		const config = await getApiKeyConfig(ctx);
 		if (!validateApiKey(apiKey, config)) {
 			console.error("API key validation failed", {
-				userId,
 				operation: "deletePromptBySlug",
 				timestamp: Date.now(),
 			});

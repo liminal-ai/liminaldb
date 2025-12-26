@@ -31,15 +31,19 @@ export async function findOrCreateTag(
 		.collect();
 
 	if (allMatching.length > 1) {
-		// Race condition occurred - keep oldest, delete the one we just created
+		// Race condition occurred - keep oldest, delete all duplicates
 		const sorted = allMatching.sort(
 			(a, b) => a._creationTime - b._creationTime,
 		);
 		const oldest = sorted[0]!; // Safe: we checked length > 1
-		if (oldest._id !== newId) {
-			await ctx.db.delete(newId);
-			return oldest._id;
+
+		// Delete all except oldest
+		for (const tag of allMatching) {
+			if (tag._id !== oldest._id) {
+				await ctx.db.delete(tag._id);
+			}
 		}
+		return oldest._id;
 	}
 
 	return newId;
