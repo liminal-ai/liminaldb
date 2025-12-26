@@ -1,6 +1,6 @@
-import { NotImplementedError } from "../errors";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import { findOrCreateTag } from "./tags";
 
 // Slug validation: lowercase, numbers, dashes only. No colons (reserved for namespacing).
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -53,11 +53,16 @@ export function validateSlug(slug: string): void {
  * Check if slug exists for user.
  */
 export async function slugExists(
-	_ctx: QueryCtx,
-	_userId: string,
-	_slug: string,
+	ctx: QueryCtx,
+	userId: string,
+	slug: string,
 ): Promise<boolean> {
-	throw new NotImplementedError("slugExists");
+	const existing = await ctx.db
+		.query("prompts")
+		.withIndex("by_user_slug", (q) => q.eq("userId", userId).eq("slug", slug))
+		.unique();
+
+	return existing !== null;
 }
 
 /**
@@ -69,11 +74,69 @@ export async function slugExists(
  * Returns array of prompt IDs.
  */
 export async function insertMany(
-	_ctx: MutationCtx,
-	_userId: string,
-	_prompts: PromptInput[],
+	ctx: MutationCtx,
+	userId: string,
+	prompts: PromptInput[],
 ): Promise<Id<"prompts">[]> {
-	throw new NotImplementedError("insertMany");
+	// Phase 1: Validate all slugs and check for duplicates BEFORE any inserts
+	for (const prompt of prompts) {
+		validateSlug(prompt.slug);
+
+		const exists = await slugExists(ctx, userId, prompt.slug);
+		if (exists) {
+			throw new Error(`Slug "${prompt.slug}" already exists for this user`);
+		}
+	}
+
+	// Phase 2: Collect all unique tag names across all prompts and create/find tags
+	// Track tags we've created during this batch to avoid duplicate lookups
+	const tagIdCache = new Map<string, Id<"tags">>();
+
+	async function getOrCreateTagId(tagName: string): Promise<Id<"tags">> {
+		const cached = tagIdCache.get(tagName);
+		if (cached) {
+			return cached;
+		}
+
+		const tagId = await findOrCreateTag(ctx, userId, tagName);
+		tagIdCache.set(tagName, tagId);
+		return tagId;
+	}
+
+	// Phase 3: Insert each prompt with its tags
+	const promptIds: Id<"prompts">[] = [];
+
+	for (const prompt of prompts) {
+		// Get or create all tags for this prompt
+		const tagIds: Id<"tags">[] = [];
+		for (const tagName of prompt.tags) {
+			const tagId = await getOrCreateTagId(tagName);
+			tagIds.push(tagId);
+		}
+
+		// Insert the prompt with denormalized tagNames
+		const promptId = await ctx.db.insert("prompts", {
+			userId,
+			slug: prompt.slug,
+			name: prompt.name,
+			description: prompt.description,
+			content: prompt.content,
+			tagNames: prompt.tags,
+			parameters: prompt.parameters,
+		});
+
+		// Create junction records
+		for (const tagId of tagIds) {
+			await ctx.db.insert("promptTags", {
+				promptId,
+				tagId,
+			});
+		}
+
+		promptIds.push(promptId);
+	}
+
+	return promptIds;
 }
 
 /**
@@ -81,11 +144,28 @@ export async function insertMany(
  * Returns DTO or null if not found.
  */
 export async function getBySlug(
-	_ctx: QueryCtx,
-	_userId: string,
-	_slug: string,
+	ctx: QueryCtx,
+	userId: string,
+	slug: string,
 ): Promise<PromptDTO | null> {
-	throw new NotImplementedError("getBySlug");
+	const prompt = await ctx.db
+		.query("prompts")
+		.withIndex("by_user_slug", (q) => q.eq("userId", userId).eq("slug", slug))
+		.unique();
+
+	if (!prompt) {
+		return null;
+	}
+
+	// Map storage format to DTO format (tagNames -> tags)
+	return {
+		slug: prompt.slug,
+		name: prompt.name,
+		description: prompt.description,
+		content: prompt.content,
+		tags: prompt.tagNames,
+		parameters: prompt.parameters,
+	};
 }
 
 /**
@@ -94,9 +174,32 @@ export async function getBySlug(
  * Returns true if deleted, false if not found.
  */
 export async function deleteBySlug(
-	_ctx: MutationCtx,
-	_userId: string,
-	_slug: string,
+	ctx: MutationCtx,
+	userId: string,
+	slug: string,
 ): Promise<boolean> {
-	throw new NotImplementedError("deleteBySlug");
+	// Find the prompt
+	const prompt = await ctx.db
+		.query("prompts")
+		.withIndex("by_user_slug", (q) => q.eq("userId", userId).eq("slug", slug))
+		.unique();
+
+	if (!prompt) {
+		return false;
+	}
+
+	// Delete all junction records for this prompt
+	const junctions = await ctx.db
+		.query("promptTags")
+		.withIndex("by_prompt", (q) => q.eq("promptId", prompt._id))
+		.collect();
+
+	for (const junction of junctions) {
+		await ctx.db.delete(junction._id);
+	}
+
+	// Delete the prompt
+	await ctx.db.delete(prompt._id);
+
+	return true;
 }
