@@ -1,4 +1,20 @@
+import type { QueryCtx } from "../_generated/server";
 import type { ApiKeyConfig } from "./types";
+
+/**
+ * Get API key config from environment variables via Convex context.
+ * This allows reading env vars at runtime in Convex functions.
+ */
+export async function getApiKeyConfig(_ctx: QueryCtx): Promise<ApiKeyConfig> {
+	const current = process.env.CONVEX_API_KEY;
+	if (!current) {
+		throw new Error("CONVEX_API_KEY environment variable not set");
+	}
+	return {
+		current,
+		previous: process.env.CONVEX_API_KEY_PREVIOUS ?? null,
+	};
+}
 
 /**
  * Performs constant-time string comparison to prevent timing attacks.
