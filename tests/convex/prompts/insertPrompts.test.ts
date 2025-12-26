@@ -86,12 +86,12 @@ describe("insertPrompts", () => {
 				name: "claude",
 			});
 
-			// Should create prompt with denormalized tagNames
+			// Should create prompt with empty tagNames (trigger syncs in real runtime)
 			expect(ctx.db.insert).toHaveBeenCalledWith(
 				"prompts",
 				expect.objectContaining({
 					slug: "ai-meta-check",
-					tagNames: ["introspection", "claude"],
+					tagNames: [], // Synced by trigger on promptTags insert
 				}),
 			);
 

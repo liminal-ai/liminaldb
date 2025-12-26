@@ -151,7 +151,8 @@ export async function slugExists(
 
 /**
  * Insert multiple prompts for a user.
- * Creates tags as needed, creates junction records, sets denormalized tagNames.
+ * Creates tags as needed, creates junction records.
+ * tagNames is synced automatically via database trigger on promptTags table.
  *
  * Atomic: All operations run within a single Convex mutation, which provides
  * serializable isolation. If any prompt fails validation, entire batch fails
@@ -208,18 +209,19 @@ export async function insertMany(
 			tagIds.push(tagId);
 		}
 
-		// Insert the prompt with denormalized tagNames
+		// Insert the prompt with empty tagNames
+		// Trigger on promptTags will sync the denormalized field after junction inserts
 		const promptId = await ctx.db.insert("prompts", {
 			userId,
 			slug: prompt.slug,
 			name: prompt.name,
 			description: prompt.description,
 			content: prompt.content,
-			tagNames: prompt.tags,
+			tagNames: [], // Synced by trigger
 			parameters: prompt.parameters,
 		});
 
-		// Create junction records
+		// Create junction records - trigger fires on each insert, syncing tagNames
 		for (const tagId of tagIds) {
 			await ctx.db.insert("promptTags", {
 				promptId,
@@ -265,6 +267,7 @@ export async function getBySlug(
 /**
  * Delete prompt by slug for user.
  * Cleans up junction records and orphaned tags (tags no longer referenced by any prompt).
+ * Note: tagNames trigger fires on junction deletes but is a no-op since prompt is deleted.
  * Returns true if deleted, false if not found.
  */
 export async function deleteBySlug(

@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query } from "./functions";
 import { v } from "convex/values";
 import * as Prompts from "./model/prompts";
 import { validateApiKey, getApiKeyConfig } from "./auth/apiKey";
