@@ -37,7 +37,9 @@ describe("insertPrompts", () => {
 		});
 
 		test("validateSlug rejects empty string", () => {
-			expect(() => Prompts.validateSlug("")).toThrow(/required and cannot be empty/);
+			expect(() => Prompts.validateSlug("")).toThrow(
+				/required and cannot be empty/,
+			);
 		});
 
 		test("validateSlug rejects leading dash", () => {

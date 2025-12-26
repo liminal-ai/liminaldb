@@ -55,7 +55,9 @@ describe("validateTagName", () => {
 	});
 
 	test("rejects whitespace-only tag name", () => {
-		expect(() => validateTagName("   ")).toThrow("required and cannot be empty");
+		expect(() => validateTagName("   ")).toThrow(
+			"required and cannot be empty",
+		);
 	});
 
 	test("rejects tag name over max length", () => {
@@ -88,15 +90,15 @@ describe("validatePromptInput", () => {
 	});
 
 	test("rejects empty name", () => {
-		expect(() =>
-			validatePromptInput({ ...validPrompt, name: "" }),
-		).toThrow("name is required and cannot be empty");
+		expect(() => validatePromptInput({ ...validPrompt, name: "" })).toThrow(
+			"name is required and cannot be empty",
+		);
 	});
 
 	test("rejects whitespace-only name", () => {
-		expect(() =>
-			validatePromptInput({ ...validPrompt, name: "   " }),
-		).toThrow("name is required and cannot be empty");
+		expect(() => validatePromptInput({ ...validPrompt, name: "   " })).toThrow(
+			"name is required and cannot be empty",
+		);
 	});
 
 	test("rejects empty description", () => {
@@ -106,9 +108,9 @@ describe("validatePromptInput", () => {
 	});
 
 	test("rejects empty content", () => {
-		expect(() =>
-			validatePromptInput({ ...validPrompt, content: "" }),
-		).toThrow("content is required and cannot be empty");
+		expect(() => validatePromptInput({ ...validPrompt, content: "" })).toThrow(
+			"content is required and cannot be empty",
+		);
 	});
 
 	test("rejects name over max length", () => {
