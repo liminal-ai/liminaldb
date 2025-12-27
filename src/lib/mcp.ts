@@ -381,7 +381,9 @@ export function createMcpServer(): McpServer {
 			title: "Save Prompts",
 			description: "Save one or more prompts to your library",
 			inputSchema: {
-				prompts: z.array(PromptInputSchema),
+				prompts: z
+					.array(PromptInputSchema)
+					.max(100, "Maximum 100 prompts per batch"),
 			},
 		},
 		async (args, extra) => {

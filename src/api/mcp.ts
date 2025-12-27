@@ -110,7 +110,7 @@ export function registerMcpRoutes(
 			send: (body: unknown) => void;
 			code: (code: number) => typeof reply;
 		},
-		logger: { error: (err: unknown) => void },
+		logger: { error: (obj: unknown, msg?: string) => void },
 	) => {
 		try {
 			// Connect on first request for this transport

@@ -76,6 +76,7 @@ export const PromptInputSchema = z.object({
 				),
 		)
 		.max(LIMITS.MAX_TAGS_PER_PROMPT, `Max ${LIMITS.MAX_TAGS_PER_PROMPT} tags`)
+		// Silently deduplicate tags - ["foo", "foo"] becomes ["foo"]
 		.transform((tags) => [...new Set(tags)]),
 	parameters: z.array(ParameterSchema).optional(),
 });
