@@ -90,7 +90,8 @@ async function createPromptsHandler(
 		if (error instanceof Error && error.message.includes("already exists")) {
 			return reply.code(409).send({ error: "Slug already exists" });
 		}
-		throw error;
+		request.log.error({ err: error, userId }, "Failed to create prompts");
+		return reply.code(500).send({ error: "Failed to create prompts" });
 	}
 }
 

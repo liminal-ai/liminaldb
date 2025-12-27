@@ -399,6 +399,7 @@ export function createMcpServer(): McpServer {
 					],
 				};
 			} catch (error) {
+				console.error("[MCP] save_prompts error:", error);
 				// Sanitize error message to avoid leaking internal details
 				let errorMessage = "Failed to save prompts";
 				if (

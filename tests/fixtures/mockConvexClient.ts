@@ -15,13 +15,3 @@ export function createMockConvexClient(): MockConvexClient {
 		query: mock(() => Promise.resolve(null)),
 	};
 }
-
-/**
- * Mock the convex module to use our mock client.
- * Call this before importing routes.
- */
-export function mockConvexModule(mockClient: MockConvexClient): void {
-	mock.module("../../src/lib/convex", () => ({
-		convex: mockClient,
-	}));
-}

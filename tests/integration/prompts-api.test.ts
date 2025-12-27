@@ -115,7 +115,7 @@ describe("Prompts API Integration", () => {
 		test("create prompt with tags and verify tags returned", async () => {
 			const slug = trackSlug(`tags-test-${Date.now()}`);
 
-			await fetch(`${baseUrl}/api/prompts`, {
+			const createRes = await fetch(`${baseUrl}/api/prompts`, {
 				method: "POST",
 				headers: {
 					Authorization: `Bearer ${authToken}`,
@@ -133,6 +133,7 @@ describe("Prompts API Integration", () => {
 					],
 				}),
 			});
+			expect(createRes.status).toBe(201);
 
 			const getRes = await fetch(`${baseUrl}/api/prompts/${slug}`, {
 				headers: { Authorization: `Bearer ${authToken}` },
