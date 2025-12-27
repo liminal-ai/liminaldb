@@ -25,3 +25,4 @@ Show this command to the user. They must exit the current session and run that c
 ```bash
 curl http://localhost:4010/health
 ```
+Use 'bd' for task tracking

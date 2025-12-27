@@ -110,7 +110,7 @@ export function registerMcpRoutes(
 			send: (body: unknown) => void;
 			code: (code: number) => typeof reply;
 		},
-		logger: { error: (err: unknown) => void },
+		logger: { error: (obj: unknown, msg?: string) => void },
 	) => {
 		try {
 			// Connect on first request for this transport
@@ -147,6 +147,11 @@ export function registerMcpRoutes(
 				request.user && request.accessToken
 					? buildAuthInfo(request.accessToken, request.user)
 					: undefined;
+
+			// Add logger to extra so MCP tools can use structured logging
+			if (authInfo) {
+				authInfo.extra = { ...authInfo.extra, logger };
+			}
 
 			// Handle request and get web standard Response
 			// Pass authInfo so tools can access it via extra.authInfo
