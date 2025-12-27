@@ -5,7 +5,7 @@
  * so LIMITS must be duplicated. This test catches drift at CI time.
  */
 
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -48,7 +48,7 @@ function extractLimitsFromFile(
 }
 
 describe("LIMITS sync validation", () => {
-	const projectRoot = join(import.meta.dir, "../..");
+	const projectRoot = join(import.meta.dirname, "../..");
 
 	test("src/schemas/prompts.ts and convex/model/prompts.ts have matching LIMITS", () => {
 		const srcPath = join(projectRoot, "src/schemas/prompts.ts");

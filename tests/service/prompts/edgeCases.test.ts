@@ -4,23 +4,29 @@
  */
 
 import Fastify from "fastify";
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
-import { createMockConvexClient } from "../../fixtures/mockConvexClient";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { createTestJwt } from "../../fixtures";
 import { LIMITS } from "../../../src/schemas/prompts";
 
-const mockConvex = createMockConvexClient();
-mock.module("../../../src/lib/convex", () => ({ convex: mockConvex }));
+const mockConvex = vi.hoisted(() => ({
+	mutation: vi.fn<(...args: unknown[]) => Promise<string[]>>(() =>
+		Promise.resolve([]),
+	),
+	query: vi.fn<(...args: unknown[]) => Promise<unknown>>(() =>
+		Promise.resolve(null),
+	),
+}));
+vi.mock("../../../src/lib/convex", () => ({ convex: mockConvex }));
 
-mock.module("../../../src/lib/auth/jwtValidator", () => ({
-	validateJwt: mock(async () => ({ valid: true })),
+vi.mock("../../../src/lib/auth/jwtValidator", () => ({
+	validateJwt: vi.fn(async () => ({ valid: true })),
 }));
 
-mock.module("../../../src/lib/config", () => ({
+vi.mock("../../../src/lib/config", () => ({
 	config: { convexApiKey: "test_api_key", convexUrl: "http://localhost:9999" },
 }));
 
-const { registerPromptRoutes } = await import("../../../src/routes/prompts");
+import { registerPromptRoutes } from "../../../src/routes/prompts";
 
 describe("POST /api/prompts - Edge Cases", () => {
 	let app: ReturnType<typeof Fastify>;

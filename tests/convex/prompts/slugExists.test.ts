@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import { createMockCtx, getQueryBuilder } from "../../fixtures/mockConvexCtx";
 import { slugExists } from "../../../convex/model/prompts";
 

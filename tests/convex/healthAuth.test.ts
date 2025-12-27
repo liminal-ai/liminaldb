@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach, afterAll } from "bun:test";
+import { describe, expect, test, beforeEach, afterAll } from "vitest";
 
 import { validateApiKey, withApiKeyAuth } from "../../convex/auth/apiKey";
 import type { ConvexAuthContext } from "../../convex/auth/types";

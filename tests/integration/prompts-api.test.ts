@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll, afterEach } from "bun:test";
+import { describe, test, expect, beforeAll, afterEach } from "vitest";
 
 /**
  * HTTP API integration tests for prompts.
@@ -8,6 +8,16 @@ import { describe, test, expect, beforeAll, afterEach } from "bun:test";
  * - TEST_BASE_URL set to staging
  * - Valid test user credentials
  */
+
+function hasTestEnv(): boolean {
+	return !!(
+		process.env.TEST_BASE_URL &&
+		process.env.TEST_USER_EMAIL &&
+		process.env.TEST_USER_PASSWORD &&
+		process.env.WORKOS_CLIENT_ID &&
+		process.env.WORKOS_API_KEY
+	);
+}
 
 function getBaseUrl(): string {
 	const url = process.env.TEST_BASE_URL;
@@ -44,6 +54,9 @@ describe("Prompts API Integration", () => {
 	const createdSlugs: string[] = [];
 
 	beforeAll(async () => {
+		if (!hasTestEnv()) {
+			return;
+		}
 		baseUrl = getBaseUrl();
 		authToken = await getAuthToken();
 	});
@@ -70,6 +83,7 @@ describe("Prompts API Integration", () => {
 
 	describe("POST /api/prompts -> GET /api/prompts/:slug round trip", () => {
 		test("create and retrieve prompt", async () => {
+			if (!hasTestEnv()) return;
 			const slug = trackSlug(`api-test-${Date.now()}`);
 
 			// Create
@@ -113,6 +127,7 @@ describe("Prompts API Integration", () => {
 		});
 
 		test("create prompt with tags and verify tags returned", async () => {
+			if (!hasTestEnv()) return;
 			const slug = trackSlug(`tags-test-${Date.now()}`);
 
 			const createRes = await fetch(`${baseUrl}/api/prompts`, {
@@ -148,6 +163,7 @@ describe("Prompts API Integration", () => {
 
 	describe("DELETE /api/prompts/:slug", () => {
 		test("delete existing prompt", async () => {
+			if (!hasTestEnv()) return;
 			const slug = trackSlug(`delete-test-${Date.now()}`);
 
 			// Create
@@ -195,6 +211,7 @@ describe("Prompts API Integration", () => {
 
 	describe("error cases", () => {
 		test("401 without auth", async () => {
+			if (!hasTestEnv()) return;
 			const res = await fetch(`${baseUrl}/api/prompts`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -205,6 +222,7 @@ describe("Prompts API Integration", () => {
 		});
 
 		test("400 with invalid slug", async () => {
+			if (!hasTestEnv()) return;
 			const res = await fetch(`${baseUrl}/api/prompts`, {
 				method: "POST",
 				headers: {
@@ -228,6 +246,7 @@ describe("Prompts API Integration", () => {
 		});
 
 		test("409 on duplicate slug", async () => {
+			if (!hasTestEnv()) return;
 			const slug = trackSlug(`dupe-test-${Date.now()}`);
 
 			// First create

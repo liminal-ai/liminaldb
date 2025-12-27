@@ -1,22 +1,22 @@
-import { mock } from "bun:test";
+import { vi } from "vitest";
 import type { Id } from "../../convex/_generated/dataModel";
 
 type TableName = "users" | "tags" | "promptTags" | "prompts";
 
 interface MockQueryBuilder {
-	withIndex: ReturnType<typeof mock>;
-	filter: ReturnType<typeof mock>;
-	unique: ReturnType<typeof mock>;
-	collect: ReturnType<typeof mock>;
-	first: ReturnType<typeof mock>;
+	withIndex: ReturnType<typeof vi.fn>;
+	filter: ReturnType<typeof vi.fn>;
+	unique: ReturnType<typeof vi.fn>;
+	collect: ReturnType<typeof vi.fn>;
+	first: ReturnType<typeof vi.fn>;
 }
 
 export interface MockDb {
-	query: ReturnType<typeof mock>;
-	insert: ReturnType<typeof mock>;
-	get: ReturnType<typeof mock>;
-	patch: ReturnType<typeof mock>;
-	delete: ReturnType<typeof mock>;
+	query: ReturnType<typeof vi.fn> & ((table: TableName) => MockQueryBuilder);
+	insert: ReturnType<typeof vi.fn>;
+	get: ReturnType<typeof vi.fn>;
+	patch: ReturnType<typeof vi.fn>;
+	delete: ReturnType<typeof vi.fn>;
 }
 
 export interface MockCtx {
@@ -28,11 +28,11 @@ export interface MockCtx {
  */
 function createQueryBuilder(): MockQueryBuilder {
 	const builder: MockQueryBuilder = {
-		withIndex: mock(() => builder),
-		filter: mock(() => builder),
-		unique: mock(() => Promise.resolve(null)),
-		collect: mock(() => Promise.resolve([])),
-		first: mock(() => Promise.resolve(null)),
+		withIndex: vi.fn(() => builder),
+		filter: vi.fn(() => builder),
+		unique: vi.fn(() => Promise.resolve(null)),
+		collect: vi.fn(() => Promise.resolve([])),
+		first: vi.fn(() => Promise.resolve(null)),
 	};
 	return builder;
 }
@@ -44,16 +44,16 @@ export function createMockCtx(): MockCtx {
 	const queryBuilders = new Map<TableName, MockQueryBuilder>();
 
 	const db: MockDb = {
-		query: mock((table: TableName) => {
+		query: vi.fn((table: TableName) => {
 			if (!queryBuilders.has(table)) {
 				queryBuilders.set(table, createQueryBuilder());
 			}
 			return queryBuilders.get(table)!;
 		}),
-		insert: mock(() => Promise.resolve("mock_id" as Id<"prompts">)),
-		get: mock(() => Promise.resolve(null)),
-		patch: mock(() => Promise.resolve()),
-		delete: mock(() => Promise.resolve()),
+		insert: vi.fn(() => Promise.resolve("mock_id" as Id<"prompts">)),
+		get: vi.fn(() => Promise.resolve(null)),
+		patch: vi.fn(() => Promise.resolve()),
+		delete: vi.fn(() => Promise.resolve()),
 	};
 
 	return { db };
@@ -74,7 +74,7 @@ export function getQueryBuilder(
  * Useful for batch operations where the same query is called multiple times.
  */
 export function mockSequentialReturns<T>(
-	mockFn: ReturnType<typeof mock>,
+	mockFn: ReturnType<typeof vi.fn>,
 	values: T[],
 ): void {
 	if (values.length === 0) {

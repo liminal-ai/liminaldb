@@ -7,19 +7,20 @@
 
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
-import { describe, expect, test, beforeEach, mock } from "bun:test";
+import { describe, expect, test, beforeEach, vi } from "vitest";
 import type { McpDependencies } from "../../../src/api/mcp";
 
 // Track the authInfo passed to handleRequest
 let capturedAuthInfo: unknown = null;
 
-// Mock JWT validator to return valid
-mock.module("../../../src/lib/auth/jwtValidator", () => ({
-	validateJwt: mock(async () => ({ valid: true })),
+// Hoisted mocks
+const mockValidateJwt = vi.hoisted(() => vi.fn(async () => ({ valid: true })));
+
+vi.mock("../../../src/lib/auth/jwtValidator", () => ({
+	validateJwt: mockValidateJwt,
 }));
 
-// Mock config
-mock.module("../../../src/lib/config", () => ({
+vi.mock("../../../src/lib/config", () => ({
 	config: {
 		convexApiKey: "test_api_key",
 		convexUrl: "http://localhost:9999",
@@ -33,7 +34,7 @@ mock.module("../../../src/lib/config", () => ({
 	},
 }));
 
-const { registerMcpRoutes } = await import("../../../src/api/mcp");
+import { registerMcpRoutes } from "../../../src/api/mcp";
 import { createTestJwt } from "../../fixtures";
 
 // Set required env vars
@@ -44,7 +45,7 @@ process.env.CONVEX_URL ??= "http://localhost:9999";
 function createMockDeps(): McpDependencies {
 	return {
 		transport: {
-			handleRequest: mock(
+			handleRequest: vi.fn(
 				async (
 					_request: Request,
 					options?: { authInfo?: unknown },
@@ -74,7 +75,7 @@ function createMockDeps(): McpDependencies {
 			),
 		},
 		mcpServer: {
-			connect: mock(async () => {}),
+			connect: vi.fn(async () => {}),
 		} as unknown as McpDependencies["mcpServer"],
 	};
 }

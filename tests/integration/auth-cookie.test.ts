@@ -11,7 +11,7 @@
  * These tests verify the server-side behavior.
  */
 
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 
 const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:5001";
 

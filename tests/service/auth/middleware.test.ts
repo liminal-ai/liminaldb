@@ -1,17 +1,25 @@
-import { describe, expect, test, mock } from "bun:test";
+import { describe, expect, test, vi } from "vitest";
 
-mock.module("../../../src/lib/auth/jwtValidator", () => ({
-	validateJwt: mock(async (token: string) => {
+const mockValidateJwt = vi.hoisted(() =>
+	vi.fn(async (token: string) => {
 		if (token && token.includes(".")) {
 			return { valid: true };
 		}
 		return { valid: false, error: "Invalid token" };
 	}),
+);
+
+vi.mock("../../../src/lib/auth/jwtValidator", () => ({
+	validateJwt: mockValidateJwt,
 }));
 
-const { TokenSource, decodeJwtClaims, extractToken, validateJwt } =
-	await import("../../../src/lib/auth");
-const { authMiddleware } = await import("../../../src/middleware/auth");
+import {
+	TokenSource,
+	decodeJwtClaims,
+	extractToken,
+	validateJwt,
+} from "../../../src/lib/auth";
+import { authMiddleware } from "../../../src/middleware/auth";
 import {
 	createExpiredJwt,
 	createMalformedJwt,
@@ -109,7 +117,7 @@ describe("Auth Middleware", () => {
 
 		test("returns invalid for expired token", async () => {
 			const token = createExpiredJwt();
-			(validateJwt as any).mockImplementationOnce(async () => ({
+			mockValidateJwt.mockImplementationOnce(async () => ({
 				valid: false,
 				error: "Token expired",
 			}));
@@ -119,7 +127,7 @@ describe("Auth Middleware", () => {
 
 		test("returns invalid for malformed token", async () => {
 			const token = createMalformedJwt("invalid-base64");
-			(validateJwt as any).mockImplementationOnce(async () => ({
+			mockValidateJwt.mockImplementationOnce(async () => ({
 				valid: false,
 				error: "Invalid token",
 			}));
@@ -179,7 +187,7 @@ describe("Auth Middleware", () => {
 			});
 			const reply = createMockReply();
 
-			(validateJwt as any).mockImplementationOnce(async () => ({
+			mockValidateJwt.mockImplementationOnce(async () => ({
 				valid: false,
 				error: "Invalid token",
 			}));
