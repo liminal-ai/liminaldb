@@ -3,7 +3,7 @@ import { z } from "zod";
 import { convex } from "./convex";
 import { api } from "../../convex/_generated/api";
 import { config } from "./config";
-import { PromptInputSchema } from "../schemas/prompts";
+import { PromptInputSchema, SlugSchema } from "../schemas/prompts";
 
 /**
  * User info extracted from MCP authInfo.extra
@@ -427,7 +427,7 @@ export function createMcpServer(): McpServer {
 			title: "Get Prompt",
 			description: "Retrieve a prompt by its slug",
 			inputSchema: {
-				slug: z.string().describe("The prompt slug"),
+				slug: SlugSchema.describe("The prompt slug"),
 			},
 		},
 		async (args, extra) => {
@@ -446,32 +446,45 @@ export function createMcpServer(): McpServer {
 				};
 			}
 
-			const prompt = await convex.query(api.prompts.getPromptBySlug, {
-				apiKey: config.convexApiKey,
-				userId,
-				slug: args.slug,
-			});
+			try {
+				const prompt = await convex.query(api.prompts.getPromptBySlug, {
+					apiKey: config.convexApiKey,
+					userId,
+					slug: args.slug,
+				});
 
-			if (!prompt) {
+				if (!prompt) {
+					return {
+						content: [
+							{
+								type: "text" as const,
+								text: "Prompt not found",
+							},
+						],
+						isError: true,
+					};
+				}
+
 				return {
 					content: [
 						{
 							type: "text" as const,
-							text: "Prompt not found",
+							text: JSON.stringify(prompt),
+						},
+					],
+				};
+			} catch (error) {
+				console.error("[MCP] get_prompt error:", error);
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Failed to get prompt",
 						},
 					],
 					isError: true,
 				};
 			}
-
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: JSON.stringify(prompt),
-					},
-				],
-			};
 		},
 	);
 
@@ -482,7 +495,7 @@ export function createMcpServer(): McpServer {
 			title: "Delete Prompt",
 			description: "Delete a prompt by its slug",
 			inputSchema: {
-				slug: z.string().describe("The prompt slug"),
+				slug: SlugSchema.describe("The prompt slug"),
 			},
 		},
 		async (args, extra) => {
@@ -501,20 +514,33 @@ export function createMcpServer(): McpServer {
 				};
 			}
 
-			const deleted = await convex.mutation(api.prompts.deletePromptBySlug, {
-				apiKey: config.convexApiKey,
-				userId,
-				slug: args.slug,
-			});
+			try {
+				const deleted = await convex.mutation(api.prompts.deletePromptBySlug, {
+					apiKey: config.convexApiKey,
+					userId,
+					slug: args.slug,
+				});
 
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: JSON.stringify({ deleted }),
-					},
-				],
-			};
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: JSON.stringify({ deleted }),
+						},
+					],
+				};
+			} catch (error) {
+				console.error("[MCP] delete_prompt error:", error);
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Failed to delete prompt",
+						},
+					],
+					isError: true,
+				};
+			}
 		},
 	);
 

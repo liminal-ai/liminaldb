@@ -27,17 +27,22 @@ export const ParameterSchema = z.object({
 });
 
 /**
+ * Standalone slug schema for parameter validation (GET/DELETE endpoints)
+ */
+export const SlugSchema = z
+	.string()
+	.min(1, "Slug required")
+	.max(LIMITS.SLUG_MAX_LENGTH, `Slug max ${LIMITS.SLUG_MAX_LENGTH} chars`)
+	.regex(
+		SLUG_REGEX,
+		"Slug must be lowercase letters, numbers, dashes only. Colons reserved for namespacing.",
+	);
+
+/**
  * Single prompt input schema
  */
 export const PromptInputSchema = z.object({
-	slug: z
-		.string()
-		.min(1, "Slug required")
-		.max(LIMITS.SLUG_MAX_LENGTH, `Slug max ${LIMITS.SLUG_MAX_LENGTH} chars`)
-		.regex(
-			SLUG_REGEX,
-			"Slug must be lowercase letters, numbers, dashes only. Colons reserved for namespacing.",
-		),
+	slug: SlugSchema,
 	name: z
 		.string()
 		.min(1, "Name required")
@@ -70,7 +75,8 @@ export const PromptInputSchema = z.object({
 					"Tag must be alphanumeric with dashes, underscores, or slashes",
 				),
 		)
-		.max(LIMITS.MAX_TAGS_PER_PROMPT, `Max ${LIMITS.MAX_TAGS_PER_PROMPT} tags`),
+		.max(LIMITS.MAX_TAGS_PER_PROMPT, `Max ${LIMITS.MAX_TAGS_PER_PROMPT} tags`)
+		.transform((tags) => [...new Set(tags)]),
 	parameters: z.array(ParameterSchema).optional(),
 });
 
@@ -78,7 +84,10 @@ export const PromptInputSchema = z.object({
  * Request body for creating prompts (batch)
  */
 export const CreatePromptsRequestSchema = z.object({
-	prompts: z.array(PromptInputSchema).min(1, "At least one prompt required"),
+	prompts: z
+		.array(PromptInputSchema)
+		.min(1, "At least one prompt required")
+		.max(100, "Maximum 100 prompts per batch"),
 });
 
 /**

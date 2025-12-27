@@ -1,5 +1,12 @@
 import type { JwtClaims } from "./types";
 
+/**
+ * Maximum allowed length for user ID from JWT sub claim.
+ * WorkOS user IDs are typically ~30 chars (e.g., user_01ABCDEF...).
+ * 255 provides generous headroom for future format changes.
+ */
+const MAX_USER_ID_LENGTH = 255;
+
 export function decodeJwtClaims(token: string): JwtClaims {
 	const parts = token.split(".");
 	if (parts.length !== 3) {
@@ -24,6 +31,13 @@ export function decodeJwtClaims(token: string): JwtClaims {
 	// Only sub is required - email and sid may not be present in MCP OAuth tokens
 	if (!claims.sub) {
 		throw new Error("Missing required claim (sub)");
+	}
+
+	// Validate user ID length to catch unexpected format changes from auth provider
+	if (claims.sub.length > MAX_USER_ID_LENGTH) {
+		throw new Error(
+			`User ID exceeds maximum length (${MAX_USER_ID_LENGTH} chars)`,
+		);
 	}
 
 	return {

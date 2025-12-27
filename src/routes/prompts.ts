@@ -116,19 +116,24 @@ async function getPromptHandler(
 		return reply.code(400).send({ error: slugError });
 	}
 
-	// Call Convex query
-	const prompt = await convex.query(api.prompts.getPromptBySlug, {
-		apiKey: config.convexApiKey,
-		userId,
-		slug,
-	});
+	try {
+		// Call Convex query
+		const prompt = await convex.query(api.prompts.getPromptBySlug, {
+			apiKey: config.convexApiKey,
+			userId,
+			slug,
+		});
 
-	if (!prompt) {
-		return reply.code(404).send({ error: "Prompt not found" });
+		if (!prompt) {
+			return reply.code(404).send({ error: "Prompt not found" });
+		}
+
+		// Return DTO (Convex already returns the correct shape)
+		return reply.code(200).send(prompt);
+	} catch (error) {
+		request.log.error({ err: error, slug, userId }, "Failed to get prompt");
+		return reply.code(500).send({ error: "Failed to get prompt" });
 	}
-
-	// Return DTO (Convex already returns the correct shape)
-	return reply.code(200).send(prompt);
 }
 
 /**
@@ -153,12 +158,17 @@ async function deletePromptHandler(
 		return reply.code(400).send({ error: slugError });
 	}
 
-	// Call Convex mutation
-	const deleted = await convex.mutation(api.prompts.deletePromptBySlug, {
-		apiKey: config.convexApiKey,
-		userId,
-		slug,
-	});
+	try {
+		// Call Convex mutation
+		const deleted = await convex.mutation(api.prompts.deletePromptBySlug, {
+			apiKey: config.convexApiKey,
+			userId,
+			slug,
+		});
 
-	return reply.code(200).send({ deleted });
+		return reply.code(200).send({ deleted });
+	} catch (error) {
+		request.log.error({ err: error, slug, userId }, "Failed to delete prompt");
+		return reply.code(500).send({ error: "Failed to delete prompt" });
+	}
 }
