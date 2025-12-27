@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 
 import { getTestAuth, hasTestAuth } from "../fixtures/auth";
 import { createExpiredJwt } from "../fixtures/jwt";
@@ -18,7 +18,7 @@ describe("Auth API Integration", () => {
 		});
 
 		expect(res.ok).toBe(true);
-		const data = (await res.json()) as any;
+		const data = (await res.json()) as { user: { email: string } };
 		expect(data.user.email).toBe(auth.email);
 	});
 

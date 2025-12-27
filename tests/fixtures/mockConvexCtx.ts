@@ -1,22 +1,28 @@
-import { mock } from "bun:test";
+import { vi } from "vitest";
 import type { Id } from "../../convex/_generated/dataModel";
 
 type TableName = "users" | "tags" | "promptTags" | "prompts";
 
+/**
+ * Type alias for vitest mock functions.
+ * Using ReturnType<typeof vi.fn> ensures compatibility with vitest's mock API.
+ */
+type MockFn = ReturnType<typeof vi.fn>;
+
 interface MockQueryBuilder {
-	withIndex: ReturnType<typeof mock>;
-	filter: ReturnType<typeof mock>;
-	unique: ReturnType<typeof mock>;
-	collect: ReturnType<typeof mock>;
-	first: ReturnType<typeof mock>;
+	withIndex: MockFn;
+	filter: MockFn;
+	unique: MockFn;
+	collect: MockFn;
+	first: MockFn;
 }
 
 export interface MockDb {
-	query: ReturnType<typeof mock>;
-	insert: ReturnType<typeof mock>;
-	get: ReturnType<typeof mock>;
-	patch: ReturnType<typeof mock>;
-	delete: ReturnType<typeof mock>;
+	query: MockFn & ((table: TableName) => MockQueryBuilder);
+	insert: MockFn;
+	get: MockFn;
+	patch: MockFn;
+	delete: MockFn;
 }
 
 export interface MockCtx {
@@ -24,15 +30,32 @@ export interface MockCtx {
 }
 
 /**
+ * Type assertion helper to cast MockCtx to the expected Convex context type.
+ * This function encapsulates the type assertion needed to use mock contexts
+ * with Convex model functions that expect MutationCtx or QueryCtx.
+ *
+ * @example
+ * // For mutation functions
+ * const result = await insertMany(asConvexCtx<MutationCtx>(ctx), userId, input);
+ *
+ * // For query functions
+ * const result = await getBySlug(asConvexCtx<QueryCtx>(ctx), userId, slug);
+ */
+export function asConvexCtx<T>(mock: MockCtx): T {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	return mock as any as T;
+}
+
+/**
  * Create a chainable query builder mock.
  */
 function createQueryBuilder(): MockQueryBuilder {
 	const builder: MockQueryBuilder = {
-		withIndex: mock(() => builder),
-		filter: mock(() => builder),
-		unique: mock(() => Promise.resolve(null)),
-		collect: mock(() => Promise.resolve([])),
-		first: mock(() => Promise.resolve(null)),
+		withIndex: vi.fn(() => builder),
+		filter: vi.fn(() => builder),
+		unique: vi.fn(() => Promise.resolve(null)),
+		collect: vi.fn(() => Promise.resolve([])),
+		first: vi.fn(() => Promise.resolve(null)),
 	};
 	return builder;
 }
@@ -44,16 +67,16 @@ export function createMockCtx(): MockCtx {
 	const queryBuilders = new Map<TableName, MockQueryBuilder>();
 
 	const db: MockDb = {
-		query: mock((table: TableName) => {
+		query: vi.fn((table: TableName) => {
 			if (!queryBuilders.has(table)) {
 				queryBuilders.set(table, createQueryBuilder());
 			}
 			return queryBuilders.get(table)!;
 		}),
-		insert: mock(() => Promise.resolve("mock_id" as Id<"prompts">)),
-		get: mock(() => Promise.resolve(null)),
-		patch: mock(() => Promise.resolve()),
-		delete: mock(() => Promise.resolve()),
+		insert: vi.fn(() => Promise.resolve("mock_id" as Id<"prompts">)),
+		get: vi.fn(() => Promise.resolve(null)),
+		patch: vi.fn(() => Promise.resolve()),
+		delete: vi.fn(() => Promise.resolve()),
 	};
 
 	return { db };
@@ -73,10 +96,7 @@ export function getQueryBuilder(
  * Helper to configure sequential return values for a mock.
  * Useful for batch operations where the same query is called multiple times.
  */
-export function mockSequentialReturns<T>(
-	mockFn: ReturnType<typeof mock>,
-	values: T[],
-): void {
+export function mockSequentialReturns<T>(mockFn: MockFn, values: T[]): void {
 	if (values.length === 0) {
 		throw new Error("mockSequentialReturns requires at least one value");
 	}

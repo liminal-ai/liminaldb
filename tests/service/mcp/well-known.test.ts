@@ -6,7 +6,7 @@
  */
 
 import Fastify from "fastify";
-import { describe, expect, test, beforeEach } from "bun:test";
+import { describe, expect, test, beforeEach } from "vitest";
 import { registerWellKnownRoutes } from "../../../src/routes/well-known";
 
 // Set required env vars for tests

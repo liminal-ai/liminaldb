@@ -1,19 +1,20 @@
-import { mock, type Mock } from "bun:test";
+import type { FastifyReply } from "fastify";
+import { vi, type MockInstance } from "vitest";
 
-interface MockReplyType {
-	code: Mock<(status: number) => MockReplyType>;
-	status: Mock<(status: number) => MockReplyType>;
-	send: Mock<(body: unknown) => MockReplyType>;
-	redirect: Mock<(url: string) => MockReplyType>;
-	setCookie: Mock<
+export interface MockReplyType {
+	code: MockInstance<(status: number) => MockReplyType>;
+	status: MockInstance<(status: number) => MockReplyType>;
+	send: MockInstance<(body: unknown) => MockReplyType>;
+	redirect: MockInstance<(url: string) => MockReplyType>;
+	setCookie: MockInstance<
 		(
 			name: string,
 			value: string,
 			options?: Record<string, unknown>,
 		) => MockReplyType
 	>;
-	clearCookie: Mock<(name: string) => MockReplyType>;
-	header: Mock<(name: string, value: unknown) => MockReplyType>;
+	clearCookie: MockInstance<(name: string) => MockReplyType>;
+	header: MockInstance<(name: string, value: unknown) => MockReplyType>;
 	getStatus: () => number | null;
 	getBody: () => unknown;
 	getRedirectUrl: () => string | null;
@@ -31,33 +32,33 @@ export function createMockReply(): MockReplyType {
 	const headers: Record<string, unknown> = {};
 
 	const reply: MockReplyType = {
-		code: mock((status: number) => {
+		code: vi.fn((status: number) => {
 			statusCode = status;
 			return reply;
 		}),
-		status: mock((status: number) => {
+		status: vi.fn((status: number) => {
 			statusCode = status;
 			return reply;
 		}),
-		send: mock((payload: unknown) => {
+		send: vi.fn((payload: unknown) => {
 			body = payload;
 			return reply;
 		}),
-		redirect: mock((url: string) => {
+		redirect: vi.fn((url: string) => {
 			redirectUrl = url;
 			return reply;
 		}),
-		setCookie: mock(
+		setCookie: vi.fn(
 			(name: string, value: string, options?: Record<string, unknown>) => {
 				cookies[name] = { value, options };
 				return reply;
 			},
 		),
-		clearCookie: mock((name: string) => {
+		clearCookie: vi.fn((name: string) => {
 			clearedCookies[name] = true;
 			return reply;
 		}),
-		header: mock((name: string, value: unknown) => {
+		header: vi.fn((name: string, value: unknown) => {
 			headers[name] = value;
 			return reply;
 		}),
@@ -70,4 +71,11 @@ export function createMockReply(): MockReplyType {
 	};
 
 	return reply;
+}
+
+/**
+ * Type assertion helper to cast MockReplyType to FastifyReply for middleware testing.
+ */
+export function asFastifyReply(mock: MockReplyType): FastifyReply {
+	return mock as unknown as FastifyReply;
 }

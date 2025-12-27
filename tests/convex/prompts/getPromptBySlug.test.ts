@@ -1,5 +1,9 @@
-import { describe, test, expect } from "bun:test";
-import { createMockCtx, getQueryBuilder } from "../../fixtures/mockConvexCtx";
+import { describe, test, expect } from "vitest";
+import {
+	asConvexCtx,
+	createMockCtx,
+	getQueryBuilder,
+} from "../../fixtures/mockConvexCtx";
 import * as Prompts from "../../../convex/model/prompts";
 
 describe("getPromptBySlug", () => {
@@ -20,7 +24,7 @@ describe("getPromptBySlug", () => {
 			});
 
 			const result = await Prompts.getBySlug(
-				ctx as any,
+				asConvexCtx(ctx),
 				userId,
 				"ai-meta-check",
 			);
@@ -59,7 +63,7 @@ describe("getPromptBySlug", () => {
 			});
 
 			const result = await Prompts.getBySlug(
-				ctx as any,
+				asConvexCtx(ctx),
 				userId,
 				"template-prompt",
 			);
@@ -82,7 +86,7 @@ describe("getPromptBySlug", () => {
 			getQueryBuilder(ctx, "prompts").unique.mockResolvedValue(null);
 
 			const result = await Prompts.getBySlug(
-				ctx as any,
+				asConvexCtx(ctx),
 				userId,
 				"does-not-exist",
 			);
@@ -98,7 +102,7 @@ describe("getPromptBySlug", () => {
 
 			getQueryBuilder(ctx, "prompts").unique.mockResolvedValue(null);
 
-			await Prompts.getBySlug(ctx as any, userId, "some-slug");
+			await Prompts.getBySlug(asConvexCtx(ctx), userId, "some-slug");
 
 			const builder = getQueryBuilder(ctx, "prompts");
 			expect(builder.withIndex).toHaveBeenCalledWith(

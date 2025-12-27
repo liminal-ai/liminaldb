@@ -1,4 +1,4 @@
-import { mock } from "bun:test";
+import { vi } from "vitest";
 
 type MockWorkosOptions = {
 	isValidJwt?: boolean | Error;
@@ -18,13 +18,13 @@ export function createMockWorkos(opts: MockWorkosOptions = {}) {
 	const isValidJwt = opts.isValidJwt ?? true;
 
 	const userManagement = {
-		isValidJwt: mock(async (_token: string) => {
+		isValidJwt: vi.fn(async (_token: string) => {
 			if (isValidJwt instanceof Error) {
 				throw isValidJwt;
 			}
 			return isValidJwt;
 		}),
-		authenticateWithCode: mock(async () => {
+		authenticateWithCode: vi.fn(async () => {
 			if (opts.authenticateError) {
 				throw opts.authenticateError;
 			}
@@ -36,7 +36,7 @@ export function createMockWorkos(opts: MockWorkosOptions = {}) {
 				}
 			);
 		}),
-		getAuthorizationUrl: mock((params?: Record<string, string>) => {
+		getAuthorizationUrl: vi.fn((params?: Record<string, string>) => {
 			if (opts.authorizationUrl) {
 				return `${opts.authorizationUrl}${
 					params?.state ? `&state=${params.state}` : ""
@@ -47,7 +47,7 @@ export function createMockWorkos(opts: MockWorkosOptions = {}) {
 			const state = params?.state ? `&state=${params.state}` : "";
 			return `https://workos.com/oauth?client_id=${client}&redirect_uri=${redirect}${state}`;
 		}),
-		getUser: mock(async (id: string) => {
+		getUser: vi.fn(async (id: string) => {
 			if (opts.getUserError) {
 				throw opts.getUserError;
 			}
@@ -58,7 +58,7 @@ export function createMockWorkos(opts: MockWorkosOptions = {}) {
 				}
 			);
 		}),
-		revokeSession: mock(async (_params: { sessionId: string }) => {
+		revokeSession: vi.fn(async (_params: { sessionId: string }) => {
 			if (opts.revokeSessionError) {
 				throw opts.revokeSessionError;
 			}

@@ -5,7 +5,7 @@
 
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import type { McpDependencies } from "../../../src/api/mcp";
 import { createTestJwt } from "../../fixtures";
 
@@ -14,18 +14,18 @@ let lastToolCall: { name: string; args: unknown } | null = null;
 let mockToolResponse: unknown = null;
 
 // Mock Convex client
-const mockConvex = {
-	mutation: mock(() => Promise.resolve([])),
-	query: mock(() => Promise.resolve(null)),
-};
-
-mock.module("../../../src/lib/convex", () => ({ convex: mockConvex }));
-
-mock.module("../../../src/lib/auth/jwtValidator", () => ({
-	validateJwt: mock(async () => ({ valid: true })),
+const mockConvex = vi.hoisted(() => ({
+	mutation: vi.fn(() => Promise.resolve([])),
+	query: vi.fn(() => Promise.resolve(null)),
 }));
 
-mock.module("../../../src/lib/config", () => ({
+vi.mock("../../../src/lib/convex", () => ({ convex: mockConvex }));
+
+vi.mock("../../../src/lib/auth/jwtValidator", () => ({
+	validateJwt: vi.fn(async () => ({ valid: true })),
+}));
+
+vi.mock("../../../src/lib/config", () => ({
 	config: {
 		convexApiKey: "test_api_key",
 		convexUrl: "http://localhost:9999",
@@ -39,7 +39,7 @@ mock.module("../../../src/lib/config", () => ({
 	},
 }));
 
-const { registerMcpRoutes } = await import("../../../src/api/mcp");
+import { registerMcpRoutes } from "../../../src/api/mcp";
 
 process.env.COOKIE_SECRET ??= "test_cookie_secret";
 process.env.CONVEX_URL ??= "http://localhost:9999";
@@ -47,7 +47,7 @@ process.env.CONVEX_URL ??= "http://localhost:9999";
 function createMockDeps(): McpDependencies {
 	return {
 		transport: {
-			handleRequest: mock(
+			handleRequest: vi.fn(
 				async (
 					request: Request,
 					_options?: { authInfo?: unknown },
@@ -79,7 +79,7 @@ function createMockDeps(): McpDependencies {
 			),
 		},
 		mcpServer: {
-			connect: mock(async () => {}),
+			connect: vi.fn(async () => {}),
 		} as unknown as McpDependencies["mcpServer"],
 	};
 }

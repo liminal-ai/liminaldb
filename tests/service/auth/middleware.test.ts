@@ -1,18 +1,28 @@
-import { describe, expect, test, mock } from "bun:test";
+import { describe, expect, test, vi } from "vitest";
 
-mock.module("../../../src/lib/auth/jwtValidator", () => ({
-	validateJwt: mock(async (token: string) => {
+const mockValidateJwt = vi.hoisted(() =>
+	vi.fn(async (token: string) => {
 		if (token && token.includes(".")) {
 			return { valid: true };
 		}
 		return { valid: false, error: "Invalid token" };
 	}),
+);
+
+vi.mock("../../../src/lib/auth/jwtValidator", () => ({
+	validateJwt: mockValidateJwt,
 }));
 
-const { TokenSource, decodeJwtClaims, extractToken, validateJwt } =
-	await import("../../../src/lib/auth");
-const { authMiddleware } = await import("../../../src/middleware/auth");
 import {
+	TokenSource,
+	decodeJwtClaims,
+	extractToken,
+	validateJwt,
+} from "../../../src/lib/auth";
+import { authMiddleware } from "../../../src/middleware/auth";
+import {
+	asFastifyReply,
+	asFastifyRequest,
 	createExpiredJwt,
 	createMalformedJwt,
 	createMockReply,
@@ -27,7 +37,7 @@ describe("Auth Middleware", () => {
 				authorization: "Bearer test.jwt.token",
 			});
 
-			const result = extractToken(request as any);
+			const result = extractToken(asFastifyRequest(request));
 
 			expect(result.token).toBe("test.jwt.token");
 			expect(result.source).toBe(TokenSource.BEARER);
@@ -38,7 +48,7 @@ describe("Auth Middleware", () => {
 				cookies: { accessToken: "cookie.jwt.token" },
 			});
 
-			const result = extractToken(request as any);
+			const result = extractToken(asFastifyRequest(request));
 
 			expect(result.token).toBe("cookie.jwt.token");
 			expect(result.source).toBe(TokenSource.COOKIE);
@@ -50,7 +60,7 @@ describe("Auth Middleware", () => {
 				cookies: { accessToken: "cookie.jwt.token" },
 			});
 
-			const result = extractToken(request as any);
+			const result = extractToken(asFastifyRequest(request));
 
 			expect(result.token).toBe("header.jwt.token");
 			expect(result.source).toBe(TokenSource.BEARER);
@@ -58,7 +68,7 @@ describe("Auth Middleware", () => {
 
 		test("returns null token when none present", () => {
 			const request = createMockRequest();
-			const result = extractToken(request as any);
+			const result = extractToken(asFastifyRequest(request));
 			expect(result.token).toBeNull();
 			expect(result.source).toBeNull();
 		});
@@ -67,7 +77,7 @@ describe("Auth Middleware", () => {
 			const request = createMockRequest({
 				authorization: "Bearer ",
 			});
-			const result = extractToken(request as any);
+			const result = extractToken(asFastifyRequest(request));
 			expect(result.token).toBeNull();
 			expect(result.source).toBeNull();
 		});
@@ -76,7 +86,7 @@ describe("Auth Middleware", () => {
 			const request = createMockRequest({
 				authorization: "Bear abc",
 			});
-			const result = extractToken(request as any);
+			const result = extractToken(asFastifyRequest(request));
 			expect(result.token).toBeNull();
 			expect(result.source).toBeNull();
 		});
@@ -85,7 +95,7 @@ describe("Auth Middleware", () => {
 			const request = createMockRequest({
 				authorization: "Basic abc123",
 			});
-			const result = extractToken(request as any);
+			const result = extractToken(asFastifyRequest(request));
 			expect(result.token).toBeNull();
 			expect(result.source).toBeNull();
 		});
@@ -94,7 +104,7 @@ describe("Auth Middleware", () => {
 			const request = createMockRequest({
 				authorization: "Bearerabc123",
 			});
-			const result = extractToken(request as any);
+			const result = extractToken(asFastifyRequest(request));
 			expect(result.token).toBeNull();
 			expect(result.source).toBeNull();
 		});
@@ -109,7 +119,7 @@ describe("Auth Middleware", () => {
 
 		test("returns invalid for expired token", async () => {
 			const token = createExpiredJwt();
-			(validateJwt as any).mockImplementationOnce(async () => ({
+			mockValidateJwt.mockImplementationOnce(async () => ({
 				valid: false,
 				error: "Token expired",
 			}));
@@ -119,7 +129,7 @@ describe("Auth Middleware", () => {
 
 		test("returns invalid for malformed token", async () => {
 			const token = createMalformedJwt("invalid-base64");
-			(validateJwt as any).mockImplementationOnce(async () => ({
+			mockValidateJwt.mockImplementationOnce(async () => ({
 				valid: false,
 				error: "Invalid token",
 			}));
@@ -152,13 +162,12 @@ describe("Auth Middleware", () => {
 			});
 			const reply = createMockReply();
 
-			await authMiddleware(request as any, reply as any);
+			await authMiddleware(asFastifyRequest(request), asFastifyReply(reply));
 
-			const typedRequest = request as any;
-			expect(typedRequest.user?.id).toBe("user_test123");
-			expect(typedRequest.user?.email).toBe("test@example.com");
-			expect(typedRequest.user?.sessionId).toBe("session_test123");
-			expect(typedRequest.accessToken).toBe(token);
+			expect(request.user?.id).toBe("user_test123");
+			expect(request.user?.email).toBe("test@example.com");
+			expect(request.user?.sessionId).toBe("session_test123");
+			expect(request.accessToken).toBe(token);
 			expect(reply.getStatus()).toBeNull();
 		});
 
@@ -166,7 +175,7 @@ describe("Auth Middleware", () => {
 			const request = createMockRequest();
 			const reply = createMockReply();
 
-			await authMiddleware(request as any, reply as any);
+			await authMiddleware(asFastifyRequest(request), asFastifyReply(reply));
 
 			expect(reply.getStatus()).toBe(401);
 			expect(reply.getBody()).toEqual({ error: "Not authenticated" });
@@ -179,12 +188,12 @@ describe("Auth Middleware", () => {
 			});
 			const reply = createMockReply();
 
-			(validateJwt as any).mockImplementationOnce(async () => ({
+			mockValidateJwt.mockImplementationOnce(async () => ({
 				valid: false,
 				error: "Invalid token",
 			}));
 
-			await authMiddleware(request as any, reply as any);
+			await authMiddleware(asFastifyRequest(request), asFastifyReply(reply));
 
 			expect(reply.getStatus()).toBe(401);
 			expect(reply.getBody()).toEqual({ error: "Invalid token" });

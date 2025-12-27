@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach } from "bun:test";
+import { describe, expect, test, beforeEach } from "vitest";
 
 import { rlsRules, withRLS } from "../../../convex/auth/rls";
 
@@ -8,7 +8,14 @@ type RlsArgs = {
 	doc: Record<string, unknown>;
 };
 
-const ctx = { userId: "userA" };
+/**
+ * Minimal RLS context type that satisfies the withRLS handler requirements.
+ */
+interface RlsContext {
+	userId: string;
+}
+
+const ctx: RlsContext = { userId: "userA" };
 const ownDoc = { userId: "userA", value: "ok" };
 const otherDoc = { userId: "userB", value: "nope" };
 
@@ -25,14 +32,14 @@ describe("RLS Rules", () => {
 	test("allows read of own record", async () => {
 		const handler = withRLS<RlsArgs, string>(async () => "ok");
 		await expect(
-			handler(ctx as any, { table: "prompts", operation: "read", doc: ownDoc }),
+			handler(ctx, { table: "prompts", operation: "read", doc: ownDoc }),
 		).resolves.toBe("ok");
 	});
 
 	test("rejects read of other record", async () => {
 		const handler = withRLS<RlsArgs, string>(async () => "ok");
 		await expect(
-			handler(ctx as any, {
+			handler(ctx, {
 				table: "prompts",
 				operation: "read",
 				doc: otherDoc,
@@ -51,7 +58,7 @@ describe("RLS Rules", () => {
 		>(async (_ctx, args) => args.docs);
 
 		await expect(
-			handler(ctx as any, {
+			handler(ctx, {
 				table: "prompts",
 				operation: "read",
 				doc: ownDoc,
@@ -63,7 +70,7 @@ describe("RLS Rules", () => {
 	test("allows insert for matching userId", async () => {
 		const handler = withRLS<RlsArgs, string>(async () => "inserted");
 		await expect(
-			handler(ctx as any, {
+			handler(ctx, {
 				table: "prompts",
 				operation: "insert",
 				doc: ownDoc,
@@ -74,7 +81,7 @@ describe("RLS Rules", () => {
 	test("rejects insert for different userId", async () => {
 		const handler = withRLS<RlsArgs, string>(async () => "inserted");
 		await expect(
-			handler(ctx as any, {
+			handler(ctx, {
 				table: "prompts",
 				operation: "insert",
 				doc: otherDoc,
@@ -85,7 +92,7 @@ describe("RLS Rules", () => {
 	test("rejects insert without userId field", async () => {
 		const handler = withRLS<RlsArgs, string>(async () => "inserted");
 		await expect(
-			handler(ctx as any, {
+			handler(ctx, {
 				table: "prompts",
 				operation: "insert",
 				doc: { value: "no user" },
@@ -96,7 +103,7 @@ describe("RLS Rules", () => {
 	test("allows update of own record", async () => {
 		const handler = withRLS<RlsArgs, string>(async () => "updated");
 		await expect(
-			handler(ctx as any, {
+			handler(ctx, {
 				table: "prompts",
 				operation: "modify",
 				doc: ownDoc,
@@ -107,7 +114,7 @@ describe("RLS Rules", () => {
 	test("rejects update of other record", async () => {
 		const handler = withRLS<RlsArgs, string>(async () => "updated");
 		await expect(
-			handler(ctx as any, {
+			handler(ctx, {
 				table: "prompts",
 				operation: "modify",
 				doc: otherDoc,
@@ -119,7 +126,7 @@ describe("RLS Rules", () => {
 		delete rlsRules.prompts?.delete;
 		const handler = withRLS<RlsArgs, string>(async () => "deleted");
 		await expect(
-			handler(ctx as any, {
+			handler(ctx, {
 				table: "prompts",
 				operation: "delete",
 				doc: ownDoc,
@@ -130,7 +137,7 @@ describe("RLS Rules", () => {
 	test("allows delete of own record", async () => {
 		const handler = withRLS<RlsArgs, string>(async () => "deleted");
 		await expect(
-			handler(ctx as any, {
+			handler(ctx, {
 				table: "prompts",
 				operation: "delete",
 				doc: ownDoc,
@@ -141,7 +148,7 @@ describe("RLS Rules", () => {
 	test("rejects delete of other record", async () => {
 		const handler = withRLS<RlsArgs, string>(async () => "deleted");
 		await expect(
-			handler(ctx as any, {
+			handler(ctx, {
 				table: "prompts",
 				operation: "delete",
 				doc: otherDoc,

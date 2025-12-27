@@ -5,24 +5,24 @@
  * business logic, rather than mocking the transport layer.
  */
 
-import { describe, test, expect, beforeEach, mock, spyOn } from "bun:test";
+import { describe, test, expect, beforeEach, vi } from "vitest";
 
 // Mock Convex client before importing - use explicit unknown return types
-const mockConvex = {
-	mutation: mock(() => Promise.resolve([] as unknown)),
-	query: mock(() => Promise.resolve(null as unknown)),
-};
+const mockConvex = vi.hoisted(() => ({
+	mutation: vi.fn(() => Promise.resolve([] as unknown)),
+	query: vi.fn(() => Promise.resolve(null as unknown)),
+}));
 
-mock.module("../../../src/lib/convex", () => ({ convex: mockConvex }));
+vi.mock("../../../src/lib/convex", () => ({ convex: mockConvex }));
 
-mock.module("../../../src/lib/config", () => ({
+vi.mock("../../../src/lib/config", () => ({
 	config: {
 		convexApiKey: "test_api_key",
 		convexUrl: "http://localhost:9999",
 	},
 }));
 
-const { createMcpServer } = await import("../../../src/lib/mcp");
+import { createMcpServer } from "../../../src/lib/mcp";
 
 /**
  * Result type from MCP tool handlers
@@ -57,6 +57,14 @@ interface RegisteredTool {
 }
 
 /**
+ * Internal MCP server type with access to registered tools.
+ * This type exposes the internal _registeredTools property used by the SDK.
+ */
+interface McpServerWithInternals {
+	_registeredTools?: Record<string, RegisteredTool>;
+}
+
+/**
  * Helper to find a registered tool handler by name and assert it exists
  */
 function getToolHandler(
@@ -64,9 +72,8 @@ function getToolHandler(
 	toolName: string,
 ): RegisteredTool {
 	// The MCP SDK stores registered tools in _registeredTools object
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const serverAny = server as any;
-	const tools = serverAny._registeredTools as Record<string, RegisteredTool>;
+	const serverWithInternals = server as unknown as McpServerWithInternals;
+	const tools = serverWithInternals._registeredTools;
 	const tool = tools?.[toolName];
 	if (!tool) {
 		throw new Error(`Tool ${toolName} not found`);
@@ -247,7 +254,7 @@ describe("MCP Tool Handlers - get_prompt", () => {
 	test("returns generic error on query failure and logs error", async () => {
 		mockConvex.query.mockRejectedValue(new Error("Database error"));
 		// Spy on console.error to verify logging
-		const consoleSpy = spyOn(console, "error").mockImplementation(() => {});
+		const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
 		const server = createMcpServer();
 		const tool = getToolHandler(server, "get_prompt");
@@ -326,7 +333,7 @@ describe("MCP Tool Handlers - delete_prompt", () => {
 
 	test("returns generic error on mutation failure and logs error", async () => {
 		mockConvex.mutation.mockRejectedValue(new Error("Database error"));
-		const consoleSpy = spyOn(console, "error").mockImplementation(() => {});
+		const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
 		const server = createMcpServer();
 		const tool = getToolHandler(server, "delete_prompt");

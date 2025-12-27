@@ -1,5 +1,9 @@
-import { describe, test, expect } from "bun:test";
-import { createMockCtx, getQueryBuilder } from "../../fixtures/mockConvexCtx";
+import { describe, test, expect } from "vitest";
+import {
+	asConvexCtx,
+	createMockCtx,
+	getQueryBuilder,
+} from "../../fixtures/mockConvexCtx";
 import { findOrCreateTag } from "../../../convex/model/tags";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -11,7 +15,7 @@ describe("findOrCreateTag", () => {
 		const existingTag = { _id: "tag_existing", userId, name: "debug" };
 		getQueryBuilder(ctx, "tags").unique.mockResolvedValue(existingTag);
 
-		const result = await findOrCreateTag(ctx as any, userId, "debug");
+		const result = await findOrCreateTag(asConvexCtx(ctx), userId, "debug");
 
 		expect(result).toBe("tag_existing" as Id<"tags">);
 		expect(ctx.db.insert).not.toHaveBeenCalled();
@@ -24,7 +28,7 @@ describe("findOrCreateTag", () => {
 		getQueryBuilder(ctx, "tags").unique.mockResolvedValue(null);
 		ctx.db.insert.mockResolvedValue("tag_new");
 
-		const result = await findOrCreateTag(ctx as any, userId, "new-tag");
+		const result = await findOrCreateTag(asConvexCtx(ctx), userId, "new-tag");
 
 		expect(result).toBe("tag_new" as Id<"tags">);
 		expect(ctx.db.insert).toHaveBeenCalledWith("tags", {
@@ -40,7 +44,7 @@ describe("findOrCreateTag", () => {
 		getQueryBuilder(ctx, "tags").unique.mockResolvedValue(null);
 		ctx.db.insert.mockResolvedValue("tag_new");
 
-		await findOrCreateTag(ctx as any, userId, "test-tag");
+		await findOrCreateTag(asConvexCtx(ctx), userId, "test-tag");
 
 		const builder = getQueryBuilder(ctx, "tags");
 		expect(builder.withIndex).toHaveBeenCalledWith(
@@ -65,7 +69,7 @@ describe("findOrCreateTag", () => {
 			{ _id: "tag_new", userId, name: "test", _creationTime: 2000 },
 		]);
 
-		const result = await findOrCreateTag(ctx as any, userId, "test");
+		const result = await findOrCreateTag(asConvexCtx(ctx), userId, "test");
 
 		// Should return the oldest tag
 		expect(result).toBe("tag_oldest" as Id<"tags">);
@@ -90,7 +94,7 @@ describe("findOrCreateTag", () => {
 			{ _id: "tag_new", userId, name: "test", _creationTime: 2000 },
 		]);
 
-		const result = await findOrCreateTag(ctx as any, userId, "test");
+		const result = await findOrCreateTag(asConvexCtx(ctx), userId, "test");
 
 		// Should return the oldest tag
 		expect(result).toBe("tag_oldest" as Id<"tags">);
@@ -115,7 +119,7 @@ describe("findOrCreateTag", () => {
 			{ _id: "tag_new", userId, name: "test", _creationTime: 1000 },
 		]);
 
-		const result = await findOrCreateTag(ctx as any, userId, "test");
+		const result = await findOrCreateTag(asConvexCtx(ctx), userId, "test");
 
 		// Should return the newly created tag
 		expect(result).toBe("tag_new" as Id<"tags">);

@@ -7,16 +7,19 @@
 
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
-import { describe, expect, test, beforeEach, mock } from "bun:test";
+import { describe, expect, test, beforeEach, vi } from "vitest";
 import type { McpDependencies } from "../../../src/api/mcp";
 
-// Mock JWT validator to return invalid by default
-mock.module("../../../src/lib/auth/jwtValidator", () => ({
-	validateJwt: mock(async () => ({ valid: false, error: "Invalid token" })),
+// Hoisted mocks
+const mockValidateJwt = vi.hoisted(() =>
+	vi.fn(async () => ({ valid: false, error: "Invalid token" })),
+);
+
+vi.mock("../../../src/lib/auth/jwtValidator", () => ({
+	validateJwt: mockValidateJwt,
 }));
 
-// Mock config
-mock.module("../../../src/lib/config", () => ({
+vi.mock("../../../src/lib/config", () => ({
 	config: {
 		convexApiKey: "test_api_key",
 		convexUrl: "http://localhost:9999",
@@ -30,7 +33,7 @@ mock.module("../../../src/lib/config", () => ({
 	},
 }));
 
-const { registerMcpRoutes } = await import("../../../src/api/mcp");
+import { registerMcpRoutes } from "../../../src/api/mcp";
 
 // Set required env vars
 process.env.COOKIE_SECRET ??= "test_cookie_secret";
@@ -42,7 +45,7 @@ process.env.BASE_URL = "http://localhost:5001";
 function createMockDeps(): McpDependencies {
 	return {
 		transport: {
-			handleRequest: mock(async () => {
+			handleRequest: vi.fn(async () => {
 				return new Response(
 					JSON.stringify({ jsonrpc: "2.0", result: "ok", id: 1 }),
 					{
@@ -53,7 +56,7 @@ function createMockDeps(): McpDependencies {
 			}),
 		},
 		mcpServer: {
-			connect: mock(async () => {}),
+			connect: vi.fn(async () => {}),
 		} as unknown as McpDependencies["mcpServer"],
 	};
 }

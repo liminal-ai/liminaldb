@@ -1,15 +1,16 @@
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
-import { describe, expect, test, beforeEach, mock } from "bun:test";
+import { describe, expect, test, beforeEach, vi } from "vitest";
 import type { McpDependencies } from "../../../src/api/mcp";
 
-// Mock JWT validator to always return valid
-mock.module("../../../src/lib/auth/jwtValidator", () => ({
-	validateJwt: mock(async () => ({ valid: true })),
+// Hoisted mocks for vi.mock
+const mockValidateJwt = vi.hoisted(() => vi.fn(async () => ({ valid: true })));
+
+vi.mock("../../../src/lib/auth/jwtValidator", () => ({
+	validateJwt: mockValidateJwt,
 }));
 
-// Mock config to avoid validation at import time
-mock.module("../../../src/lib/config", () => ({
+vi.mock("../../../src/lib/config", () => ({
 	config: {
 		convexApiKey: "test_api_key",
 		convexUrl: "http://localhost:9999",
@@ -23,14 +24,14 @@ mock.module("../../../src/lib/config", () => ({
 	},
 }));
 
-const { registerMcpRoutes } = await import("../../../src/api/mcp");
+import { registerMcpRoutes } from "../../../src/api/mcp";
 import { createTestJwt } from "../../fixtures";
 
 process.env.COOKIE_SECRET ??= "test_cookie_secret";
 process.env.CONVEX_URL ??= "http://localhost:9999";
 
 // Create mock transport directly - no mock.module needed
-const mockHandleRequest = mock(async () => {
+const mockHandleRequest = vi.fn(async () => {
 	return new Response(JSON.stringify({ jsonrpc: "2.0", result: "ok", id: 1 }), {
 		status: 200,
 		headers: { "content-type": "application/json" },
@@ -43,7 +44,7 @@ function createMockDeps(): McpDependencies {
 			handleRequest: mockHandleRequest,
 		},
 		mcpServer: {
-			connect: mock(async () => {}),
+			connect: vi.fn(async () => {}),
 		} as unknown as McpDependencies["mcpServer"],
 	};
 }

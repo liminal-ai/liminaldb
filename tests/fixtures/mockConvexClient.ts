@@ -1,8 +1,8 @@
-import { mock } from "bun:test";
+import { vi } from "vitest";
 
 export interface MockConvexClient {
-	mutation: ReturnType<typeof mock>;
-	query: ReturnType<typeof mock>;
+	mutation: ReturnType<typeof vi.fn>;
+	query: ReturnType<typeof vi.fn>;
 }
 
 /**
@@ -11,7 +11,7 @@ export interface MockConvexClient {
  */
 export function createMockConvexClient(): MockConvexClient {
 	return {
-		mutation: mock(() => Promise.resolve([])),
-		query: mock(() => Promise.resolve(null)),
+		mutation: vi.fn(() => Promise.resolve([])),
+		query: vi.fn(() => Promise.resolve(null)),
 	};
 }

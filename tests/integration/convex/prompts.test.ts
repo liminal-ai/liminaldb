@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll, afterEach } from "bun:test";
+import { describe, test, expect, beforeAll, afterEach } from "vitest";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../convex/_generated/api";
 
@@ -60,7 +60,7 @@ describe("Convex Prompts Integration", () => {
 		return slug;
 	}
 
-	describe("insertPrompts → getPromptBySlug round trip", () => {
+	describe("insertPrompts -> getPromptBySlug round trip", () => {
 		test("insert and retrieve prompt", async () => {
 			const testSlug = trackSlug(`test-prompt-${Date.now()}`);
 

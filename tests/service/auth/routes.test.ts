@@ -1,32 +1,49 @@
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
-import { describe, expect, test, beforeEach, mock } from "bun:test";
+import { describe, expect, test, beforeEach, vi } from "vitest";
 
-import { createMockWorkos, createTestJwt } from "../../fixtures";
+import { createTestJwt } from "../../fixtures";
 
-const workosMock = createMockWorkos({
-	authorizationUrl:
-		"https://workos.com/oauth?client_id=client_test&redirect_uri=http://localhost:5001/auth/callback",
-});
+// Hoisted mocks - must define inline, not use imported functions
+const workosMock = vi.hoisted(() => ({
+	userManagement: {
+		getAuthorizationUrl: vi.fn((params?: Record<string, string>) => {
+			const baseUrl =
+				"https://workos.com/oauth?client_id=client_test&redirect_uri=http://localhost:5001/auth/callback";
+			const state = params?.state ? `&state=${params.state}` : "";
+			return `${baseUrl}${state}`;
+		}),
+		authenticateWithCode: vi.fn(async () => ({
+			accessToken: "test_access_token",
+			refreshToken: "test_refresh_token",
+			user: { id: "user_123", email: "test@example.com" },
+		})),
+		revokeSession: vi.fn(async () => {}),
+	},
+}));
 
-mock.module("../../../src/lib/workos", () => ({
+vi.mock("../../../src/lib/workos", () => ({
 	workos: workosMock,
 	clientId: "client_test",
 	redirectUri: "http://localhost:5001/auth/callback",
 }));
 
-// Mock JWT validation to accept test tokens (which have no real signature)
-mock.module("../../../src/lib/auth/jwtValidator", () => ({
-	validateJwt: mock(async (token: string) => {
+// Hoisted mock for JWT validation
+const mockValidateJwt = vi.hoisted(() =>
+	vi.fn(async (token: string) => {
 		if (token && token.includes(".")) {
 			return { valid: true };
 		}
 		return { valid: false, error: "Invalid token" };
 	}),
-	clearJwksCache: mock(() => {}),
+);
+
+vi.mock("../../../src/lib/auth/jwtValidator", () => ({
+	validateJwt: mockValidateJwt,
+	clearJwksCache: vi.fn(() => {}),
 }));
 
-const { registerAuthRoutes } = await import("../../../src/routes/auth");
+import { registerAuthRoutes } from "../../../src/routes/auth";
 
 process.env.COOKIE_SECRET ??= "test_cookie_secret";
 process.env.WORKOS_API_KEY ??= "test_workos_api_key";
@@ -37,6 +54,7 @@ describe("Auth Routes", () => {
 	let app: ReturnType<typeof Fastify>;
 
 	beforeEach(async () => {
+		vi.clearAllMocks();
 		app = Fastify({ logger: false });
 		app.register(cookie, { secret: process.env.COOKIE_SECRET });
 		registerAuthRoutes(app);

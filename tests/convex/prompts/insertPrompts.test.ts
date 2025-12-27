@@ -1,5 +1,6 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import {
+	asConvexCtx,
 	createMockCtx,
 	getQueryBuilder,
 	mockSequentialReturns,
@@ -74,7 +75,7 @@ describe("insertPrompts", () => {
 				},
 			];
 
-			const result = await Prompts.insertMany(ctx as any, userId, input);
+			const result = await Prompts.insertMany(asConvexCtx(ctx), userId, input);
 
 			// Should create 2 tags
 			expect(ctx.db.insert).toHaveBeenCalledWith("tags", {
@@ -141,7 +142,7 @@ describe("insertPrompts", () => {
 				},
 			];
 
-			const result = await Prompts.insertMany(ctx as any, userId, input);
+			const result = await Prompts.insertMany(asConvexCtx(ctx), userId, input);
 
 			// Should NOT insert new tag (only prompt and promptTags)
 			const insertCalls = ctx.db.insert.mock.calls;
@@ -201,7 +202,7 @@ describe("insertPrompts", () => {
 				},
 			];
 
-			const result = await Prompts.insertMany(ctx as any, userId, input);
+			const result = await Prompts.insertMany(asConvexCtx(ctx), userId, input);
 
 			// Count tag inserts - "shared" should only be inserted once
 			const insertCalls = ctx.db.insert.mock.calls;
@@ -239,7 +240,7 @@ describe("insertPrompts", () => {
 			];
 
 			await expect(
-				Prompts.insertMany(ctx as any, userId, input),
+				Prompts.insertMany(asConvexCtx(ctx), userId, input),
 			).rejects.toThrow(/already exists/);
 
 			// Should not insert anything
@@ -274,7 +275,7 @@ describe("insertPrompts", () => {
 			];
 
 			await expect(
-				Prompts.insertMany(ctx as any, userId, input),
+				Prompts.insertMany(asConvexCtx(ctx), userId, input),
 			).rejects.toThrow(/already exists/);
 
 			// Atomic: nothing should be inserted
@@ -306,7 +307,7 @@ describe("insertPrompts", () => {
 			];
 
 			await expect(
-				Prompts.insertMany(ctx as any, userId, input),
+				Prompts.insertMany(asConvexCtx(ctx), userId, input),
 			).rejects.toThrow(/Duplicate slug in batch: "same-slug"/);
 
 			// Atomic: nothing should be inserted
@@ -332,7 +333,7 @@ describe("insertPrompts", () => {
 				},
 			];
 
-			const result = await Prompts.insertMany(ctx as any, userId, input);
+			const result = await Prompts.insertMany(asConvexCtx(ctx), userId, input);
 
 			// Should create prompt with empty tagNames
 			expect(ctx.db.insert).toHaveBeenCalledWith(
@@ -379,7 +380,7 @@ describe("insertPrompts", () => {
 				},
 			];
 
-			const result = await Prompts.insertMany(ctx as any, userId, input);
+			const result = await Prompts.insertMany(asConvexCtx(ctx), userId, input);
 
 			expect(ctx.db.insert).toHaveBeenCalledWith(
 				"prompts",

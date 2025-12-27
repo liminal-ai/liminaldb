@@ -15,7 +15,7 @@
  * - Environment variables set (MCP_RESOURCE_URL, WORKOS_AUTH_SERVER_URL, etc.)
  */
 
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { getTestAuth, hasTestAuth } from "../fixtures/auth";
 
 const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:5001";
