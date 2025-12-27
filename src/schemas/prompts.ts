@@ -1,0 +1,101 @@
+import { z } from "zod";
+
+// Slug: lowercase, numbers, dashes. No colons (reserved for namespacing).
+export const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+// Tag name: alphanumeric, dashes, underscores, forward slashes
+const TAG_NAME_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9\-_/]*$/;
+
+// Validation limits
+export const LIMITS = {
+	SLUG_MAX_LENGTH: 200,
+	NAME_MAX_LENGTH: 200,
+	DESCRIPTION_MAX_LENGTH: 2000,
+	CONTENT_MAX_LENGTH: 100000,
+	TAG_NAME_MAX_LENGTH: 100,
+	MAX_TAGS_PER_PROMPT: 50,
+} as const;
+
+/**
+ * Parameter schema for prompt templates
+ */
+export const ParameterSchema = z.object({
+	name: z.string().min(1, "Parameter name required"),
+	type: z.enum(["string", "string[]", "number", "boolean"]),
+	required: z.boolean(),
+	description: z.string().optional(),
+});
+
+/**
+ * Single prompt input schema
+ */
+export const PromptInputSchema = z.object({
+	slug: z
+		.string()
+		.min(1, "Slug required")
+		.max(LIMITS.SLUG_MAX_LENGTH, `Slug max ${LIMITS.SLUG_MAX_LENGTH} chars`)
+		.regex(
+			SLUG_REGEX,
+			"Slug must be lowercase letters, numbers, dashes only. Colons reserved for namespacing.",
+		),
+	name: z
+		.string()
+		.min(1, "Name required")
+		.max(LIMITS.NAME_MAX_LENGTH, `Name max ${LIMITS.NAME_MAX_LENGTH} chars`),
+	description: z
+		.string()
+		.min(1, "Description required")
+		.max(
+			LIMITS.DESCRIPTION_MAX_LENGTH,
+			`Description max ${LIMITS.DESCRIPTION_MAX_LENGTH} chars`,
+		),
+	content: z
+		.string()
+		.min(1, "Content required")
+		.max(
+			LIMITS.CONTENT_MAX_LENGTH,
+			`Content max ${LIMITS.CONTENT_MAX_LENGTH} chars`,
+		),
+	tags: z
+		.array(
+			z
+				.string()
+				.min(1, "Tag name required")
+				.max(
+					LIMITS.TAG_NAME_MAX_LENGTH,
+					`Tag max ${LIMITS.TAG_NAME_MAX_LENGTH} chars`,
+				)
+				.regex(
+					TAG_NAME_REGEX,
+					"Tag must be alphanumeric with dashes, underscores, or slashes",
+				),
+		)
+		.max(LIMITS.MAX_TAGS_PER_PROMPT, `Max ${LIMITS.MAX_TAGS_PER_PROMPT} tags`),
+	parameters: z.array(ParameterSchema).optional(),
+});
+
+/**
+ * Request body for creating prompts (batch)
+ */
+export const CreatePromptsRequestSchema = z.object({
+	prompts: z.array(PromptInputSchema).min(1, "At least one prompt required"),
+});
+
+/**
+ * Prompt DTO returned from queries
+ * Note: Maps storage `tagNames` to API `tags`
+ */
+export const PromptDTOSchema = z.object({
+	slug: z.string(),
+	name: z.string(),
+	description: z.string(),
+	content: z.string(),
+	tags: z.array(z.string()),
+	parameters: z.array(ParameterSchema).optional(),
+});
+
+// TypeScript types derived from Zod
+export type Parameter = z.infer<typeof ParameterSchema>;
+export type PromptInput = z.infer<typeof PromptInputSchema>;
+export type CreatePromptsRequest = z.infer<typeof CreatePromptsRequestSchema>;
+export type PromptDTO = z.infer<typeof PromptDTOSchema>;

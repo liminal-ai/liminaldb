@@ -1,7 +1,44 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import { convex } from "./convex";
 import { api } from "../../convex/_generated/api";
 import { config } from "./config";
+import { PromptInputSchema } from "../schemas/prompts";
+
+/**
+ * User info extracted from MCP authInfo.extra
+ */
+interface McpUserInfo {
+	userId?: string;
+	email?: string;
+	sessionId?: string;
+}
+
+/**
+ * Minimal type for MCP request handler extra parameter
+ * Includes the authInfo that we use for user extraction
+ */
+interface McpExtra {
+	authInfo?: {
+		extra?: unknown;
+	};
+}
+
+/**
+ * Extract user info from MCP extra.authInfo
+ * Returns the userId or undefined if not authenticated
+ */
+function extractMcpUserId(extra: McpExtra): string | undefined {
+	const userInfo = extra.authInfo?.extra as McpUserInfo | undefined;
+	return userInfo?.userId;
+}
+
+/**
+ * Extract full user info from MCP extra.authInfo
+ */
+function extractMcpUserInfo(extra: McpExtra): McpUserInfo | undefined {
+	return extra.authInfo?.extra as McpUserInfo | undefined;
+}
 
 // Health check widget HTML - renders in ChatGPT iframe via window.openai
 const healthWidgetHtml = `<!DOCTYPE html>
@@ -219,10 +256,7 @@ export function createMcpServer(): McpServer {
 		async (extra) => {
 			try {
 				// Get user ID from authInfo.extra (populated by buildAuthInfo in api/mcp.ts)
-				const userExtra = extra.authInfo?.extra as
-					| { userId?: string; email?: string; sessionId?: string }
-					| undefined;
-				const userId = userExtra?.userId;
+				const userId = extractMcpUserId(extra);
 
 				if (!userId) {
 					const errorData = {
@@ -298,11 +332,9 @@ export function createMcpServer(): McpServer {
 		// NOTE: When no inputSchema is defined, callback signature is (extra) not (args, extra)
 		async (extra) => {
 			// Get user info from authInfo.extra (populated by buildAuthInfo)
-			const userExtra = extra.authInfo?.extra as
-				| { userId?: string; email?: string; sessionId?: string }
-				| undefined;
+			const userInfo = extractMcpUserInfo(extra);
 
-			if (!userExtra?.userId) {
+			if (!userInfo?.userId) {
 				return {
 					content: [
 						{
@@ -318,7 +350,168 @@ export function createMcpServer(): McpServer {
 				content: [
 					{
 						type: "text" as const,
-						text: `Authenticated as ${userExtra.email ?? userExtra.userId ?? "unknown"}`,
+						text: `Authenticated as ${userInfo.email ?? userInfo.userId ?? "unknown"}`,
+					},
+				],
+			};
+		},
+	);
+
+	// Register save_prompts tool
+	server.registerTool(
+		"save_prompts",
+		{
+			title: "Save Prompts",
+			description: "Save one or more prompts to your library",
+			inputSchema: {
+				prompts: z.array(PromptInputSchema),
+			},
+		},
+		async (args, extra) => {
+			// Get user ID from authInfo.extra
+			const userId = extractMcpUserId(extra);
+
+			if (!userId) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Not authenticated",
+						},
+					],
+					isError: true,
+				};
+			}
+
+			try {
+				const ids = await convex.mutation(api.prompts.insertPrompts, {
+					apiKey: config.convexApiKey,
+					userId,
+					prompts: args.prompts,
+				});
+
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: JSON.stringify({ ids }),
+						},
+					],
+				};
+			} catch (error) {
+				// Sanitize error message to avoid leaking internal details
+				let errorMessage = "Failed to save prompts";
+				if (
+					error instanceof Error &&
+					error.message.includes("already exists")
+				) {
+					errorMessage = "Slug already exists";
+				}
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: errorMessage,
+						},
+					],
+					isError: true,
+				};
+			}
+		},
+	);
+
+	// Register get_prompt tool
+	server.registerTool(
+		"get_prompt",
+		{
+			title: "Get Prompt",
+			description: "Retrieve a prompt by its slug",
+			inputSchema: {
+				slug: z.string().describe("The prompt slug"),
+			},
+		},
+		async (args, extra) => {
+			// Get user ID from authInfo.extra
+			const userId = extractMcpUserId(extra);
+
+			if (!userId) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Not authenticated",
+						},
+					],
+					isError: true,
+				};
+			}
+
+			const prompt = await convex.query(api.prompts.getPromptBySlug, {
+				apiKey: config.convexApiKey,
+				userId,
+				slug: args.slug,
+			});
+
+			if (!prompt) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Prompt not found",
+						},
+					],
+					isError: true,
+				};
+			}
+
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: JSON.stringify(prompt),
+					},
+				],
+			};
+		},
+	);
+
+	// Register delete_prompt tool
+	server.registerTool(
+		"delete_prompt",
+		{
+			title: "Delete Prompt",
+			description: "Delete a prompt by its slug",
+			inputSchema: {
+				slug: z.string().describe("The prompt slug"),
+			},
+		},
+		async (args, extra) => {
+			// Get user ID from authInfo.extra
+			const userId = extractMcpUserId(extra);
+
+			if (!userId) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Not authenticated",
+						},
+					],
+					isError: true,
+				};
+			}
+
+			const deleted = await convex.mutation(api.prompts.deletePromptBySlug, {
+				apiKey: config.convexApiKey,
+				userId,
+				slug: args.slug,
+			});
+
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: JSON.stringify({ deleted }),
 					},
 				],
 			};

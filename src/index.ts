@@ -7,6 +7,7 @@ import { registerHealthRoutes } from "./api/health";
 import { registerAuthRoutes } from "./routes/auth";
 import { registerMcpRoutes } from "./api/mcp";
 import { registerWellKnownRoutes } from "./routes/well-known";
+import { registerPromptRoutes } from "./routes/prompts";
 import { config } from "./lib/config";
 
 const fastify = Fastify({
@@ -38,6 +39,7 @@ registerHealthRoutes(fastify);
 registerAuthRoutes(fastify);
 registerMcpRoutes(fastify);
 registerWellKnownRoutes(fastify);
+registerPromptRoutes(fastify);
 
 const start = async () => {
 	try {
