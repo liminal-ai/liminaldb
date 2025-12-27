@@ -3,24 +3,47 @@ import type { Id } from "../../convex/_generated/dataModel";
 
 type TableName = "users" | "tags" | "promptTags" | "prompts";
 
+/**
+ * Type alias for vitest mock functions.
+ * Using ReturnType<typeof vi.fn> ensures compatibility with vitest's mock API.
+ */
+type MockFn = ReturnType<typeof vi.fn>;
+
 interface MockQueryBuilder {
-	withIndex: ReturnType<typeof vi.fn>;
-	filter: ReturnType<typeof vi.fn>;
-	unique: ReturnType<typeof vi.fn>;
-	collect: ReturnType<typeof vi.fn>;
-	first: ReturnType<typeof vi.fn>;
+	withIndex: MockFn;
+	filter: MockFn;
+	unique: MockFn;
+	collect: MockFn;
+	first: MockFn;
 }
 
 export interface MockDb {
-	query: ReturnType<typeof vi.fn> & ((table: TableName) => MockQueryBuilder);
-	insert: ReturnType<typeof vi.fn>;
-	get: ReturnType<typeof vi.fn>;
-	patch: ReturnType<typeof vi.fn>;
-	delete: ReturnType<typeof vi.fn>;
+	query: MockFn & ((table: TableName) => MockQueryBuilder);
+	insert: MockFn;
+	get: MockFn;
+	patch: MockFn;
+	delete: MockFn;
 }
 
 export interface MockCtx {
 	db: MockDb;
+}
+
+/**
+ * Type assertion helper to cast MockCtx to the expected Convex context type.
+ * This function encapsulates the type assertion needed to use mock contexts
+ * with Convex model functions that expect MutationCtx or QueryCtx.
+ *
+ * @example
+ * // For mutation functions
+ * const result = await insertMany(asConvexCtx<MutationCtx>(ctx), userId, input);
+ *
+ * // For query functions
+ * const result = await getBySlug(asConvexCtx<QueryCtx>(ctx), userId, slug);
+ */
+export function asConvexCtx<T>(mock: MockCtx): T {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	return mock as any as T;
 }
 
 /**
@@ -73,10 +96,7 @@ export function getQueryBuilder(
  * Helper to configure sequential return values for a mock.
  * Useful for batch operations where the same query is called multiple times.
  */
-export function mockSequentialReturns<T>(
-	mockFn: ReturnType<typeof vi.fn>,
-	values: T[],
-): void {
+export function mockSequentialReturns<T>(mockFn: MockFn, values: T[]): void {
 	if (values.length === 0) {
 		throw new Error("mockSequentialReturns requires at least one value");
 	}

@@ -57,6 +57,14 @@ interface RegisteredTool {
 }
 
 /**
+ * Internal MCP server type with access to registered tools.
+ * This type exposes the internal _registeredTools property used by the SDK.
+ */
+interface McpServerWithInternals {
+	_registeredTools?: Record<string, RegisteredTool>;
+}
+
+/**
  * Helper to find a registered tool handler by name and assert it exists
  */
 function getToolHandler(
@@ -64,9 +72,8 @@ function getToolHandler(
 	toolName: string,
 ): RegisteredTool {
 	// The MCP SDK stores registered tools in _registeredTools object
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const serverAny = server as any;
-	const tools = serverAny._registeredTools as Record<string, RegisteredTool>;
+	const serverWithInternals = server as unknown as McpServerWithInternals;
+	const tools = serverWithInternals._registeredTools;
 	const tool = tools?.[toolName];
 	if (!tool) {
 		throw new Error(`Tool ${toolName} not found`);

@@ -1,6 +1,7 @@
+import type { FastifyReply } from "fastify";
 import { vi, type MockInstance } from "vitest";
 
-interface MockReplyType {
+export interface MockReplyType {
 	code: MockInstance<(status: number) => MockReplyType>;
 	status: MockInstance<(status: number) => MockReplyType>;
 	send: MockInstance<(body: unknown) => MockReplyType>;
@@ -70,4 +71,11 @@ export function createMockReply(): MockReplyType {
 	};
 
 	return reply;
+}
+
+/**
+ * Type assertion helper to cast MockReplyType to FastifyReply for middleware testing.
+ */
+export function asFastifyReply(mock: MockReplyType): FastifyReply {
+	return mock as unknown as FastifyReply;
 }

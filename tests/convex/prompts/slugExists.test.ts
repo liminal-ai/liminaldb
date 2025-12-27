@@ -1,5 +1,9 @@
 import { describe, test, expect } from "vitest";
-import { createMockCtx, getQueryBuilder } from "../../fixtures/mockConvexCtx";
+import {
+	asConvexCtx,
+	createMockCtx,
+	getQueryBuilder,
+} from "../../fixtures/mockConvexCtx";
 import { slugExists } from "../../../convex/model/prompts";
 
 describe("slugExists", () => {
@@ -13,7 +17,7 @@ describe("slugExists", () => {
 			slug: "existing-slug",
 		});
 
-		const result = await slugExists(ctx as any, userId, "existing-slug");
+		const result = await slugExists(asConvexCtx(ctx), userId, "existing-slug");
 
 		expect(result).toBe(true);
 	});
@@ -24,7 +28,7 @@ describe("slugExists", () => {
 
 		getQueryBuilder(ctx, "prompts").unique.mockResolvedValue(null);
 
-		const result = await slugExists(ctx as any, userId, "non-existent");
+		const result = await slugExists(asConvexCtx(ctx), userId, "non-existent");
 
 		expect(result).toBe(false);
 	});
@@ -35,7 +39,7 @@ describe("slugExists", () => {
 
 		getQueryBuilder(ctx, "prompts").unique.mockResolvedValue(null);
 
-		await slugExists(ctx as any, userId, "test-slug");
+		await slugExists(asConvexCtx(ctx), userId, "test-slug");
 
 		const builder = getQueryBuilder(ctx, "prompts");
 		expect(builder.withIndex).toHaveBeenCalledWith(

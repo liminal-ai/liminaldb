@@ -19,7 +19,8 @@ Migrate from Bun's built-in test runner to Vitest with projects-based configurat
 **Test Count:** 199 tests across 38 files
 
 **Directory Structure:**
-```
+
+```text
 tests/
 ├── fixtures/      # Shared test utilities (4 files)
 ├── service/       # Fastify handlers, MCP tools (13 files)
@@ -120,6 +121,7 @@ Create config per Target State section above.
 Update all 4 files in `tests/fixtures/`:
 
 **Import changes:**
+
 ```typescript
 // Before
 import { mock, type Mock } from 'bun:test'
@@ -129,6 +131,7 @@ import { vi, type MockInstance } from 'vitest'
 ```
 
 **Function changes:**
+
 ```typescript
 // Before (Bun)
 const mockFn = mock(() => Promise.resolve([]))
@@ -138,6 +141,7 @@ const mockFn = vi.fn(() => Promise.resolve([]))
 ```
 
 **Type changes:**
+
 ```typescript
 // Before (Bun)
 interface MockReplyType {
@@ -155,6 +159,7 @@ interface MockReplyType {
 All 34 test files need changes.
 
 **Import changes:**
+
 ```typescript
 // Before
 import { describe, test, expect, mock, beforeAll, beforeEach, afterEach, spyOn } from 'bun:test'
@@ -164,6 +169,7 @@ import { describe, test, expect, vi, beforeAll, beforeEach, afterEach } from 'vi
 ```
 
 **mock() → vi.fn():**
+
 ```typescript
 // Before (Bun)
 const mockFn = mock(() => value)
@@ -173,6 +179,7 @@ const mockFn = vi.fn(() => value)
 ```
 
 **spyOn() → vi.spyOn():**
+
 ```typescript
 // Before (Bun)
 const consoleSpy = spyOn(console, 'error').mockImplementation(() => {})
@@ -182,6 +189,7 @@ const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 ```
 
 **mock.module() → vi.mock() with vi.hoisted():**
+
 ```typescript
 // Before (Bun) - dynamic import required
 const mockConvex = createMockConvexClient();
@@ -285,6 +293,6 @@ CI runs `bun run test:service`. Scripts handle the change - no workflow edits ne
 
 **Frontend testing:** When UI grows beyond static HTML, add `ui` project with happy-dom environment.
 
-**Browser E2E:** OAuth providers block automated browsers. If needed, use agent-assisted testing (Claude chrome extension) for semi-supervised flows. Not Playwright.
+**Browser E2E:** OAuth providers block automated browsers. If needed, use agent-assisted testing (Claude Chrome extension) for semi-supervised flows. Not Playwright.
 
 **Widget HTML testing:** MCP widget responses can be tested via integration tests - fetch + HTML structure assertions. No browser needed.

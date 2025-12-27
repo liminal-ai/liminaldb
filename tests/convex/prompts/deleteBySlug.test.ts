@@ -1,5 +1,9 @@
 import { describe, test, expect } from "vitest";
-import { createMockCtx, getQueryBuilder } from "../../fixtures/mockConvexCtx";
+import {
+	asConvexCtx,
+	createMockCtx,
+	getQueryBuilder,
+} from "../../fixtures/mockConvexCtx";
 import * as Prompts from "../../../convex/model/prompts";
 
 describe("deleteBySlug", () => {
@@ -23,7 +27,7 @@ describe("deleteBySlug", () => {
 			getQueryBuilder(ctx, "promptTags").collect.mockResolvedValue([]);
 
 			const result = await Prompts.deleteBySlug(
-				ctx as any,
+				asConvexCtx(ctx),
 				userId,
 				"ai-meta-check",
 			);
@@ -42,7 +46,7 @@ describe("deleteBySlug", () => {
 			getQueryBuilder(ctx, "prompts").unique.mockResolvedValue(null);
 
 			const result = await Prompts.deleteBySlug(
-				ctx as any,
+				asConvexCtx(ctx),
 				userId,
 				"does-not-exist",
 			);
@@ -81,7 +85,7 @@ describe("deleteBySlug", () => {
 				tagId: "tag_1",
 			});
 
-			await Prompts.deleteBySlug(ctx as any, userId, "ai-meta-check");
+			await Prompts.deleteBySlug(asConvexCtx(ctx), userId, "ai-meta-check");
 
 			// Should delete junction records first
 			expect(ctx.db.delete).toHaveBeenCalledWith("pt_1");
@@ -115,7 +119,7 @@ describe("deleteBySlug", () => {
 			// Tag is NOT referenced by other prompts (orphan check returns null)
 			getQueryBuilder(ctx, "promptTags").first.mockResolvedValue(null);
 
-			await Prompts.deleteBySlug(ctx as any, userId, "orphan-test");
+			await Prompts.deleteBySlug(asConvexCtx(ctx), userId, "orphan-test");
 
 			// Should delete: junction record, prompt, and orphaned tag
 			expect(ctx.db.delete).toHaveBeenCalledWith("pt_1");
@@ -132,7 +136,7 @@ describe("deleteBySlug", () => {
 
 			getQueryBuilder(ctx, "prompts").unique.mockResolvedValue(null);
 
-			await Prompts.deleteBySlug(ctx as any, userId, "some-slug");
+			await Prompts.deleteBySlug(asConvexCtx(ctx), userId, "some-slug");
 
 			const builder = getQueryBuilder(ctx, "prompts");
 			expect(builder.withIndex).toHaveBeenCalledWith(
@@ -157,7 +161,7 @@ describe("deleteBySlug", () => {
 
 			getQueryBuilder(ctx, "promptTags").collect.mockResolvedValue([]);
 
-			await Prompts.deleteBySlug(ctx as any, userId, "ai-meta-check");
+			await Prompts.deleteBySlug(asConvexCtx(ctx), userId, "ai-meta-check");
 
 			const builder = getQueryBuilder(ctx, "promptTags");
 			expect(builder.withIndex).toHaveBeenCalledWith(
