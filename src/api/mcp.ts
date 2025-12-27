@@ -148,6 +148,11 @@ export function registerMcpRoutes(
 					? buildAuthInfo(request.accessToken, request.user)
 					: undefined;
 
+			// Add logger to extra so MCP tools can use structured logging
+			if (authInfo) {
+				authInfo.extra = { ...authInfo.extra, logger };
+			}
+
 			// Handle request and get web standard Response
 			// Pass authInfo so tools can access it via extra.authInfo
 			const webResponse = await transport.handleRequest(webRequest, {

@@ -6,12 +6,20 @@ import { config } from "./config";
 import { PromptInputSchema, SlugSchema } from "../schemas/prompts";
 
 /**
+ * Logger interface matching Fastify's structured logger
+ */
+interface McpLogger {
+	error: (obj: unknown, msg?: string) => void;
+}
+
+/**
  * User info extracted from MCP authInfo.extra
  */
 interface McpUserInfo {
 	userId?: string;
 	email?: string;
 	sessionId?: string;
+	logger?: McpLogger;
 }
 
 /**
@@ -38,6 +46,15 @@ function extractMcpUserId(extra: McpExtra): string | undefined {
  */
 function extractMcpUserInfo(extra: McpExtra): McpUserInfo | undefined {
 	return extra.authInfo?.extra as McpUserInfo | undefined;
+}
+
+/**
+ * Extract logger from MCP extra.authInfo
+ * Falls back to console if no logger available
+ */
+function extractMcpLogger(extra: McpExtra): McpLogger {
+	const userInfo = extra.authInfo?.extra as McpUserInfo | undefined;
+	return userInfo?.logger ?? { error: (obj, msg) => console.error(msg, obj) };
 }
 
 // Health check widget HTML - renders in ChatGPT iframe via window.openai
@@ -399,7 +416,8 @@ export function createMcpServer(): McpServer {
 					],
 				};
 			} catch (error) {
-				console.error("[MCP] save_prompts error:", error);
+				const logger = extractMcpLogger(extra);
+				logger.error({ err: error, userId }, "[MCP] save_prompts error");
 				// Sanitize error message to avoid leaking internal details
 				let errorMessage = "Failed to save prompts";
 				if (
@@ -475,7 +493,11 @@ export function createMcpServer(): McpServer {
 					],
 				};
 			} catch (error) {
-				console.error("[MCP] get_prompt error:", error);
+				const logger = extractMcpLogger(extra);
+				logger.error(
+					{ err: error, slug: args.slug, userId },
+					"[MCP] get_prompt error",
+				);
 				return {
 					content: [
 						{
@@ -531,7 +553,11 @@ export function createMcpServer(): McpServer {
 					],
 				};
 			} catch (error) {
-				console.error("[MCP] delete_prompt error:", error);
+				const logger = extractMcpLogger(extra);
+				logger.error(
+					{ err: error, slug: args.slug, userId },
+					"[MCP] delete_prompt error",
+				);
 				return {
 					content: [
 						{

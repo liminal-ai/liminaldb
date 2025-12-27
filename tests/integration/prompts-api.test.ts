@@ -151,7 +151,7 @@ describe("Prompts API Integration", () => {
 			const slug = trackSlug(`delete-test-${Date.now()}`);
 
 			// Create
-			await fetch(`${baseUrl}/api/prompts`, {
+			const createRes = await fetch(`${baseUrl}/api/prompts`, {
 				method: "POST",
 				headers: {
 					Authorization: `Bearer ${authToken}`,
@@ -169,6 +169,7 @@ describe("Prompts API Integration", () => {
 					],
 				}),
 			});
+			expect(createRes.status).toBe(201);
 
 			// Delete
 			const deleteRes = await fetch(`${baseUrl}/api/prompts/${slug}`, {
@@ -230,7 +231,7 @@ describe("Prompts API Integration", () => {
 			const slug = trackSlug(`dupe-test-${Date.now()}`);
 
 			// First create
-			await fetch(`${baseUrl}/api/prompts`, {
+			const firstRes = await fetch(`${baseUrl}/api/prompts`, {
 				method: "POST",
 				headers: {
 					Authorization: `Bearer ${authToken}`,
@@ -248,6 +249,7 @@ describe("Prompts API Integration", () => {
 					],
 				}),
 			});
+			expect(firstRes.status).toBe(201);
 
 			// Second create with same slug
 			const res = await fetch(`${baseUrl}/api/prompts`, {
