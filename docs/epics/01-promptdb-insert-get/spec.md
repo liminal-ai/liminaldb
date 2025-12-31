@@ -1,10 +1,8 @@
-# Epic 01: PromptDB Insert + Get (Thin Slice v1)
+# Epic 01: LiminalDB Insert + Get (Thin Slice v1)
 
 ## Overview
 
-Walking skeleton for PromptDB - save and retrieve prompts across all tiers. This is horizontal-first (by tier) to establish the pipe, then vertical slices for features after.
-
-**Target:** 8 days to MVP submission
+Walking skeleton for LiminalDB - save and retrieve prompts across all tiers. This is horizontal-first (by tier) to establish the pipe, then vertical slices for features after.
 
 ---
 
@@ -15,7 +13,7 @@ Walking skeleton for PromptDB - save and retrieve prompts across all tiers. This
 | 1 | Schema + Convex | `insertPrompts`, `getPromptBySlug` mutations/queries |
 | 2 | API | `POST /prompts`, `GET /prompts/:slug` endpoints |
 | 3 | Web | Insert form, Get form |
-| 4 | MCP + Widget | `save_prompt`, `get_prompt` tools |
+| 4 | MCP | `save_prompt`, `get_prompt` tools (widget support deferred) |
 | 5 | Search | Typeahead on slug across Web + MCP |
 
 Within each phase: **Skeleton → TDD-Red → TDD-Green**

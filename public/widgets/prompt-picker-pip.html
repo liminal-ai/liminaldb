@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prompt Picker</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: rgba(20, 20, 22, 0.85);
+      --text: #e4e4e7;
+      --text-muted: #71717a;
+      --accent: #10b981;
+      --border: rgba(255,255,255,0.1);
+      --hover: rgba(255,255,255,0.06);
+      --selected: rgba(16, 185, 129, 0.18);
+    }
+
+    html, body {
+      background: transparent !important;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text);
+    }
+
+    .pip {
+      display: inline-block;
+      background: var(--bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      padding: 4px 5px;
+    }
+
+    .mode {
+      padding: 3px 7px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 9px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: all 0.1s;
+    }
+
+    .mode.on {
+      color: var(--accent);
+      background: var(--selected);
+    }
+
+    .mode:not(.on):hover {
+      color: var(--text);
+      background: var(--hover);
+    }
+
+    .sep {
+      width: 1px;
+      height: 14px;
+      background: var(--border);
+      margin: 0 6px;
+    }
+
+    .input {
+      width: 130px;
+      padding: 3px 6px;
+      border: none;
+      background: rgba(255,255,255,0.05);
+      border-radius: 3px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 11px;
+      outline: none;
+    }
+
+    .input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .input:focus {
+      background: rgba(255,255,255,0.08);
+    }
+
+    .results {
+      border-top: 1px solid var(--border);
+    }
+
+    .results:empty {
+      display: none;
+    }
+
+    .item {
+      padding: 5px 8px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.1s;
+    }
+
+    .item:hover { background: var(--hover); }
+    .item.sel { background: var(--selected); }
+    .item.sel .slug { color: var(--accent); }
+
+    .slug {
+      font-weight: 500;
+    }
+
+    .tag {
+      font-size: 9px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="pip">
+    <div class="row">
+      <button class="mode on" data-m="run">Run</button>
+      <button class="mode" data-m="edit">Edit</button>
+      <div class="sep"></div>
+      <input class="input" placeholder="slug..." autofocus>
+    </div>
+    <div class="results" id="r"></div>
+  </div>
+
+  <script>
+    const P = [
+      { s: 'code-review', t: 'code' },
+      { s: 'code-explain', t: 'code' },
+      { s: 'meeting-summary', t: 'mtg' },
+      { s: 'email-draft', t: 'email' },
+      { s: 'bug-report', t: 'code' },
+    ];
+    let m = 'run', sel = -1, f = [];
+    const r = document.getElementById('r');
+    const inp = document.querySelector('.input');
+
+    document.querySelectorAll('.mode').forEach(b => {
+      b.onclick = () => {
+        m = b.dataset.m;
+        document.querySelectorAll('.mode').forEach(x => x.classList.toggle('on', x === b));
+        inp.focus();
+      };
+    });
+
+    inp.oninput = () => {
+      const q = inp.value.toLowerCase();
+      if (!q) { r.innerHTML = ''; f = []; sel = -1; return; }
+      f = P.filter(p => p.s.includes(q));
+      sel = f.length ? 0 : -1;
+      draw();
+    };
+
+    inp.onkeydown = e => {
+      if (e.key === 'ArrowDown' && sel < f.length - 1) { sel++; draw(); e.preventDefault(); }
+      else if (e.key === 'ArrowUp' && sel > 0) { sel--; draw(); e.preventDefault(); }
+      else if (e.key === 'Enter' && sel >= 0) { pick(f[sel]); e.preventDefault(); }
+      else if (e.key === 'Escape') { inp.value = ''; r.innerHTML = ''; f = []; sel = -1; }
+    };
+
+    function draw() {
+      if (!f.length) { r.innerHTML = ''; return; }
+      r.innerHTML = f.map((p, i) =>
+        `<div class="item${i === sel ? ' sel' : ''}" data-i="${i}"><span class="slug">${p.s}</span><span class="tag">${p.t}</span></div>`
+      ).join('');
+      r.querySelectorAll('.item').forEach(x => x.onclick = () => pick(f[+x.dataset.i]));
+    }
+
+    function pick(p) {
+      console.log(m.toUpperCase() + ':', p.s);
+    }
+  </script>
+</body>
+</html>

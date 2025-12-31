@@ -3,16 +3,17 @@ stepsCompleted: [1, 2, 3]
 inputDocuments:
   - brainstorming-session-2025-12-17-chatgpt-apps-and-more.md
   - openai-chatgpt-app-store-research.md
+  - ROADMAP.md
 workflowType: 'product-brief'
 lastStep: 3
-project_name: 'promptdb'
+project_name: 'liminaldb'
 user_name: 'Leemoore'
-date: '2025-12-20'
+date: '2025-12-31'
 ---
 
-# Product Brief: PromptDB
+# Product Brief: LiminalDB
 
-**Date:** 2025-12-20 | **Author:** Leemoore | **Version:** 0.1 (Lean)
+**Date:** 2025-12-31 | **Author:** Leemoore | **Version:** 0.2 (Pivot Update)
 
 ---
 
@@ -20,52 +21,54 @@ date: '2025-12-20'
 
 This is a **lean product brief** - intentionally minimal and functional. It evolves with each feature delivery.
 
-**What's here now:** Core vision, target user, initial scope.
+**What's here now:** Core vision, target user, feature-based roadmap.
 
 **What's deferred:** Marketing positioning, pricing strategy, competitive research, revenue modeling. These layer in as capability grows and merits deeper product discussion.
 
-**Iteration rhythm:** Revisit and refine after each milestone. The brief stays fluid and responsive to building and learning.
+**Iteration rhythm:** Revisit and refine after each feature milestone. The brief stays fluid and responsive to building and learning.
+
+**Related documents:** See `ROADMAP.md` for the full strategic context and feature breakdown.
 
 ---
 
 ## Executive Summary
 
-**PromptDB** (working name) captures emerging AI collaboration wisdom and provides frictionless access across every chat surface.
+**LiminalDB** captures emerging AI collaboration wisdom and provides frictionless access across every chat surface.
 
 ```
 User develops prompt patterns → Wisdom scatters across surfaces → Lost
                                         ↓
-                              PromptDB captures in flow → Available everywhere
+                              LiminalDB captures in flow → Available everywhere
 ```
+
+**Brand context:** LiminalDB is the flagship product of **LiminalBuilder** - an indie studio building tools in the threshold space between how we work now and how we'll work with AI.
 
 **Differentiators:** Chat-native | Cross-surface MCP | Model-assisted | Inference arbitrage
 
-**Milestones:** M0 Stack Standup | M1 Dogfood (~Dec 27-28) | M2 App Store (Jan 2)
+**Current focus:** Feature 1 (Prompt CRUD) - backend complete, web frontend next
 
 ---
 
-## ChatGPT App Store Context
+## Distribution Strategy
 
-OpenAI opened app submissions Dec 2025. First approved apps roll out in the new year.
+### Primary: Web App + MCP
 
-**What it means to be in the store:**
-- Apps built on **MCP (Model Context Protocol)** - same protocol works in Claude, Cursor, VS Code
-- Apps extend ChatGPT via tools (actions) and optional widgets (UI in iframes)
-- Users discover via @ mention, tools menu, or proactive suggestions
-- **ChatGPT becomes discovery channel, not lock-in** - MCP portability means build once, run everywhere
+LiminalDB's primary distribution is via:
+- **Web application** - owns auth, owns billing, full management UI
+- **MCP (Model Context Protocol)** - prompts available in Claude Code, Cursor, VS Code, and any MCP-enabled surface
 
-**Key requirements:**
-1. Clear purpose beyond base ChatGPT
-2. Reliable, low latency, complete (no demos)
-3. Privacy policy required
-4. Tools must be atomic with accurate annotations (read vs write)
+Users don't wait for platform approvals. Configure the MCP, point it at your account, and your prompts are available.
 
-**Monetization (current):**
-- No digital goods yet (subscriptions not allowed in-app)
-- Monetize via external web UI + Stripe
-- Future: OpenAI exploring digital goods
+### Future: ChatGPT App Store (Deprioritized)
 
-**Strategic value:** Early entry in new ecosystem. Inference arbitrage economics.
+OpenAI opened app submissions Dec 2025, but with significant constraints:
+
+**The monetization problem:**
+- Apps cannot charge for digital goods (subscriptions not allowed in-app)
+- Store is filled with subscription services (Canva, Zapier, Notion) that appear grandfathered
+- No timeline for when this will change
+
+**Current decision:** ChatGPT widgets are deprioritized (Feature 3). The core product ships via web + MCP first. If OpenAI's policies improve or the Skybridge/MCP UI standard gains traction, we'll revisit.
 
 ---
 
@@ -91,19 +94,19 @@ Prompting mastery is foundational yet impossible to compound:
 ### The Solution
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  Chat Surface (ChatGPT, Claude, Cursor, VS Code)        │
-│                                                         │
-│  User: "save this as my code review prompt"             │
-│           ↓                                             │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │  PromptDB MCP                                    │   │
-│  │  - Save / Retrieve / List / Compose              │   │
-│  │  - Tags, not hierarchies                         │   │
-│  │  - Model-assisted refinement                     │   │
-│  │  - Harvest wisdom from sessions                  │   │
-│  └─────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  Chat Surface (ChatGPT, Claude, Cursor, VS Code)            │
+│                                                             │
+│  User: "save this as my code review prompt"                 │
+│           ↓                                                 │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  LiminalDB MCP                                      │   │
+│  │  - Save / Retrieve / List / Compose                 │   │
+│  │  - Tags, not hierarchies                            │   │
+│  │  - Model-assisted refinement                        │   │
+│  │  - Harvest wisdom from sessions                     │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ### Key Differentiators
@@ -171,28 +174,63 @@ Uses AI daily across surfaces → Cares about prompt quality → Hates friction
 
 ---
 
-## Scope
+## Monetization
 
-*To be defined in Feature.md for each milestone.*
+**Direct subscription via web:**
 
-### Development Approach: Production Hello World
+| Tier | Price | Access |
+|------|-------|--------|
+| Single utility | $5/month | LiminalDB only |
+| Full suite | $10/month | LiminalDB + LiminalTools + future products |
+| Add-ons | Variable | Premium features per utility |
 
-First feature is always infrastructure standup with zero product function:
-- Full stack wired end-to-end (frontend, backend, MCP, API)
-- Modern stable versions, resolve any version friction
-- Automated deployment to staging
-- Testing pyramid with 1+ test per layer
-- Health checks, logging, error handling scaffolds
+**Key principle:** Users bring their own inference. We sell the organization layer, not the compute.
 
-De-risks infrastructure before feature work.
+---
 
-### Milestones
+## Feature Roadmap
 
-**M0 (Stack Standup):** Production hello world - all layers connected, deployed, tested, zero product logic
+*See `ROADMAP.md` for full context and strategic rationale.*
 
-**M1 (Dogfood):** First real function - basic CRUD, harvest, works in Claude Code + VS Code
+### Feature 1: Prompt CRUD (Current)
+*Get the thin slice working end-to-end.*
 
-**M2 (App Store):** ChatGPT widget, web UI, Stripe billing, submission package
+| Layer | Status |
+|-------|--------|
+| Convex (schema, model, triggers) | Done |
+| Fastify REST API | Done |
+| MCP tools (save, get, delete) | Done |
+| Vitest framework | Done |
+| Web frontend | Next |
+
+### Feature 2: Skills
+*Skills are big prompts with attachments.*
+
+A skill has a slug, main content, tags - plus attachments (markdown files, CSVs, Python scripts, reference documents). Introduces Redis for text handling and caching.
+
+### Feature 3: ChatGPT Widgets (Optional)
+*Depends on timing and OpenAI policy changes.*
+
+If ChatGPT's app store situation improves:
+- PiP widget (low-profile prompt picker)
+- Inline cards (prompt display)
+- Fullscreen viewer (batch prompt review)
+
+### Feature 4: Search
+*Search as a pillar feature, not an afterthought.*
+
+- Full-text search across prompts and skills
+- Tag-based filtering
+- Typeahead suggestions
+- Recent/frequent access patterns
+
+### Features 5-6: Refinements & Ergonomics
+*Iterative, goal-directed, not rigidly scoped.*
+
+- Interface polish
+- AI utilities (parse documents, build skills, generate metadata)
+- Template refinement
+- Integration depth
 
 ---
 
@@ -200,7 +238,7 @@ De-risks infrastructure before feature work.
 
 *Parking lot for decisions to revisit:*
 
-1. Final product name (PromptDB is working name)
+1. ~~Final product name~~ → Resolved: LiminalDB
 2. Composition syntax/patterns (how prompts combine)
 3. Version history (cut from v1, revisit later)
 

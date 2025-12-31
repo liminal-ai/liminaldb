@@ -1,8 +1,8 @@
-# PromptDB Authentication Architecture
+# LiminalDB Authentication Architecture
 
 ## Overview
 
-This document defines the authentication and authorization architecture for PromptDB. It covers all entry points, token flows, validation strategies, and testing approaches. Authentication is established correctly from the start rather than retrofitted later.
+This document defines the authentication and authorization architecture for LiminalDB. It covers all entry points, token flows, validation strategies, and testing approaches. Authentication is established correctly from the start rather than retrofitted later.
 
 ---
 
@@ -39,7 +39,7 @@ WorkOS was selected for the following reasons:
 
 **B2B SaaS Focus**: WorkOS is built specifically for SaaS companies selling to enterprises. It handles the enterprise features (SSO, SCIM, audit logs) that enterprise customers require without the complexity of full IAM platforms.
 
-**ChatGPT/MCP Integration Path**: PromptDB's primary distribution channel is MCP clients (ChatGPT, Claude). The ChatGPT app store requires us to act as an OAuth provider. WorkOS's architecture supports this - we can wrap WorkOS authentication in our OAuth provider endpoints and return the same JWT format to ChatGPT.
+**MCP Integration Path**: LiminalDB is designed to work across multiple MCP surfaces (Claude Code, ChatGPT, Claude.ai, and other MCP-compatible clients). The ChatGPT app store is one of several potential distribution channels. WorkOS's architecture supports all of these - we can wrap WorkOS authentication in our OAuth provider endpoints and return the same JWT format to any MCP client.
 
 **Pricing Alignment**: 1 million free monthly active users covers M0 through early growth. Enterprise SSO is priced per-connection ($125/month), which aligns with B2B revenue model - we only pay when we have paying enterprise customers.
 
@@ -94,7 +94,7 @@ OAuth and multi-surface authentication are inherently complex. The goal is a wel
 | FR3 | API clients authenticate via Bearer token | Must |
 | FR4 | Integration tests use same auth as production | Must |
 | FR5 | E2E tests cover both cookie and Bearer paths | Must |
-| FR6 | ChatGPT app store OAuth provider flow | Must |
+| FR6 | MCP client OAuth provider flow (RFC 9728 discovery) | Must |
 | FR7 | Convex receives and validates user identity | Must |
 | FR8 | Logout clears session appropriately | Must |
 
@@ -295,7 +295,7 @@ Signature: RS256 signed, verifiable via JWKS
 
 MCP clients handle OAuth directly with WorkOS. We provide discovery metadata and validate tokens:
 
-1. User attempts to use PromptDB in MCP client
+1. User attempts to use LiminalDB in MCP client
 2. MCP client calls our `/mcp` endpoint, receives 401 with `WWW-Authenticate` header
 3. MCP client fetches `/.well-known/oauth-protected-resource`
 4. Metadata points to WorkOS as `authorization_servers`
@@ -363,7 +363,7 @@ Convex does not validate JWTs. Instead, it validates an API key that proves the 
 **API Key Setup:**
 - Generate a cryptographically secure random string (32+ bytes, hex encoded)
 - Store in environment variables on both Fastify and Convex
-- Optional prefix for identification: `pdb_live_...` (production), `pdb_dev_...` (development)
+- Optional prefix for identification: `ldb_live_...` (production), `ldb_dev_...` (development)
 
 **Validation:**
 - Convex function wrapper checks `apiKey` argument against environment variable
@@ -552,9 +552,9 @@ To support MCP OAuth, enable in WorkOS Dashboard → Connect → Configuration:
 
 CIMD is lower risk (less state, domain-backed trust). DCR is needed for local tools.
 
-### ChatGPT Widgets
+### ChatGPT Widgets (Future Consideration)
 
-ChatGPT supports widgets via MCP resources. When a tool returns `structuredContent` and references a widget via `_meta["openai/outputTemplate"]`:
+ChatGPT supports widgets via MCP resources. This is a future consideration for enhanced UI when LiminalDB is accessed via ChatGPT. When a tool returns `structuredContent` and references a widget via `_meta["openai/outputTemplate"]`:
 
 1. ChatGPT fetches the widget resource (`resources/read`)
 2. Widget HTML is rendered in sandboxed iframe
@@ -562,6 +562,8 @@ ChatGPT supports widgets via MCP resources. When a tool returns `structuredConte
 4. Widget must listen for `openai:set_globals` event (data arrives async)
 
 Required CSP configuration via `openai/widgetCSP` metadata.
+
+Note: Widget support is deferred. The current focus is on MCP tool functionality that works across all MCP clients.
 
 ---
 
@@ -604,7 +606,7 @@ These are potential enhancements to consider. None are commitments - they repres
 - Separate Convex functions marked as `internal` that don't require userId
 - WorkOS M2M Applications for scheduled tasks originating outside Fastify
 
-**Open questions**: Whether these scenarios arise in PromptDB. Most operations are inherently user-scoped (prompts belong to users). Admin operations may be the exception.
+**Open questions**: Whether these scenarios arise in LiminalDB. Most operations are inherently user-scoped (prompts belong to users). Admin operations may be the exception.
 
 ---
 
