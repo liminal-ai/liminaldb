@@ -3,15 +3,17 @@ stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 workflowType: 'architecture'
 lastStep: 8
 status: 'draft'
-project_name: 'PromptDB'
+project_name: 'LiminalDB'
 user_name: 'Leemoore'
-date: '2025-12-21'
+date: '2025-12-31'
 shardable: true
 ---
 
-# PromptDB Architecture Document
+# LiminalDB Architecture Document
 
 _This document serves as the single source of truth for all architectural decisions. It is organized into shardable sections that can be extracted as context for AI coding agents._
+
+**Note:** For current priorities and feature roadmap, see `ROADMAP.md`. This architecture document describes the technical implementation; ROADMAP.md describes what we're building and why.
 
 ---
 
@@ -19,12 +21,12 @@ _This document serves as the single source of truth for all architectural decisi
 
 <!-- SHARD: product-context -->
 
-**PromptDB** captures emerging AI collaboration wisdom and provides frictionless access across every chat surface.
+**LiminalDB** captures emerging AI collaboration wisdom and provides frictionless access across every chat surface.
 
 ```
 User develops prompt patterns → Wisdom scatters across surfaces → Lost
                                         ↓
-                              PromptDB captures in flow → Available everywhere
+                              LiminalDB captures in flow → Available everywhere
 ```
 
 ### Core Value Proposition
@@ -38,13 +40,16 @@ User develops prompt patterns → Wisdom scatters across surfaces → Lost
 
 The **AI Power User**: uses AI daily across surfaces, crafts prompts carefully, hates friction, will pay $5/mo for "just works."
 
-### Milestones
+### Feature Roadmap
 
-| Milestone | Goal | Key Deliverables |
-|-----------|------|------------------|
-| **M0** | Production Hello World | Stack wired, deployed to staging, testing pyramid |
-| **M1** | Dogfood | Basic CRUD, harvest, works in Claude Code + VS Code |
-| **M2** | App Store | ChatGPT widget, web UI, Stripe billing, submission |
+*Note: See `ROADMAP.md` for full strategic context. This table provides architectural reference.*
+
+| Feature | Goal | Key Deliverables |
+|---------|------|------------------|
+| **Feature 1** | Prompt CRUD | Backend complete, web frontend next |
+| **Feature 2** | Skills | Prompts with attachments, Redis integration |
+| **Feature 3** | ChatGPT Widgets | Optional - depends on OpenAI policy changes |
+| **Feature 4** | Search | Full-text, tags, typeahead |
 
 <!-- END SHARD: product-context -->
 
@@ -56,24 +61,24 @@ The **AI Power User**: uses AI daily across surfaces, crafts prompts carefully, 
 
 ### 2.1 Functional Requirements
 
-| ID | Requirement | Milestone |
-|----|-------------|-----------|
-| FR-01 | Save prompt from any MCP-enabled surface | M1 |
-| FR-02 | Retrieve prompt by name, description, or topic | M1 |
-| FR-03 | List all user prompts with filtering | M1 |
-| FR-04 | Harvest: review session, extract prompt candidates | M1 |
-| FR-05 | User authentication via OAuth (Google, GitHub, email) | M0 |
-| FR-06 | Health check endpoints for all layers | M0 |
-| FR-07 | ChatGPT widget for prompt access | M2 |
-| FR-08 | Web UI for billing and settings | M2 |
-| FR-09 | Stripe subscription management | M2 |
+| ID | Requirement | Feature |
+|----|-------------|---------|
+| FR-01 | Save prompt from any MCP-enabled surface | 1 |
+| FR-02 | Retrieve prompt by name, description, or topic | 1 |
+| FR-03 | List all user prompts with filtering | 1 |
+| FR-04 | Harvest: review session, extract prompt candidates | 1 |
+| FR-05 | User authentication via OAuth (Google, GitHub, email) | 1 |
+| FR-06 | Health check endpoints for all layers | 1 |
+| FR-07 | ChatGPT widget for prompt access | 3 (future/optional) |
+| FR-08 | Web UI for billing and settings | 1 |
+| FR-09 | Stripe subscription management | 1 |
 
 ### 2.2 Non-Functional Requirements
 
 | ID | Requirement | Target | Rationale |
 |----|-------------|--------|-----------|
 | NFR-01 | API response time | < 200ms p90 | MCP calls must feel instant |
-| NFR-02 | Simultaneous requests | 2,000 | Handle viral ChatGPT spikes |
+| NFR-02 | Simultaneous requests | 2,000 | Handle viral traffic spikes |
 | NFR-03 | Monthly infrastructure cost | < $100 (pre-scale) | Affordable while building users |
 | NFR-04 | Availability | 99.5% | Critical for chat surface integration |
 | NFR-05 | GDPR compliance | User data exportable/deletable | Privacy policy requirement |
@@ -88,7 +93,7 @@ The **AI Power User**: uses AI daily across surfaces, crafts prompts carefully, 
 
 ### 2.3 Constraints
 
-1. **ChatGPT App Store requirements** - Must meet OpenAI submission guidelines (privacy policy, reliability, atomic tools)
+1. **MCP clients** - Must work with any MCP-enabled surface (Claude Code, Cursor, VS Code, ChatGPT when widgets enabled)
 2. **Budget constraint** - Infrastructure must remain affordable during user acquisition phase
 3. **Solo developer** - Architecture must minimize operational overhead
 
@@ -108,11 +113,11 @@ The **AI Power User**: uses AI daily across surfaces, crafts prompts carefully, 
 
 ```mermaid
 flowchart TB
-    subgraph Surfaces[Chat Surfaces]
-        ChatGPT[ChatGPT - Widget + MCP]
+    subgraph Surfaces[MCP Clients]
         Claude[Claude Code - MCP]
         VSCode[VS Code - MCP]
         Cursor[Cursor - MCP]
+        ChatGPT[ChatGPT - MCP + Widget*]
     end
 
     subgraph API[Fastify + Bun on Fly.io]
@@ -130,10 +135,10 @@ flowchart TB
         Schema[Schema]
     end
 
-    ChatGPT --> Auth
     Claude --> Auth
     VSCode --> Auth
     Cursor --> Auth
+    ChatGPT --> Auth
 
     Auth --> MCPEndpoint
     Auth --> RESTApi
@@ -149,11 +154,13 @@ flowchart TB
     Mutations --> Schema
 ```
 
+*ChatGPT widget support is future/optional (Feature 3)
+
 ### 3.2 Layer Responsibilities
 
 | Layer | Responsibility | Technology |
 |-------|----------------|------------|
-| **Chat Surfaces** | User interaction, MCP client | ChatGPT, Claude, VS Code |
+| **MCP Clients** | User interaction, MCP client | Claude Code, Cursor, VS Code, ChatGPT |
 | **API Layer** | Request handling, auth enforcement, MCP protocol | Fastify + Bun |
 | **Auth** | Identity, session management | WorkOS AuthKit |
 | **Data Layer** | Persistence, real-time, user scoping | Convex |
@@ -245,7 +252,7 @@ Fastify natively uses JSON Schema via AJV. To use Zod, the `fastify-type-provide
 |----------|--------|-----------|
 | Framework | Plain HTML + Vanilla JS | No build complexity for simple widgets |
 | Bundler | Bun build | Already have Bun, no extra tooling |
-| CSS | Plain CSS | Minimal UI for M0-M2 |
+| CSS | Plain CSS | Minimal UI for early features |
 | Reactivity | None (revisit if needed) | YAGNI - add Alpine.js later if painful |
 
 ### 4.7 Infrastructure & Deployment
@@ -255,7 +262,7 @@ Fastify natively uses JSON Schema via AJV. To use Zod, the `fastify-type-provide
 | Hosting | Fly.io | Easy scaling, no cold starts, built-in LB |
 | CI/CD | Blacksmith | Faster than GitHub Actions |
 | Container | Dockerfile (oven/bun:1) | Bun-native base image |
-| Environments | Local → Staging (main branch) | Prod added in M1 |
+| Environments | Local → Staging (main branch) | Prod added when ready |
 
 ### 4.8 Code Quality
 
@@ -263,8 +270,8 @@ Fastify natively uses JSON Schema via AJV. To use Zod, the `fastify-type-provide
 |----------|--------|---------|-----------|
 | Linter/Formatter | Biome | 2.3.10 | 10-25x faster than ESLint+Prettier, one config |
 | Type Checking | TypeScript | 5.x | Strict mode |
-| Testing | bun test | - | Built-in, fast, Jest-compatible |
-| E2E Testing | Deferred to M1 | - | Add Playwright when real flows exist |
+| Testing | Vitest | 3.x | Fast, Jest-compatible, better ESM support |
+| E2E Testing | Deferred | - | Add Playwright when real flows exist |
 
 <!-- END SHARD: decisions -->
 
@@ -322,7 +329,7 @@ sequenceDiagram
 
 ### 5.4 Auth Flow: MCP Endpoint
 
-MCP clients (ChatGPT, Claude Code, VS Code) authenticate via OAuth before making MCP calls.
+MCP clients (Claude Code, VS Code, Cursor) authenticate via OAuth before making MCP calls.
 
 ```mermaid
 sequenceDiagram
@@ -342,14 +349,16 @@ sequenceDiagram
     F-->>M: MCP response
 ```
 
-### 5.5 Auth Flow: ChatGPT Widget (iframe)
+### 5.5 Auth Flow: ChatGPT Widget (Future Consideration)
+
+*Note: ChatGPT widgets are deprioritized (Feature 3). This section is retained for future reference.*
 
 ChatGPT widgets run in iframes. OAuth is initiated from the widget, redirects through WorkOS, returns to widget callback.
 
 ```mermaid
 flowchart TD
     subgraph ChatGPT[ChatGPT Interface]
-        subgraph Widget[PromptDB Widget - iframe]
+        subgraph Widget[LiminalDB Widget - iframe]
             A[Check for session cookie] --> B{Has session?}
             B -->|No| C[Show Login button]
             B -->|Yes| F[Authenticated - can call /api/*]
@@ -397,7 +406,7 @@ Convex functions receive userId as an argument and use RLS to ensure users can o
 
 Model Context Protocol (MCP) is the standard for extending AI chat surfaces with external tools and data.
 
-**PromptDB exposes:**
+**LiminalDB exposes:**
 
 | Tool | Purpose | Read/Write |
 |------|---------|------------|
@@ -405,13 +414,13 @@ Model Context Protocol (MCP) is the standard for extending AI chat surfaces with
 | `list_prompts` | List user's prompts with filters | Read |
 | `save_prompt` | Save or update a prompt | Write |
 | `harvest_session` | Extract prompts from session | Write |
-| `health_check` | Verify connectivity (M0) | Read |
+| `health_check` | Verify connectivity | Read |
 
 ### 6.2 MCP Transport
 
 | Transport | Protocol Version | Usage |
 |-----------|-----------------|-------|
-| **Streamable HTTP** | 2025-11-25 | Modern clients (ChatGPT, Claude Desktop) |
+| **Streamable HTTP** | 2025-11-25 | Modern clients (Claude Desktop, Cursor) |
 | **SSE (deprecated)** | 2024-11-05 | Backwards compatibility |
 | **Stdio** | - | Local spawned processes (Claude Code) |
 
@@ -420,7 +429,7 @@ Model Context Protocol (MCP) is the standard for extending AI chat surfaces with
 The MCP server is created using `@modelcontextprotocol/sdk` and integrated with Fastify via `fastify-mcp`:
 
 - **Server factory** - Creates McpServer instance with tool registrations
-- **Stateless mode** - No session tracking required for PromptDB tools
+- **Stateless mode** - No session tracking required for LiminalDB tools
 - **Tool registration** - Each tool defines input/output schemas using Zod
 - **Fastify plugin** - Mounts MCP handler at `/mcp` endpoint
 
@@ -503,6 +512,7 @@ MCP clients discover how to authenticate via RFC 9728 OAuth discovery:
 | `typescript` | 5.x | Type checking |
 | `@types/bun` | latest | Bun type definitions |
 | `@biomejs/biome` | 2.3.10 | Linting and formatting |
+| `vitest` | 3.x | Test framework |
 
 ### 8.3 External Services
 
@@ -517,8 +527,8 @@ MCP clients discover how to authenticate via RFC 9728 OAuth discovery:
 
 | Phase | Services | Estimated Cost |
 |-------|----------|----------------|
-| **M0 (Staging only)** | Convex (free tier) + Fly (1 instance) | ~$5/mo |
-| **M1+ (Staging + Prod)** | Convex Pro + Fly (3 instances) + Domain | ~$41/mo |
+| **Early (Staging only)** | Convex (free tier) + Fly (1 instance) | ~$5/mo |
+| **Growing (Staging + Prod)** | Convex Pro + Fly (3 instances) + Domain | ~$41/mo |
 
 <!-- END SHARD: dependencies -->
 
@@ -623,13 +633,13 @@ Options:
 block-beta
     columns 1
     block:E2E
-        e2e["E2E (Playwright) - Deferred to M1"]
+        e2e["E2E (Playwright) - Deferred"]
     end
     block:Integration
-        int["Integration (bun test) - Fastify + Convex, MCP protocol"]
+        int["Integration (Vitest) - Fastify + Convex, MCP protocol"]
     end
     block:Unit
-        unit["Unit (bun test) - Utils, validators, pure functions"]
+        unit["Unit (Vitest) - Utils, validators, pure functions"]
     end
 
     style E2E fill:#f9f9f9,stroke:#ccc
@@ -673,7 +683,7 @@ flowchart LR
 2. **Build** - Bundle frontend assets
 3. **Deploy** - Push to Convex and Fly.io
 
-_Detailed CI/CD configuration will be specified during M0 implementation._
+_Detailed CI/CD configuration will be specified during implementation._
 
 ### 12.2 Required Secrets
 
@@ -713,7 +723,7 @@ _Detailed CI/CD configuration will be specified during M0 implementation._
 1. **All Convex calls require userId** - No system-level access without workarounds
 2. **Fastify is auth boundary** - If Fastify compromised, Convex trusts it
 3. **Widget complexity limited** - No React means no component libraries
-4. **E2E testing deferred** - Playwright adds weight, defer to M1
+4. **E2E testing deferred** - Playwright adds weight, defer until needed
 
 <!-- END SHARD: tradeoffs -->
 
@@ -753,7 +763,7 @@ _Detailed CI/CD configuration will be specified during M0 implementation._
 
 <!-- SHARD: future-considerations -->
 
-The following topics require architectural decisions in subsequent reviews. They are not blockers for M0-M2 but will need resolution as the system evolves.
+The following topics require architectural decisions in subsequent reviews. They are not blockers for current features but will need resolution as the system evolves.
 
 ### 15.1 System Operations Without User Context
 
@@ -782,7 +792,7 @@ Stack options: Upstash (managed) vs Fly Redis (same network)
 
 ### 15.3 Search Architecture
 
-PromptDB will need search capabilities beyond simple filtering:
+LiminalDB will need search capabilities beyond simple filtering:
 
 - **Full-text search** - Search prompt content, not just metadata
 - **Semantic search** - Find prompts by meaning, not just keywords
@@ -795,7 +805,7 @@ Options to evaluate:
 
 ### 15.4 Multi-Tenant Considerations
 
-If PromptDB expands to team/org support:
+If LiminalDB expands to team/org support:
 
 - **Data isolation** - User prompts vs shared team prompts
 - **Permission model** - Read/write/admin roles
@@ -825,7 +835,7 @@ Implementation options: Fastify plugin, Redis-backed, Convex-side
 Future features may require direct LLM access:
 
 - **Chat assistants** - Help users manage their prompt library, skill DB, and reference layers
-- **Phone a Friend** - Standalone product and PromptDB add-on providing OpenRouter access to chat assistants
+- **Phone a Friend** - Standalone product and LiminalDB add-on providing OpenRouter access to chat assistants
 - **Content analysis** - Suggest tags, detect duplicates, recommend organization
 - **Harvest enhancement** - LLM-powered session review and prompt extraction
 
@@ -848,7 +858,7 @@ NODE_ENV=development|staging|production
 # Convex
 CONVEX_URL=https://your-deployment.convex.cloud
 CONVEX_DEPLOY_KEY=prod:your-deploy-key
-CONVEX_API_KEY=pdb_live_your-64-char-hex-key  # Shared with Convex for auth
+CONVEX_API_KEY=ldb_live_your-64-char-hex-key  # Shared with Convex for auth
 
 # WorkOS
 WORKOS_CLIENT_ID=client_01XXXXX
@@ -883,10 +893,10 @@ For AI agents, these sections can be extracted as standalone context:
 
 ---
 
-**Architecture Status:** APPROVED (2025-12-21), Updated (2025-12-24)
+**Architecture Status:** Updated for LiminalDB pivot (2025-12-31)
 
 ---
 
 _Document generated: 2025-12-21_
-_Last updated: 2025-12-24 - Added MCP OAuth discovery, updated dependencies (jose, removed @convex-dev/workos)_
+_Last updated: 2025-12-31 - Renamed to LiminalDB, aligned with ROADMAP.md, updated to feature-based roadmap, marked ChatGPT widgets as future/optional_
 _BMAD Workflow: create-architecture_

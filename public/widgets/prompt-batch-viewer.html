@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PromptDB - Review Prompts</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-dark: #0a0a0b;
+      --bg-panel: #141416;
+      --bg-content: #1a1a1d;
+      --bg-hover: #222226;
+      --bg-selected: #2a2a30;
+      --text: #e4e4e7;
+      --text-muted: #71717a;
+      --text-dim: #52525b;
+      --accent: #10b981;
+      --accent-hover: #059669;
+      --accent-dim: rgba(16, 185, 129, 0.15);
+      --border: #27272a;
+      --border-light: #3f3f46;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg-dark);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+    }
+
+    .app {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+      color: white;
+    }
+
+    .header-title {
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .header-subtitle {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-left: 8px;
+    }
+
+    .close-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .close-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
+    /* Main Layout */
+    .main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+    }
+
+    .prompt-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .prompt-item {
+      padding: 10px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 2px;
+      transition: all 0.1s;
+    }
+
+    .prompt-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .prompt-item.selected {
+      background: var(--bg-selected);
+    }
+
+    .prompt-item.selected .prompt-slug {
+      color: var(--accent);
+    }
+
+    .prompt-slug {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .prompt-meta {
+      display: flex;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .prompt-tags {
+      display: flex;
+      gap: 4px;
+    }
+
+    .tag {
+      padding: 2px 6px;
+      background: var(--accent-dim);
+      border-radius: 3px;
+      font-size: 10px;
+      color: var(--accent);
+    }
+
+    /* Content Area */
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-content);
+    }
+
+    .content-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .content-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--accent);
+    }
+
+    .content-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+      border-color: var(--border-light);
+    }
+
+    .content-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .prompt-content {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Footer */
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-info {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .footer-info strong {
+      color: var(--text);
+    }
+
+    .footer-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-light);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border: 1px solid var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--border-light);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">P</div>
+        <span class="header-title">PromptDB</span>
+        <span class="header-subtitle">Review Harvested Prompts</span>
+      </div>
+      <button class="close-btn">✕</button>
+    </header>
+
+    <main class="main">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <span class="sidebar-label">Prompts to Save</span>
+        </div>
+        <div class="prompt-list" id="promptList">
+          <!-- Generated by JS -->
+        </div>
+      </aside>
+
+      <section class="content">
+        <div class="content-header">
+          <span class="content-title" id="contentTitle">code-review</span>
+          <div class="content-actions">
+            <button class="icon-btn" title="Copy">📋</button>
+          </div>
+        </div>
+        <div class="content-body">
+          <div class="prompt-content" id="promptContent">
+            <!-- Generated by JS -->
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-info">
+        <strong id="promptCount">5</strong> prompts ready to save
+      </div>
+      <div class="footer-actions">
+        <button class="btn btn-secondary">Cancel</button>
+        <button class="btn btn-primary">Save All</button>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module">
+    // Mock harvested prompts
+    const prompts = [
+      {
+        slug: 'code-review',
+        tags: ['code', 'review'],
+        content: `You are a senior software engineer conducting a thorough code review. Analyze the provided code for:
+
+1. **Bugs and Logic Errors**
+   - Off-by-one errors
+   - Null/undefined handling
+   - Race conditions
+   - Edge cases
+
+2. **Security Vulnerabilities**
+   - Input validation
+   - SQL injection
+   - XSS vulnerabilities
+   - Authentication/authorization issues
+
+3. **Performance Concerns**
+   - Unnecessary loops or iterations
+   - Memory leaks
+   - N+1 queries
+   - Missing caching opportunities
+
+4. **Code Quality**
+   - Readability and clarity
+   - DRY violations
+   - Proper error handling
+   - Appropriate abstractions
+
+5. **Best Practices**
+   - Language-specific idioms
+   - Framework conventions
+   - Testing considerations
+
+Provide specific, actionable feedback with line references where applicable. Prioritize issues by severity (Critical, High, Medium, Low).`
+      },
+      {
+        slug: 'meeting-summary',
+        tags: ['meetings', 'notes'],
+        content: `Analyze the provided meeting transcript and create a structured summary including:
+
+## Key Decisions
+- List all decisions made during the meeting
+
+## Action Items
+- [ ] Task description | Owner | Due date
+
+## Discussion Points
+- Main topics discussed with brief context
+
+## Open Questions
+- Unresolved items requiring follow-up
+
+## Next Steps
+- Immediate next actions for the team
+
+Keep the summary concise but comprehensive. Use bullet points for clarity.`
+      },
+      {
+        slug: 'email-draft',
+        tags: ['email', 'writing'],
+        content: `Draft a professional email based on the provided context. Consider:
+
+- **Tone**: Match the appropriate formality level
+- **Clarity**: Lead with the main point
+- **Action**: Clear call-to-action if needed
+- **Length**: Concise but complete
+
+Structure:
+1. Subject line (clear and specific)
+2. Greeting
+3. Purpose statement
+4. Supporting details
+5. Call to action
+6. Professional closing`
+      },
+      {
+        slug: 'bug-report',
+        tags: ['code', 'issues'],
+        content: `Create a detailed bug report from the provided information:
+
+## Title
+[Concise description of the issue]
+
+## Environment
+- OS:
+- Browser/Runtime:
+- Version:
+
+## Steps to Reproduce
+1.
+2.
+3.
+
+## Expected Behavior
+[What should happen]
+
+## Actual Behavior
+[What actually happens]
+
+## Screenshots/Logs
+[If available]
+
+## Severity
+[Critical/High/Medium/Low]
+
+## Additional Context
+[Any other relevant information]`
+      },
+      {
+        slug: 'api-docs',
+        tags: ['code', 'docs'],
+        content: `Generate API documentation for the provided endpoint(s):
+
+## Endpoint Name
+
+### Description
+Brief description of what this endpoint does.
+
+### Request
+\`\`\`
+METHOD /path
+\`\`\`
+
+#### Headers
+| Header | Required | Description |
+|--------|----------|-------------|
+| Authorization | Yes | Bearer token |
+
+#### Parameters
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+
+#### Request Body
+\`\`\`json
+{
+  "example": "value"
+}
+\`\`\`
+
+### Response
+
+#### Success (200)
+\`\`\`json
+{
+  "example": "response"
+}
+\`\`\`
+
+#### Errors
+| Code | Description |
+|------|-------------|
+| 400 | Bad request |
+| 401 | Unauthorized |
+
+### Example
+\`\`\`bash
+curl -X METHOD ...
+\`\`\``
+      }
+    ];
+
+    let selectedIndex = 0;
+
+    function renderList() {
+      const listEl = document.getElementById('promptList');
+      listEl.innerHTML = prompts.map((p, i) => `
+        <div class="prompt-item ${i === selectedIndex ? 'selected' : ''}" data-index="${i}">
+          <div class="prompt-slug">${p.slug}</div>
+          <div class="prompt-meta">
+            <div class="prompt-tags">
+              ${p.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      listEl.querySelectorAll('.prompt-item').forEach(item => {
+        item.addEventListener('click', () => {
+          selectedIndex = parseInt(item.dataset.index);
+          renderList();
+          renderContent();
+        });
+      });
+
+      document.getElementById('promptCount').textContent = prompts.length;
+    }
+
+    function renderContent() {
+      const prompt = prompts[selectedIndex];
+      document.getElementById('contentTitle').textContent = prompt.slug;
+      document.getElementById('promptContent').textContent = prompt.content;
+    }
+
+    renderList();
+    renderContent();
+  </script>
+</body>
+</html>

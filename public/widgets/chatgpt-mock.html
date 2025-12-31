@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ChatGPT Mock - Widget Testing</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Söhne:wght@400;500;600&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sidebar-bg: #171717;
+      --main-bg: #212121;
+      --chat-bg: #2f2f2f;
+      --text: #ececf1;
+      --text-muted: #8e8ea0;
+      --border: #444654;
+      --accent: #10a37f;
+    }
+
+    body {
+      font-family: 'Söhne', ui-sans-serif, system-ui, sans-serif;
+      background: var(--main-bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .new-chat-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+      margin-bottom: 16px;
+    }
+
+    .new-chat-btn:hover {
+      background: rgba(255,255,255,0.05);
+    }
+
+    .chat-history {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .chat-item {
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      color: var(--text-muted);
+      cursor: pointer;
+      margin-bottom: 2px;
+    }
+
+    .chat-item:hover {
+      background: rgba(255,255,255,0.05);
+    }
+
+    .chat-item.active {
+      background: rgba(255,255,255,0.1);
+      color: var(--text);
+    }
+
+    /* Main Area */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Header */
+    .header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .model-selector {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Chat Area */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .message {
+      max-width: 768px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .message.user {
+      background: var(--chat-bg);
+      padding: 16px 20px;
+      border-radius: 16px;
+      margin-left: auto;
+      max-width: 80%;
+      width: auto;
+    }
+
+    .message.assistant {
+      line-height: 1.6;
+    }
+
+    .message.assistant .avatar {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    /* PiP Container - Fixed at top */
+    .pip-container {
+      position: fixed;
+      top: 70px;
+      right: 24px;
+      z-index: 1000;
+    }
+
+    /* PiP Widget Styles */
+    .pip-widget {
+      width: 200px;
+      background: rgba(20, 20, 22, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+    }
+
+    .pip-search {
+      padding: 4px;
+    }
+
+    .pip-input {
+      width: 100%;
+      padding: 4px 6px;
+      border: none;
+      background: rgba(255,255,255,0.05);
+      border-radius: 3px;
+      color: #e4e4e7;
+      font-family: inherit;
+      font-size: 11px;
+      outline: none;
+    }
+
+    .pip-input::placeholder { color: #71717a; }
+    .pip-input:focus { background: rgba(255,255,255,0.08); }
+
+    .pip-results { border-top: 1px solid rgba(255,255,255,0.1); }
+    .pip-results:empty { display: none; }
+
+    .pip-item {
+      padding: 5px 8px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #e4e4e7;
+      transition: background 0.1s;
+    }
+
+    .pip-item:hover { background: rgba(255,255,255,0.06); }
+    .pip-item.sel { background: rgba(16, 185, 129, 0.18); }
+    .pip-item.sel .pip-slug { color: #10b981; }
+    .pip-slug { font-weight: 500; }
+    .pip-tag { font-size: 9px; color: #71717a; }
+
+    /* Input Area */
+    .input-area {
+      padding: 16px 24px 24px;
+      background: var(--main-bg);
+    }
+
+    .input-container {
+      max-width: 768px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .input-box {
+      width: 100%;
+      padding: 16px 48px 16px 16px;
+      background: var(--chat-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      color: var(--text);
+      font-size: 16px;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+    }
+
+    .input-box::placeholder {
+      color: var(--text-muted);
+    }
+
+    .send-btn {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .send-btn:disabled {
+      background: var(--border);
+      cursor: not-allowed;
+    }
+
+    /* Inline widget container */
+    .inline-widget {
+      background: var(--chat-bg);
+      border-radius: 12px;
+      padding: 4px;
+      margin: 16px 0;
+    }
+
+    .inline-widget iframe {
+      border: none;
+      border-radius: 8px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <button class="new-chat-btn">
+      <span>+</span> New chat
+    </button>
+    <div class="chat-history">
+      <div class="chat-item active">PromptDB Testing</div>
+      <div class="chat-item">Code review session</div>
+      <div class="chat-item">Meeting notes</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="header">
+      <button class="model-selector">ChatGPT 4o ▾</button>
+      <div></div>
+    </header>
+
+    <div class="chat-area">
+      <div class="message user">
+        Can you help me run a prompt from my library?
+      </div>
+
+      <div class="message assistant">
+        <div class="avatar">✦</div>
+        <p>I've opened the PromptDB prompt picker for you. You can search for prompts by typing in the search box.</p>
+        <p style="margin-top: 12px; color: var(--text-muted); font-size: 14px;">The widget is pinned at the top right. Type to filter your prompts, then select one to run it in this conversation.</p>
+      </div>
+
+      <div class="message user">
+        Show me the code review prompt
+      </div>
+
+      <div class="message assistant">
+        <div class="avatar">✦</div>
+        <p>Here's your <strong>code-review</strong> prompt:</p>
+
+        <!-- Example of inline card for viewing a prompt -->
+        <div class="inline-widget">
+          <iframe src="prompt-card.html" width="100%" height="160" loading="lazy"></iframe>
+        </div>
+
+        <p>Would you like me to run this prompt, or would you prefer to edit it first?</p>
+      </div>
+    </div>
+
+    <!-- PiP Widget - Always visible (embedded directly) -->
+    <div class="pip-container">
+      <div class="pip-widget">
+        <div class="pip-search">
+          <input class="pip-input" placeholder="select prompt to run..." id="pipInput">
+        </div>
+        <div class="pip-results" id="pipResults"></div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-container">
+        <textarea class="input-box" placeholder="Message ChatGPT" rows="1"></textarea>
+        <button class="send-btn" disabled>↑</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // PiP Widget Logic
+    const prompts = [
+      { s: 'code-review', t: 'code' },
+      { s: 'code-explain', t: 'code' },
+      { s: 'meeting-summary', t: 'mtg' },
+      { s: 'email-draft', t: 'email' },
+      { s: 'bug-report', t: 'code' },
+    ];
+    let pipSel = -1, pipFiltered = [];
+    const pipResults = document.getElementById('pipResults');
+    const pipInput = document.getElementById('pipInput');
+
+    pipInput.onfocus = () => {
+      if (!pipInput.value) {
+        pipFiltered = prompts.slice(0, 3);
+        pipSel = 0;
+        drawPip();
+      }
+    };
+
+    pipInput.onblur = (e) => {
+      // Delay to allow click on results
+      setTimeout(() => {
+        if (!pipInput.matches(':focus')) {
+          pipResults.innerHTML = '';
+          pipFiltered = [];
+          pipSel = -1;
+        }
+      }, 150);
+    };
+
+    pipInput.oninput = () => {
+      const q = pipInput.value.toLowerCase();
+      if (!q) {
+        pipFiltered = prompts.slice(0, 3);
+        pipSel = 0;
+        drawPip();
+        return;
+      }
+      pipFiltered = prompts.filter(p => p.s.includes(q));
+      pipSel = pipFiltered.length ? 0 : -1;
+      drawPip();
+    };
+
+    pipInput.onkeydown = e => {
+      if (e.key === 'ArrowDown' && pipSel < pipFiltered.length - 1) { pipSel++; drawPip(); e.preventDefault(); }
+      else if (e.key === 'ArrowUp' && pipSel > 0) { pipSel--; drawPip(); e.preventDefault(); }
+      else if (e.key === 'Enter' && pipSel >= 0) { pickPip(pipFiltered[pipSel]); e.preventDefault(); }
+      else if (e.key === 'Escape') { pipInput.blur(); }
+    };
+
+    function drawPip() {
+      if (!pipFiltered.length) { pipResults.innerHTML = ''; return; }
+      pipResults.innerHTML = pipFiltered.map((p, i) =>
+        `<div class="pip-item${i === pipSel ? ' sel' : ''}" data-i="${i}"><span class="pip-slug">${p.s}</span><span class="pip-tag">${p.t}</span></div>`
+      ).join('');
+      pipResults.querySelectorAll('.pip-item').forEach(x => x.onclick = () => pickPip(pipFiltered[+x.dataset.i]));
+    }
+
+    function pickPip(p) {
+      console.log('RUN:', p.s);
+      pipInput.value = '';
+      pipResults.innerHTML = '';
+      pipFiltered = [];
+      pipSel = -1;
+      pipInput.blur();
+    }
+  </script>
+</body>
+</html>

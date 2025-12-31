@@ -1,4 +1,4 @@
-# PromptDB Auth Design
+# LiminalDB Auth Design
 
 Detailed technical design for authentication and authorization implementation.
 

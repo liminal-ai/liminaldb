@@ -15,3 +15,10 @@ _bmad/
 # MCP config (machine-specific)
 .mcp.json
 .agent-threads/
+.extract/
+
+# OpenAI Apps SDK examples (cloned repo)
+docs/reference/openai-apps/openai-apps-sdk-examples/
+
+# macOS
+.DS_Store
