@@ -103,7 +103,10 @@ export const listPrompts = query({
 			});
 			throw new Error("Invalid API key");
 		}
-		return Prompts.listByUser(ctx, userId, { query, limit });
+		// Clamp limit to reasonable bounds (1-1000)
+		const safeLimit =
+			limit !== undefined ? Math.max(1, Math.min(limit, 1000)) : undefined;
+		return Prompts.listByUser(ctx, userId, { query, limit: safeLimit });
 	},
 });
 

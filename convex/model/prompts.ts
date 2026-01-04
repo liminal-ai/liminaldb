@@ -274,27 +274,42 @@ export async function listByUser(
 	options: { query?: string; limit?: number } = {},
 ): Promise<PromptDTO[]> {
 	const limit = options.limit ?? 50;
-
-	// Get all prompts for user, ordered by creation time (descending)
-	let prompts = await ctx.db
-		.query("prompts")
-		.withIndex("by_user", (q) => q.eq("userId", userId))
-		.order("desc")
-		.take(limit);
-
-	// Filter by search query if provided
 	const query = options.query?.trim();
+
+	// When filtering by search, we need to fetch all then filter then slice
+	// Otherwise the limit would truncate before filtering
 	if (query) {
+		const allPrompts = await ctx.db
+			.query("prompts")
+			.withIndex("by_user", (q) => q.eq("userId", userId))
+			.order("desc")
+			.collect();
+
 		const searchLower = query.toLowerCase();
-		prompts = prompts.filter(
+		const filtered = allPrompts.filter(
 			(p) =>
 				p.slug.toLowerCase().includes(searchLower) ||
 				p.name.toLowerCase().includes(searchLower) ||
 				p.tagNames.some((t) => t.toLowerCase().includes(searchLower)),
 		);
+
+		return filtered.slice(0, limit).map((prompt) => ({
+			slug: prompt.slug,
+			name: prompt.name,
+			description: prompt.description,
+			content: prompt.content,
+			tags: prompt.tagNames,
+			parameters: prompt.parameters,
+		}));
 	}
 
-	// Map to DTOs
+	// No search query: apply limit at DB level for efficiency
+	const prompts = await ctx.db
+		.query("prompts")
+		.withIndex("by_user", (q) => q.eq("userId", userId))
+		.order("desc")
+		.take(limit);
+
 	return prompts.map((prompt) => ({
 		slug: prompt.slug,
 		name: prompt.name,

@@ -1,3 +1,8 @@
+/**
+ * UI test setup utilities.
+ * Provides DOM mocking, event simulation, and async helpers for testing HTML templates.
+ */
+
 import { JSDOM } from "jsdom";
 import { vi } from "vitest";
 import { readFile } from "node:fs/promises";
@@ -15,6 +20,8 @@ const __dirname = dirname(__filename);
 
 /**
  * Load a template file into jsdom for testing.
+ * @param templateName - The template file name (e.g., "prompts.html")
+ * @returns A JSDOM instance with the template loaded
  */
 export async function loadTemplate(templateName: string): Promise<JSDOM> {
 	const templatePath = resolve(
@@ -65,6 +72,8 @@ export const mockUser = {
 /**
  * Create a mock fetch function.
  * Returns a vi.fn that can be assigned to window.fetch and also has mockClear().
+ * @param responses - A map of URL substrings to response configurations
+ * @returns A mock fetch function that returns configured responses
  */
 export function mockFetch(
 	responses: Record<string, { ok?: boolean; status?: number; data: unknown }>,
@@ -103,6 +112,7 @@ export function mockFetch(
 
 /**
  * Create a mock clipboard.
+ * @returns A mock clipboard object with writeText, readText, and getWritten methods
  */
 export function mockClipboard() {
 	const written: string[] = [];
@@ -118,6 +128,8 @@ export function mockClipboard() {
 
 /**
  * Inject clipboard mock into jsdom window.
+ * @param dom - The JSDOM instance to inject the clipboard into
+ * @returns The mock clipboard object
  */
 export function setupClipboard(dom: JSDOM) {
 	const clipboard = mockClipboard();
@@ -130,6 +142,8 @@ export function setupClipboard(dom: JSDOM) {
 
 /**
  * Wait for async operations (fetch, DOM updates).
+ * @param ms - Milliseconds to wait (default: 50)
+ * @returns A promise that resolves after the specified time
  */
 export function waitForAsync(ms = 50): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
@@ -137,6 +151,11 @@ export function waitForAsync(ms = 50): Promise<void> {
 
 /**
  * Wait for element to appear in DOM.
+ * @param dom - The JSDOM instance to search in
+ * @param selector - CSS selector for the element
+ * @param timeout - Maximum time to wait in ms (default: 1000)
+ * @returns The found element
+ * @throws Error if element is not found within timeout
  */
 export async function waitForElement(
 	dom: JSDOM,
@@ -154,6 +173,7 @@ export async function waitForElement(
 
 /**
  * Simulate a click event.
+ * @param element - The element to click
  */
 export function click(element: Element): void {
 	const view = element.ownerDocument.defaultView;
@@ -167,6 +187,8 @@ export function click(element: Element): void {
 
 /**
  * Simulate input event.
+ * @param element - The input or textarea element
+ * @param value - The value to set
  */
 export function input(
 	element: HTMLInputElement | HTMLTextAreaElement,
@@ -183,6 +205,7 @@ export function input(
 
 /**
  * Simulate blur event.
+ * @param element - The element to blur
  */
 export function blur(element: Element): void {
 	const view = element.ownerDocument.defaultView;
@@ -195,6 +218,8 @@ export function blur(element: Element): void {
 
 /**
  * Send postMessage to window.
+ * @param dom - The JSDOM instance
+ * @param data - The message data to send
  */
 export function postMessage(dom: JSDOM, data: unknown): void {
 	const event = new dom.window.MessageEvent("message", {

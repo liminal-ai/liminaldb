@@ -8,6 +8,11 @@ import { authMiddleware } from "../middleware/auth";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+/**
+ * Register application page routes.
+ * Sets up user-facing routes for the prompts UI with authentication.
+ * @param fastify - The Fastify instance to register routes on
+ */
 export function registerAppRoutes(fastify: FastifyInstance): void {
 	// Root redirect to prompts
 	fastify.get("/", async (_request, reply) => {

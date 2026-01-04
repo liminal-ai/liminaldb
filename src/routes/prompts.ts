@@ -12,8 +12,9 @@ import { api } from "../../convex/_generated/api";
 import { config } from "../lib/config";
 
 /**
- * Validate a slug parameter against the shared slug regex and length limits
- * Returns an error message if invalid, undefined if valid
+ * Validate a slug parameter against the shared slug regex and length limits.
+ * @param slug - The slug string to validate
+ * @returns Error message if invalid, undefined if valid
  */
 function validateSlugParam(slug: string): string | undefined {
 	if (!slug || slug.length === 0) {
@@ -28,6 +29,11 @@ function validateSlugParam(slug: string): string | undefined {
 	return undefined;
 }
 
+/**
+ * Register prompt API routes.
+ * Sets up CRUD endpoints for prompts with authentication middleware.
+ * @param fastify - The Fastify instance to register routes on
+ */
 export function registerPromptRoutes(fastify: FastifyInstance): void {
 	// All routes require authentication (inline preHandler matches existing patterns)
 	fastify.get(

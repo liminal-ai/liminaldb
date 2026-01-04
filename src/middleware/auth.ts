@@ -5,6 +5,8 @@ import { decodeJwtClaims, extractToken, validateJwt } from "../lib/auth";
 
 /**
  * Checks if the request is for an MCP endpoint.
+ * @param request - The Fastify request to check
+ * @returns True if the request URL starts with /mcp
  */
 function isMcpRoute(request: FastifyRequest): boolean {
 	return request.url.startsWith("/mcp");
@@ -12,6 +14,8 @@ function isMcpRoute(request: FastifyRequest): boolean {
 
 /**
  * Checks if the request is for an API endpoint.
+ * @param request - The Fastify request to check
+ * @returns True if the request URL starts with /api/ or /auth/
  */
 function isApiRoute(request: FastifyRequest): boolean {
 	return request.url.startsWith("/api/") || request.url.startsWith("/auth/");
@@ -20,6 +24,8 @@ function isApiRoute(request: FastifyRequest): boolean {
 /**
  * Checks if the request is for a browser page (should redirect on auth failure).
  * Browser routes are anything that's not an API or MCP route.
+ * @param request - The Fastify request to check
+ * @returns True if the request is not an API or MCP route
  */
 function isBrowserRoute(request: FastifyRequest): boolean {
 	return !isApiRoute(request) && !isMcpRoute(request);
@@ -28,6 +34,9 @@ function isBrowserRoute(request: FastifyRequest): boolean {
 /**
  * Sends a 401 response with WWW-Authenticate header for MCP routes.
  * The header tells clients where to find auth metadata (RFC 9728).
+ * @param request - The Fastify request
+ * @param reply - The Fastify reply to set headers on
+ * @param error - The error code to include in the header
  */
 export function sendMcpAuthChallenge(
 	request: FastifyRequest,
@@ -52,6 +61,13 @@ declare module "fastify" {
 	}
 }
 
+/**
+ * Fastify preHandler middleware for authentication.
+ * Validates JWT tokens and populates request.user on success.
+ * Handles different response types for browser, API, and MCP routes.
+ * @param request - The Fastify request
+ * @param reply - The Fastify reply
+ */
 export async function authMiddleware(
 	request: FastifyRequest,
 	reply: FastifyReply,

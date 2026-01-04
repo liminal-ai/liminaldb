@@ -1,6 +1,14 @@
+/**
+ * Mock Convex database context for unit testing model functions.
+ * Provides chainable query builders and database operation mocks.
+ */
+
 import { vi } from "vitest";
 import type { Id } from "../../convex/_generated/dataModel";
 
+/**
+ * Supported table names for the mock database.
+ */
 type TableName = "users" | "tags" | "promptTags" | "prompts";
 
 /**

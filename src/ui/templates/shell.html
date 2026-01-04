@@ -59,8 +59,15 @@
 
     // Handle navigation from modules
     window.addEventListener('message', (e) => {
+      // Only accept messages from same origin
+      if (e.origin !== window.location.origin) return;
+
       if (e.data?.type === 'module:navigate') {
-        window.location.href = e.data.path;
+        // Validate path is internal (starts with / but not //)
+        const path = e.data.path;
+        if (typeof path === 'string' && path.startsWith('/') && !path.startsWith('//')) {
+          window.location.href = path;
+        }
       }
     });
   </script>
