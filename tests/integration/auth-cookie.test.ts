@@ -12,8 +12,9 @@
  */
 
 import { describe, expect, test } from "vitest";
+import { getTestBaseUrl } from "../fixtures/env";
 
-const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:5001";
+const BASE_URL = getTestBaseUrl();
 
 describe("Auth Cookie Integration", () => {
 	describe("Login endpoint", () => {
@@ -209,9 +210,14 @@ describe("Auth Cookie Integration", () => {
 
 				const stateMatch = location?.match(/state=([^&]+)/);
 				expect(stateMatch).toBeTruthy();
-				expect(stateMatch?.[1]).toBeTruthy();
+				const encodedState = stateMatch?.[1];
+				expect(encodedState).toBeTruthy();
 
-				const stateJson = decodeURIComponent(stateMatch![1]!);
+				if (!encodedState) {
+					throw new Error("Missing state parameter");
+				}
+
+				const stateJson = decodeURIComponent(encodedState);
 				const state = JSON.parse(stateJson) as { redirect?: string };
 				expect(state.redirect).toBe(expected);
 			});

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LiminalDB</title>
+  <link rel="stylesheet" href="/shared/themes/base.css">
+  <link rel="stylesheet" href="/shared/themes/tokyo-night.css">
+</head>
+<body class="shell">
+  <header class="shell-header">
+    <div class="logo">LiminalDB</div>
+    <input type="search" id="search-input" placeholder="Search prompts..." />
+    <div class="user-info">{{email}}</div>
+  </header>
+
+  <main class="shell-main">
+    <iframe
+      src="{{modulePath}}"
+      class="module-frame"
+      id="main-module"
+    ></iframe>
+  </main>
+
+  <footer class="shell-footer">
+    <select id="theme-select">
+      <option value="tokyo-night">Tokyo Night</option>
+    </select>
+  </footer>
+
+  <script>
+    window.__AUTH__ = {
+      userId: "{{userId}}",
+      email: "{{email}}"
+    };
+
+    // Search broadcast to module
+    const searchInput = document.getElementById('search-input');
+    const moduleFrame = document.getElementById('main-module');
+
+    let debounceTimer;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        moduleFrame.contentWindow.postMessage({
+          type: 'shell:search',
+          query: e.target.value
+        }, '*');
+      }, 150);
+    });
+
+    // Cmd+K focuses search
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+      }
+    });
+
+    // Handle navigation from modules
+    window.addEventListener('message', (e) => {
+      // Only accept messages from same origin
+      if (e.origin !== window.location.origin) return;
+
+      if (e.data?.type === 'module:navigate') {
+        // Validate path is internal (starts with / but not //)
+        const path = e.data.path;
+        if (typeof path === 'string' && path.startsWith('/') && !path.startsWith('//')) {
+          window.location.href = path;
+        }
+      }
+    });
+  </script>
+</body>
+</html>

@@ -4,6 +4,12 @@ import { api } from "../../convex/_generated/api";
 import { authMiddleware } from "../middleware/auth";
 import { config } from "../lib/config";
 
+/**
+ * Register health check routes.
+ * Provides public and authenticated health endpoints for monitoring.
+ * Returns 503 if Convex is unavailable so load balancers know the app is unhealthy.
+ * @param fastify - The Fastify instance to register routes on
+ */
 export function registerHealthRoutes(fastify: FastifyInstance): void {
 	// Public health check (no auth)
 	// Returns 503 if Convex is unavailable so Fly.io knows the app is unhealthy
@@ -38,9 +44,13 @@ export function registerHealthRoutes(fastify: FastifyInstance): void {
 	fastify.get(
 		"/api/health",
 		{ preHandler: authMiddleware },
-		async (request, _reply) => {
+		async (request, reply) => {
 			// authMiddleware guarantees request.user exists (rejects with 401 otherwise)
-			const user = request.user!;
+			const user = request.user;
+			if (!user) {
+				reply.code(401);
+				return { error: "Not authenticated" };
+			}
 			try {
 				// Use new pattern: pass apiKey + userId to Convex
 				const convexHealth = await convex.query(api.healthAuth.check, {

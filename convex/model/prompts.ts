@@ -265,6 +265,64 @@ export async function getBySlug(
 }
 
 /**
+ * List prompts for user with optional search.
+ * Returns DTOs sorted by creation time (most recent first).
+ */
+export async function listByUser(
+	ctx: QueryCtx,
+	userId: string,
+	options: { query?: string; limit?: number } = {},
+): Promise<PromptDTO[]> {
+	const limit = options.limit ?? 50;
+	const query = options.query?.trim();
+
+	// When filtering by search, we need to fetch all then filter then slice
+	// Otherwise the limit would truncate before filtering
+	// WARNING: This fetches ALL user prompts before filtering. Performance degrades
+	// with large prompt collections. Temporary - replaced with search index in Feature 4.
+	if (query) {
+		const allPrompts = await ctx.db
+			.query("prompts")
+			.withIndex("by_user", (q) => q.eq("userId", userId))
+			.order("desc")
+			.collect();
+
+		const searchLower = query.toLowerCase();
+		const filtered = allPrompts.filter(
+			(p) =>
+				p.slug.toLowerCase().includes(searchLower) ||
+				p.name.toLowerCase().includes(searchLower) ||
+				p.tagNames.some((t) => t.toLowerCase().includes(searchLower)),
+		);
+
+		return filtered.slice(0, limit).map((prompt) => ({
+			slug: prompt.slug,
+			name: prompt.name,
+			description: prompt.description,
+			content: prompt.content,
+			tags: prompt.tagNames,
+			parameters: prompt.parameters,
+		}));
+	}
+
+	// No search query: apply limit at DB level for efficiency
+	const prompts = await ctx.db
+		.query("prompts")
+		.withIndex("by_user", (q) => q.eq("userId", userId))
+		.order("desc")
+		.take(limit);
+
+	return prompts.map((prompt) => ({
+		slug: prompt.slug,
+		name: prompt.name,
+		description: prompt.description,
+		content: prompt.content,
+		tags: prompt.tagNames,
+		parameters: prompt.parameters,
+	}));
+}
+
+/**
  * Delete prompt by slug for user.
  * Cleans up junction records and orphaned tags (tags no longer referenced by any prompt).
  * Note: tagNames trigger fires on junction deletes but is a no-op since prompt is deleted.

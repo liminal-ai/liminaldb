@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
+import { getTestBaseUrl } from "../fixtures/env";
 
-const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:5001";
+const BASE_URL = getTestBaseUrl();
 
 interface HealthResponse {
 	status: string;

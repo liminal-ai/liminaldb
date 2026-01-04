@@ -1,5 +1,12 @@
+/**
+ * Mock WorkOS SDK for testing authentication flows.
+ */
+
 import { vi } from "vitest";
 
+/**
+ * Configuration options for the mock WorkOS client.
+ */
 type MockWorkosOptions = {
 	isValidJwt?: boolean | Error;
 	authenticateResult?: {
@@ -14,6 +21,12 @@ type MockWorkosOptions = {
 	revokeSessionError?: Error;
 };
 
+/**
+ * Create a mock WorkOS SDK for testing.
+ * Supports configuring JWT validation, authentication, and user management responses.
+ * @param opts - Configuration options for mock behavior
+ * @returns A mock WorkOS client with userManagement methods
+ */
 export function createMockWorkos(opts: MockWorkosOptions = {}) {
 	const isValidJwt = opts.isValidJwt ?? true;
 

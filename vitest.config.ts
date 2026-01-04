@@ -22,6 +22,21 @@ export default defineConfig(({ mode }) => ({
 				test: {
 					name: "service",
 					include: ["tests/service/**/*.test.ts", "tests/convex/**/*.test.ts"],
+					exclude: ["tests/service/ui/**/*.test.ts"],
+				},
+			},
+			{
+				extends: true,
+				test: {
+					name: "ui",
+					include: ["tests/service/ui/**/*.test.ts"],
+					environment: "jsdom",
+					environmentOptions: {
+						jsdom: {
+							url: "http://localhost:5001",
+							runScripts: "dangerously",
+						},
+					},
 				},
 			},
 			{

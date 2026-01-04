@@ -119,14 +119,20 @@ async function checkValidation() {
 	console.log("\n=== Validation Methods ===\n");
 
 	// Re-authenticate to get fresh token
+	if (!email || !password || !clientId) {
+		throw new Error("Missing env vars");
+	}
 	const { accessToken } = await workos.userManagement.authenticateWithPassword({
-		email: email!,
-		password: password!,
-		clientId: clientId!,
+		email,
+		password,
+		clientId,
 	});
 
 	// Try to access isValidJwt - it showed as a method
-	const um = workos.userManagement as any;
+	const um = workos.userManagement as {
+		isValidJwt?: (token: string) => Promise<unknown>;
+		jwks?: unknown;
+	};
 
 	console.log("isValidJwt exists:", typeof um.isValidJwt);
 

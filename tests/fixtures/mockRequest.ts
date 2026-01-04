@@ -1,5 +1,12 @@
+/**
+ * Mock Fastify request for testing middleware and handlers.
+ */
+
 import type { FastifyRequest } from "fastify";
 
+/**
+ * Options for creating a mock request.
+ */
 type MockRequestOptions = {
 	headers?: Record<string, string | string[]>;
 	cookies?: Record<string, string>;
@@ -28,6 +35,11 @@ export interface MockRequest {
 	hostname?: string;
 }
 
+/**
+ * Create a mock Fastify request for testing.
+ * @param opts - Configuration options for the mock request
+ * @returns A mock request object with the specified properties
+ */
 export function createMockRequest(opts: MockRequestOptions = {}): MockRequest {
 	const headers: Record<string, string | string[] | undefined> = {
 		...(opts.headers ?? {}),
@@ -41,7 +53,7 @@ export function createMockRequest(opts: MockRequestOptions = {}): MockRequest {
 	return {
 		headers,
 		cookies,
-		url: opts.url ?? "/",
+		url: opts.url ?? "/api/test",
 		method: opts.method ?? "GET",
 		query: opts.query ?? {},
 		body: opts.body,
@@ -58,6 +70,8 @@ export function createMockRequest(opts: MockRequestOptions = {}): MockRequest {
  * Type assertion helper to cast MockRequest to FastifyRequest for middleware testing.
  * This is type-safe because MockRequest implements the subset of FastifyRequest
  * that the auth middleware actually uses.
+ * @param mock - The mock request to cast
+ * @returns The mock as a FastifyRequest type
  */
 export function asFastifyRequest(mock: MockRequest): FastifyRequest {
 	return mock as unknown as FastifyRequest;

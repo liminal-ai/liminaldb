@@ -12,8 +12,9 @@ import { api } from "../../convex/_generated/api";
 import { config } from "../lib/config";
 
 /**
- * Validate a slug parameter against the shared slug regex and length limits
- * Returns an error message if invalid, undefined if valid
+ * Validate a slug parameter against the shared slug regex and length limits.
+ * @param slug - The slug string to validate
+ * @returns Error message if invalid, undefined if valid
  */
 function validateSlugParam(slug: string): string | undefined {
 	if (!slug || slug.length === 0) {
@@ -28,8 +29,18 @@ function validateSlugParam(slug: string): string | undefined {
 	return undefined;
 }
 
+/**
+ * Register prompt API routes.
+ * Sets up CRUD endpoints for prompts with authentication middleware.
+ * @param fastify - The Fastify instance to register routes on
+ */
 export function registerPromptRoutes(fastify: FastifyInstance): void {
 	// All routes require authentication (inline preHandler matches existing patterns)
+	fastify.get(
+		"/api/prompts",
+		{ preHandler: authMiddleware },
+		listPromptsHandler,
+	);
 	fastify.post(
 		"/api/prompts",
 		{ preHandler: authMiddleware },
@@ -45,6 +56,36 @@ export function registerPromptRoutes(fastify: FastifyInstance): void {
 		{ preHandler: authMiddleware },
 		deletePromptHandler,
 	);
+}
+
+/**
+ * GET /api/prompts
+ * List prompts with optional search
+ */
+async function listPromptsHandler(
+	request: FastifyRequest,
+	reply: FastifyReply,
+): Promise<void> {
+	const userId = request.user?.id;
+	if (!userId) {
+		return reply.code(401).send({ error: "Not authenticated" });
+	}
+
+	const { q, limit } = request.query as { q?: string; limit?: string };
+
+	try {
+		const prompts = await convex.query(api.prompts.listPrompts, {
+			apiKey: config.convexApiKey,
+			userId,
+			query: q,
+			limit: limit ? parseInt(limit, 10) : undefined,
+		});
+
+		return reply.code(200).send(prompts);
+	} catch (error) {
+		request.log.error({ err: error, userId }, "Failed to list prompts");
+		return reply.code(500).send({ error: "Failed to list prompts" });
+	}
 }
 
 /**

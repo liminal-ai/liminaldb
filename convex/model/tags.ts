@@ -35,7 +35,10 @@ export async function findOrCreateTag(
 		const sorted = allMatching.sort(
 			(a, b) => a._creationTime - b._creationTime,
 		);
-		const oldest = sorted[0]!; // Safe: we checked length > 1
+		const oldest = sorted[0];
+		if (!oldest) {
+			return newId;
+		}
 
 		// Delete all except oldest
 		for (const tag of allMatching) {

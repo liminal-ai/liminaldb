@@ -62,16 +62,20 @@ export async function getTestAuth(): Promise<TestAuth | null> {
 }
 
 /**
- * Check if test auth is configured (env vars present).
- * Does not verify the credentials are valid.
+ * Require test auth configuration.
+ * Throws if env vars are missing - tests should fail, not skip.
  */
-export function hasTestAuth(): boolean {
-	return !!(
-		process.env.TEST_USER_EMAIL &&
-		process.env.TEST_USER_PASSWORD &&
-		process.env.WORKOS_CLIENT_ID &&
-		process.env.WORKOS_API_KEY
-	);
+export function requireTestAuth(): void {
+	const missing: string[] = [];
+	if (!process.env.TEST_USER_EMAIL) missing.push("TEST_USER_EMAIL");
+	if (!process.env.TEST_USER_PASSWORD) missing.push("TEST_USER_PASSWORD");
+	if (!process.env.WORKOS_CLIENT_ID) missing.push("WORKOS_CLIENT_ID");
+	if (!process.env.WORKOS_API_KEY) missing.push("WORKOS_API_KEY");
+	if (missing.length > 0) {
+		throw new Error(
+			`Missing required env vars for integration tests: ${missing.join(", ")}`,
+		);
+	}
 }
 
 /**

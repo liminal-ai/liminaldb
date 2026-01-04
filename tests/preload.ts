@@ -14,7 +14,7 @@ if (process.env.CI) {
 	const missing = required.filter((key) => !process.env[key]);
 
 	if (missing.length > 0) {
-		console.error("\n" + "=".repeat(60));
+		console.error(`\n${"=".repeat(60)}`);
 		console.error("ERROR: Environment variables not loaded!");
 		console.error("=".repeat(60));
 		console.error("\nYou ran: bun test");
@@ -22,7 +22,7 @@ if (process.env.CI) {
 		console.error("\nThe package.json script loads .env.local automatically.");
 		console.error("Running 'bun test' directly skips this.\n");
 		console.error("Missing vars:", missing.join(", "));
-		console.error("=".repeat(60) + "\n");
+		console.error(`${"=".repeat(60)}\n`);
 		process.exit(1);
 	}
 }

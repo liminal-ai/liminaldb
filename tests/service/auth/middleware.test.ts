@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from "vitest";
 
 const mockValidateJwt = vi.hoisted(() =>
 	vi.fn(async (token: string) => {
-		if (token && token.includes(".")) {
+		if (token?.includes(".")) {
 			return { valid: true };
 		}
 		return { valid: false, error: "Invalid token" };

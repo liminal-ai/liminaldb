@@ -31,7 +31,7 @@ vi.mock("../../../src/lib/workos", () => ({
 // Hoisted mock for JWT validation
 const mockValidateJwt = vi.hoisted(() =>
 	vi.fn(async (token: string) => {
-		if (token && token.includes(".")) {
+		if (token?.includes(".")) {
 			return { valid: true };
 		}
 		return { valid: false, error: "Invalid token" };
@@ -107,7 +107,7 @@ describe("Auth Routes", () => {
 
 		expect(response.statusCode).toBe(302);
 		expect(
-			response.cookies.find((c: any) => c.name === "accessToken"),
+			response.cookies.find((c: { name: string }) => c.name === "accessToken"),
 		).toBeDefined();
 		expect(response.headers.location).toBe("/");
 	});
@@ -118,7 +118,9 @@ describe("Auth Routes", () => {
 			url: "/auth/callback?code=testcode",
 		});
 
-		const cookie = response.cookies.find((c: any) => c.name === "accessToken");
+		const cookie = response.cookies.find(
+			(c: { name: string }) => c.name === "accessToken",
+		);
 		expect(cookie?.httpOnly).toBe(true);
 	});
 
@@ -131,7 +133,9 @@ describe("Auth Routes", () => {
 			url: "/auth/callback?code=testcode",
 		});
 
-		const cookie = response.cookies.find((c: any) => c.name === "accessToken");
+		const cookie = response.cookies.find(
+			(c: { name: string }) => c.name === "accessToken",
+		);
 		expect(cookie?.secure).toBe(true);
 
 		process.env.NODE_ENV = originalEnv;

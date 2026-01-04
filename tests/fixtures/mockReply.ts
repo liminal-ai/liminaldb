@@ -1,6 +1,13 @@
+/**
+ * Mock Fastify reply for testing middleware and handlers.
+ */
+
 import type { FastifyReply } from "fastify";
 import { vi, type MockInstance } from "vitest";
 
+/**
+ * Interface for the mock Fastify reply object.
+ */
 export interface MockReplyType {
 	code: MockInstance<(status: number) => MockReplyType>;
 	status: MockInstance<(status: number) => MockReplyType>;
@@ -23,6 +30,11 @@ export interface MockReplyType {
 	getHeaders: () => Record<string, unknown>;
 }
 
+/**
+ * Create a mock Fastify reply object for testing.
+ * Tracks status codes, bodies, redirects, cookies, and headers.
+ * @returns A mock reply object with tracking getters
+ */
 export function createMockReply(): MockReplyType {
 	let statusCode: number | null = null;
 	let body: unknown = null;
@@ -75,6 +87,8 @@ export function createMockReply(): MockReplyType {
 
 /**
  * Type assertion helper to cast MockReplyType to FastifyReply for middleware testing.
+ * @param mock - The mock reply to cast
+ * @returns The mock as a FastifyReply type
  */
 export function asFastifyReply(mock: MockReplyType): FastifyReply {
 	return mock as unknown as FastifyReply;

@@ -1,7 +1,8 @@
-import { describe, expect, test } from "vitest";
-import { getTestAuth, hasTestAuth } from "../fixtures/auth";
+import { describe, expect, test, beforeAll } from "vitest";
+import { getTestAuth, requireTestAuth } from "../fixtures/auth";
+import { getTestBaseUrl } from "../fixtures/env";
 
-const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:5001";
+const BASE_URL = getTestBaseUrl();
 
 interface AuthHealthResponse {
 	status: string;
@@ -14,12 +15,13 @@ interface AuthMeResponse {
 }
 
 describe("Authenticated Health Endpoints", () => {
+	beforeAll(() => {
+		requireTestAuth();
+	});
+
 	test("GET /api/health with auth returns user and convex status", async () => {
-		if (!hasTestAuth()) {
-			throw new Error("Test auth not configured");
-		}
 		const auth = await getTestAuth();
-		if (!auth) throw new Error("Test auth not available");
+		if (!auth) throw new Error("Failed to get test auth");
 
 		const res = await fetch(`${BASE_URL}/api/health`, {
 			headers: {
@@ -36,11 +38,8 @@ describe("Authenticated Health Endpoints", () => {
 	});
 
 	test("GET /auth/me with auth returns user", async () => {
-		if (!hasTestAuth()) {
-			throw new Error("Test auth not configured");
-		}
 		const auth = await getTestAuth();
-		if (!auth) throw new Error("Test auth not available");
+		if (!auth) throw new Error("Failed to get test auth");
 
 		const res = await fetch(`${BASE_URL}/auth/me`, {
 			headers: {

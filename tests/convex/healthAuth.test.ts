@@ -24,7 +24,7 @@ describe("withApiKeyAuth wrapper", () => {
 
 	test("validates API key and calls handler with userId from args", async () => {
 		const mockHandler = async (
-			ctx: ConvexAuthContext,
+			_ctx: ConvexAuthContext,
 			args: { apiKey: string; userId: string; data: string },
 		): Promise<{ userId: string; data: string }> => {
 			return { userId: args.userId, data: args.data };
