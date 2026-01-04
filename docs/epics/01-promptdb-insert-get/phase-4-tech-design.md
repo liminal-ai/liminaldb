@@ -124,6 +124,13 @@ sequenceDiagram
 | Module → Shell | `prompts:selected` | `{slug: string}` | Prompt was selected |
 | Module → Shell | `module:navigate` | `{path: string}` | Request navigation |
 
+**Security Requirements:**
+
+All postMessage handlers must validate origin to prevent cross-origin attacks:
+- Receivers check `event.origin === window.location.origin` before processing
+- Senders use explicit origin: `postMessage(data, window.location.origin)`
+- Never use wildcard `'*'` as target origin
+
 ---
 
 ## File System Layout

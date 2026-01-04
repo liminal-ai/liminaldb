@@ -278,6 +278,8 @@ export async function listByUser(
 
 	// When filtering by search, we need to fetch all then filter then slice
 	// Otherwise the limit would truncate before filtering
+	// WARNING: This fetches ALL user prompts before filtering. Performance degrades
+	// with large prompt collections. Temporary - replaced with search index in Feature 4.
 	if (query) {
 		const allPrompts = await ctx.db
 			.query("prompts")
