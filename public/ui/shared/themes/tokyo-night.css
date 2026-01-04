@@ -1,0 +1,34 @@
+/* Tokyo Night - Blue/purple base with gold accents */
+
+:root {
+  /* Backgrounds */
+  --bg-deep: #1a1b26;
+  --bg-surface: #24283b;
+  --bg-elevated: #414868;
+  --bg-hover: #565f89;
+
+  /* Borders */
+  --border: #414868;
+  --border-subtle: #2f3549;
+
+  /* Typography */
+  --text-primary: #c0caf5;
+  --text-secondary: #9aa5ce;
+  --text-muted: #565f89;
+
+  /* Accent - Gold */
+  --accent: #e0af68;
+  --accent-bright: #ffcb6b;
+  --accent-dim: #c49a4a;
+  --accent-glow: rgba(224, 175, 104, 0.2);
+
+  /* Secondary accent - Cyan */
+  --accent-secondary: #7dcfff;
+  --accent-secondary-dim: rgba(125, 207, 255, 0.15);
+
+  /* Status */
+  --success: #9ece6a;
+  --error: #f7768e;
+  --warning: #e0af68;
+  --info: #7dcfff;
+}

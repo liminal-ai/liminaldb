@@ -59,18 +59,24 @@ async function investigate() {
 	// 3. Compare timing of different validation approaches
 	console.log("\n3. Timing comparison (5 iterations each):");
 
-	const um = workos.userManagement as any;
+	const um = workos.userManagement as {
+		isValidJwt?: (token: string) => Promise<unknown>;
+	};
 
 	// isValidJwt
-	const jwtTimes: number[] = [];
-	for (let i = 0; i < 5; i++) {
-		const start = Date.now();
-		await um.isValidJwt(accessToken);
-		jwtTimes.push(Date.now() - start);
+	if (typeof um.isValidJwt !== "function") {
+		console.log("   isValidJwt() not available on WorkOS SDK");
+	} else {
+		const jwtTimes: number[] = [];
+		for (let i = 0; i < 5; i++) {
+			const start = Date.now();
+			await um.isValidJwt(accessToken);
+			jwtTimes.push(Date.now() - start);
+		}
+		console.log(
+			`   isValidJwt(): ${jwtTimes.join(", ")}ms (avg: ${Math.round(jwtTimes.reduce((a, b) => a + b) / 5)}ms)`,
+		);
 	}
-	console.log(
-		`   isValidJwt(): ${jwtTimes.join(", ")}ms (avg: ${Math.round(jwtTimes.reduce((a, b) => a + b) / 5)}ms)`,
-	);
 
 	// getUser
 	const getUserTimes: number[] = [];

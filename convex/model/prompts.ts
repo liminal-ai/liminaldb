@@ -265,6 +265,47 @@ export async function getBySlug(
 }
 
 /**
+ * List prompts for user with optional search.
+ * Returns DTOs sorted by creation time (most recent first).
+ */
+export async function listByUser(
+	ctx: QueryCtx,
+	userId: string,
+	options: { query?: string; limit?: number } = {},
+): Promise<PromptDTO[]> {
+	const limit = options.limit ?? 50;
+
+	// Get all prompts for user, ordered by creation time (descending)
+	let prompts = await ctx.db
+		.query("prompts")
+		.withIndex("by_user", (q) => q.eq("userId", userId))
+		.order("desc")
+		.take(limit);
+
+	// Filter by search query if provided
+	const query = options.query?.trim();
+	if (query) {
+		const searchLower = query.toLowerCase();
+		prompts = prompts.filter(
+			(p) =>
+				p.slug.toLowerCase().includes(searchLower) ||
+				p.name.toLowerCase().includes(searchLower) ||
+				p.tagNames.some((t) => t.toLowerCase().includes(searchLower)),
+		);
+	}
+
+	// Map to DTOs
+	return prompts.map((prompt) => ({
+		slug: prompt.slug,
+		name: prompt.name,
+		description: prompt.description,
+		content: prompt.content,
+		tags: prompt.tagNames,
+		parameters: prompt.parameters,
+	}));
+}
+
+/**
  * Delete prompt by slug for user.
  * Cleans up junction records and orphaned tags (tags no longer referenced by any prompt).
  * Note: tagNames trigger fires on junction deletes but is a no-op since prompt is deleted.

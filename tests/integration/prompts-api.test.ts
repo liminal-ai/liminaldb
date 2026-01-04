@@ -1,4 +1,6 @@
 import { describe, test, expect, beforeAll, afterEach } from "vitest";
+import { getTestAuth, requireTestAuth } from "../fixtures/auth";
+import { getTestBaseUrl } from "../fixtures/env";
 
 /**
  * HTTP API integration tests for prompts.
@@ -9,56 +11,19 @@ import { describe, test, expect, beforeAll, afterEach } from "vitest";
  * - Valid test user credentials
  */
 
-function hasTestEnv(): boolean {
-	return !!(
-		process.env.TEST_BASE_URL &&
-		process.env.TEST_USER_EMAIL &&
-		process.env.TEST_USER_PASSWORD &&
-		process.env.WORKOS_CLIENT_ID &&
-		process.env.WORKOS_API_KEY
-	);
-}
-
-function getBaseUrl(): string {
-	const url = process.env.TEST_BASE_URL;
-	if (!url) throw new Error("TEST_BASE_URL not configured");
-	return url;
-}
-
-async function getAuthToken(): Promise<string> {
-	// Use WorkOS to get a real token for the test user
-	const email = process.env.TEST_USER_EMAIL;
-	const password = process.env.TEST_USER_PASSWORD;
-	const clientId = process.env.WORKOS_CLIENT_ID;
-	const apiKey = process.env.WORKOS_API_KEY;
-
-	if (!email || !password || !clientId || !apiKey) {
-		throw new Error("Test user credentials not configured");
-	}
-
-	const { WorkOS } = await import("@workos-inc/node");
-	const workos = new WorkOS(apiKey);
-
-	const { accessToken } = await workos.userManagement.authenticateWithPassword({
-		email,
-		password,
-		clientId,
-	});
-
-	return accessToken;
-}
-
 describe("Prompts API Integration", () => {
 	let baseUrl: string;
 	let authToken: string;
 	const createdSlugs: string[] = [];
 
 	beforeAll(async () => {
-		if (!hasTestEnv()) {
-			return;
+		requireTestAuth();
+		baseUrl = getTestBaseUrl();
+		const auth = await getTestAuth();
+		if (!auth) {
+			throw new Error("Failed to get test auth");
 		}
-		baseUrl = getBaseUrl();
-		authToken = await getAuthToken();
+		authToken = auth.accessToken;
 	});
 
 	afterEach(async () => {
@@ -82,7 +47,7 @@ describe("Prompts API Integration", () => {
 	}
 
 	describe("POST /api/prompts -> GET /api/prompts/:slug round trip", () => {
-		test.skipIf(!hasTestEnv())("create and retrieve prompt", async () => {
+		test("create and retrieve prompt", async () => {
 			const slug = trackSlug(`api-test-${Date.now()}`);
 
 			// Create
@@ -125,45 +90,42 @@ describe("Prompts API Integration", () => {
 			expect(prompt.tags).toContain("api-test");
 		});
 
-		test.skipIf(!hasTestEnv())(
-			"create prompt with tags and verify tags returned",
-			async () => {
-				const slug = trackSlug(`tags-test-${Date.now()}`);
+		test("create prompt with tags and verify tags returned", async () => {
+			const slug = trackSlug(`tags-test-${Date.now()}`);
 
-				const createRes = await fetch(`${baseUrl}/api/prompts`, {
-					method: "POST",
-					headers: {
-						Authorization: `Bearer ${authToken}`,
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						prompts: [
-							{
-								slug,
-								name: "Tags Test",
-								description: "Multiple tags",
-								content: "Content",
-								tags: ["tag-a", "tag-b", "tag-c"],
-							},
-						],
-					}),
-				});
-				expect(createRes.status).toBe(201);
+			const createRes = await fetch(`${baseUrl}/api/prompts`, {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${authToken}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					prompts: [
+						{
+							slug,
+							name: "Tags Test",
+							description: "Multiple tags",
+							content: "Content",
+							tags: ["tag-a", "tag-b", "tag-c"],
+						},
+					],
+				}),
+			});
+			expect(createRes.status).toBe(201);
 
-				const getRes = await fetch(`${baseUrl}/api/prompts/${slug}`, {
-					headers: { Authorization: `Bearer ${authToken}` },
-				});
+			const getRes = await fetch(`${baseUrl}/api/prompts/${slug}`, {
+				headers: { Authorization: `Bearer ${authToken}` },
+			});
 
-				const prompt = (await getRes.json()) as { tags: string[] };
-				expect(prompt.tags).toContain("tag-a");
-				expect(prompt.tags).toContain("tag-b");
-				expect(prompt.tags).toContain("tag-c");
-			},
-		);
+			const prompt = (await getRes.json()) as { tags: string[] };
+			expect(prompt.tags).toContain("tag-a");
+			expect(prompt.tags).toContain("tag-b");
+			expect(prompt.tags).toContain("tag-c");
+		});
 	});
 
 	describe("DELETE /api/prompts/:slug", () => {
-		test.skipIf(!hasTestEnv())("delete existing prompt", async () => {
+		test("delete existing prompt", async () => {
 			const slug = trackSlug(`delete-test-${Date.now()}`);
 
 			// Create
@@ -210,7 +172,7 @@ describe("Prompts API Integration", () => {
 	});
 
 	describe("error cases", () => {
-		test.skipIf(!hasTestEnv())("401 without auth", async () => {
+		test("401 without auth", async () => {
 			const res = await fetch(`${baseUrl}/api/prompts`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -220,7 +182,7 @@ describe("Prompts API Integration", () => {
 			expect(res.status).toBe(401);
 		});
 
-		test.skipIf(!hasTestEnv())("400 with invalid slug", async () => {
+		test("400 with invalid slug", async () => {
 			const res = await fetch(`${baseUrl}/api/prompts`, {
 				method: "POST",
 				headers: {
@@ -243,7 +205,7 @@ describe("Prompts API Integration", () => {
 			expect(res.status).toBe(400);
 		});
 
-		test.skipIf(!hasTestEnv())("409 on duplicate slug", async () => {
+		test("409 on duplicate slug", async () => {
 			const slug = trackSlug(`dupe-test-${Date.now()}`);
 
 			// First create

@@ -8,6 +8,8 @@ import { registerAuthRoutes } from "./routes/auth";
 import { registerMcpRoutes } from "./api/mcp";
 import { registerWellKnownRoutes } from "./routes/well-known";
 import { registerPromptRoutes } from "./routes/prompts";
+import { registerAppRoutes } from "./routes/app";
+import { registerModuleRoutes } from "./routes/modules";
 import { config } from "./lib/config";
 
 const fastify = Fastify({
@@ -40,6 +42,8 @@ registerAuthRoutes(fastify);
 registerMcpRoutes(fastify);
 registerWellKnownRoutes(fastify);
 registerPromptRoutes(fastify);
+registerAppRoutes(fastify);
+registerModuleRoutes(fastify);
 
 const start = async () => {
 	try {

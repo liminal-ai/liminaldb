@@ -41,7 +41,7 @@ export function createMockRequest(opts: MockRequestOptions = {}): MockRequest {
 	return {
 		headers,
 		cookies,
-		url: opts.url ?? "/",
+		url: opts.url ?? "/api/test",
 		method: opts.method ?? "GET",
 		query: opts.query ?? {},
 		body: opts.body,

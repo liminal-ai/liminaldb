@@ -42,8 +42,7 @@ export interface MockCtx {
  * const result = await getBySlug(asConvexCtx<QueryCtx>(ctx), userId, slug);
  */
 export function asConvexCtx<T>(mock: MockCtx): T {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	return mock as any as T;
+	return mock as unknown as T;
 }
 
 /**
@@ -68,10 +67,13 @@ export function createMockCtx(): MockCtx {
 
 	const db: MockDb = {
 		query: vi.fn((table: TableName) => {
-			if (!queryBuilders.has(table)) {
-				queryBuilders.set(table, createQueryBuilder());
+			const existing = queryBuilders.get(table);
+			if (existing) {
+				return existing;
 			}
-			return queryBuilders.get(table)!;
+			const created = createQueryBuilder();
+			queryBuilders.set(table, created);
+			return created;
 		}),
 		insert: vi.fn(() => Promise.resolve("mock_id" as Id<"prompts">)),
 		get: vi.fn(() => Promise.resolve(null)),

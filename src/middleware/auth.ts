@@ -11,6 +11,21 @@ function isMcpRoute(request: FastifyRequest): boolean {
 }
 
 /**
+ * Checks if the request is for an API endpoint.
+ */
+function isApiRoute(request: FastifyRequest): boolean {
+	return request.url.startsWith("/api/") || request.url.startsWith("/auth/");
+}
+
+/**
+ * Checks if the request is for a browser page (should redirect on auth failure).
+ * Browser routes are anything that's not an API or MCP route.
+ */
+function isBrowserRoute(request: FastifyRequest): boolean {
+	return !isApiRoute(request) && !isMcpRoute(request);
+}
+
+/**
  * Sends a 401 response with WWW-Authenticate header for MCP routes.
  * The header tells clients where to find auth metadata (RFC 9728).
  */
@@ -44,6 +59,11 @@ export async function authMiddleware(
 	const { token } = extractToken(request);
 
 	if (!token) {
+		// Browser routes redirect to login
+		if (isBrowserRoute(request)) {
+			const returnTo = encodeURIComponent(request.url);
+			return reply.redirect(`/auth/login?returnTo=${returnTo}`);
+		}
 		if (isMcpRoute(request)) {
 			sendMcpAuthChallenge(request, reply, "missing_token");
 		}
@@ -52,6 +72,11 @@ export async function authMiddleware(
 
 	const validation = await validateJwt(token);
 	if (!validation.valid) {
+		// Browser routes redirect to login on invalid token
+		if (isBrowserRoute(request)) {
+			const returnTo = encodeURIComponent(request.url);
+			return reply.redirect(`/auth/login?returnTo=${returnTo}`);
+		}
 		if (isMcpRoute(request)) {
 			sendMcpAuthChallenge(request, reply, "invalid_token");
 		}

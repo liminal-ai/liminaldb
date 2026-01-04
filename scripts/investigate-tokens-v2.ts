@@ -18,7 +18,13 @@ if (!apiKey || !clientId || !email || !password) {
 const workos = new WorkOS(apiKey, { clientId });
 
 async function investigate() {
-	const um = workos.userManagement as any;
+	const um = workos.userManagement as {
+		isValidJwt?: (token: string) => Promise<unknown>;
+	};
+	if (typeof um.isValidJwt !== "function") {
+		console.log("WorkOS SDK does not expose isValidJwt");
+		return;
+	}
 
 	// Get a valid token
 	const { accessToken, user } =
@@ -42,8 +48,9 @@ async function investigate() {
 	try {
 		const tamperedResult = await um.isValidJwt(tamperedToken);
 		console.log("   Result:", tamperedResult);
-	} catch (e: any) {
-		console.log("   Error:", e.message || e);
+	} catch (e) {
+		const message = e instanceof Error ? e.message : String(e);
+		console.log("   Error:", message);
 	}
 
 	// 3. Garbage token
@@ -51,8 +58,9 @@ async function investigate() {
 	try {
 		const garbageResult = await um.isValidJwt("not.a.token");
 		console.log("   Result:", garbageResult);
-	} catch (e: any) {
-		console.log("   Error:", e.message || e);
+	} catch (e) {
+		const message = e instanceof Error ? e.message : String(e);
+		console.log("   Error:", message);
 	}
 
 	// 4. Does isValidJwt return claims or just boolean?

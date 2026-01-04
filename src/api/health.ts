@@ -38,9 +38,13 @@ export function registerHealthRoutes(fastify: FastifyInstance): void {
 	fastify.get(
 		"/api/health",
 		{ preHandler: authMiddleware },
-		async (request, _reply) => {
+		async (request, reply) => {
 			// authMiddleware guarantees request.user exists (rejects with 401 otherwise)
-			const user = request.user!;
+			const user = request.user;
+			if (!user) {
+				reply.code(401);
+				return { error: "Not authenticated" };
+			}
 			try {
 				// Use new pattern: pass apiKey + userId to Convex
 				const convexHealth = await convex.query(api.healthAuth.check, {

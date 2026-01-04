@@ -1,0 +1,65 @@
+[
+	{
+		"slug": "explain-code",
+		"name": "Explain Code",
+		"description": "Get a clear explanation of any code snippet",
+		"content": "# Code Explanation Request\n\nPlease explain the following code in detail:\n\n```\n{{code}}\n```\n\n## What I need:\n1. **Overview**: What does this code do at a high level?\n2. **Step-by-step breakdown**: Walk through each significant part\n3. **Key concepts**: What programming concepts are being used?\n4. **Potential issues**: Any bugs, edge cases, or improvements?\n\nExplain as if teaching a junior developer.",
+		"tags": ["code", "learning", "documentation"]
+	},
+	{
+		"slug": "write-tests",
+		"name": "Write Unit Tests",
+		"description": "Generate comprehensive unit tests for your code",
+		"content": "# Unit Test Generation\n\nWrite comprehensive unit tests for the following code:\n\n```{{language}}\n{{code}}\n```\n\n## Requirements:\n- Use **{{framework}}** testing framework\n- Cover happy path and edge cases\n- Include setup/teardown if needed\n- Add descriptive test names\n- Mock external dependencies\n\n## Test categories to include:\n1. Normal inputs\n2. Boundary conditions\n3. Error handling\n4. Edge cases\n5. Integration points",
+		"tags": ["testing", "code", "tdd"]
+	},
+	{
+		"slug": "refactor-code",
+		"name": "Refactor Code",
+		"description": "Get suggestions to improve code quality and maintainability",
+		"content": "# Code Refactoring Request\n\nReview and refactor this code for better quality:\n\n```{{language}}\n{{code}}\n```\n\n## Focus areas:\n- **Readability**: Clear naming, structure\n- **Maintainability**: Single responsibility, DRY\n- **Performance**: Obvious optimizations\n- **Type safety**: Better typing if applicable\n\nProvide the refactored code with comments explaining each change.",
+		"tags": ["code", "refactoring", "quality"]
+	},
+	{
+		"slug": "api-design",
+		"name": "API Design Review",
+		"description": "Review and improve REST API design patterns",
+		"content": "# API Design Review\n\nReview this API endpoint design:\n\n**Endpoint**: `{{method}} {{path}}`\n**Purpose**: {{purpose}}\n\n## Current request/response:\n```json\n{{schema}}\n```\n\n## Please evaluate:\n1. RESTful conventions\n2. Naming consistency\n3. Error handling approach\n4. Pagination strategy\n5. Versioning considerations\n6. Security implications\n\nSuggest improvements with examples.",
+		"tags": ["api", "design", "architecture"]
+	},
+	{
+		"slug": "debug-error",
+		"name": "Debug Error",
+		"description": "Help diagnose and fix errors with detailed analysis",
+		"content": "# Error Debugging Request\n\n## The error:\n```\n{{error_message}}\n```\n\n## Context:\n- **Language/Framework**: {{stack}}\n- **What I was trying to do**: {{action}}\n- **When it happens**: {{trigger}}\n\n## Relevant code:\n```{{language}}\n{{code}}\n```\n\nHelp me:\n1. Understand what this error means\n2. Identify the root cause\n3. Provide a fix with explanation\n4. Suggest how to prevent similar issues",
+		"tags": ["debugging", "errors", "troubleshooting"]
+	},
+	{
+		"slug": "pr-description",
+		"name": "PR Description",
+		"description": "Generate a clear pull request description",
+		"content": "# Generate PR Description\n\nBased on these changes, write a clear PR description:\n\n## Changed files:\n{{files}}\n\n## Diff summary:\n```diff\n{{diff}}\n```\n\n## Generate:\n1. **Title**: Concise, conventional commit style\n2. **Summary**: 2-3 sentences on what and why\n3. **Changes**: Bullet points of key modifications\n4. **Testing**: How to verify the changes\n5. **Screenshots**: Note if UI changes need screenshots",
+		"tags": ["git", "workflow", "documentation"]
+	},
+	{
+		"slug": "commit-message",
+		"name": "Commit Message",
+		"description": "Write conventional commit messages",
+		"content": "# Generate Commit Message\n\nWrite a commit message for these changes:\n\n```diff\n{{diff}}\n```\n\n## Format:\n- Use conventional commits: type(scope): description\n- Types: feat, fix, docs, style, refactor, test, chore\n- Keep first line under 72 characters\n- Add body if needed for context\n\n## Output:\nProvide 2-3 options ranked by appropriateness.",
+		"tags": ["git", "workflow"]
+	},
+	{
+		"slug": "system-prompt",
+		"name": "System Prompt Writer",
+		"description": "Create effective system prompts for AI assistants",
+		"content": "# System Prompt Creation\n\nCreate a system prompt for an AI assistant with these requirements:\n\n**Role**: {{role}}\n**Primary tasks**: {{tasks}}\n**Tone**: {{tone}}\n**Constraints**: {{constraints}}\n\n## The system prompt should include:\n1. Clear role definition\n2. Behavioral guidelines\n3. Response format preferences\n4. Edge case handling\n5. Things to avoid\n\nOutput a complete, production-ready system prompt.",
+		"tags": ["prompts", "ai", "meta"]
+	},
+	{
+		"slug": "sql-query",
+		"name": "SQL Query Builder",
+		"description": "Generate optimized SQL queries from natural language",
+		"content": "# SQL Query Request\n\n## Database schema:\n```sql\n{{schema}}\n```\n\n## What I need:\n{{description}}\n\n## Requirements:\n- Database: {{database_type}}\n- Optimize for: {{optimization}}\n- Include: Comments explaining the query\n\nProvide the SQL query with explanation of approach and any indexes that would help.",
+		"tags": ["sql", "database", "queries"]
+	}
+]

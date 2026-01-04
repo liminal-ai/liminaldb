@@ -9,16 +9,17 @@
  * NO MOCKS - all real services.
  *
  * Prerequisites:
- * - Server running at TEST_BASE_URL (default: http://localhost:5001)
+ * - Server running at TEST_BASE_URL
  * - Convex backend running
  * - Test user configured (TEST_USER_EMAIL, TEST_USER_PASSWORD)
  * - Environment variables set (MCP_RESOURCE_URL, WORKOS_AUTH_SERVER_URL, etc.)
  */
 
-import { describe, expect, test } from "vitest";
-import { getTestAuth, hasTestAuth } from "../fixtures/auth";
+import { describe, expect, test, beforeAll } from "vitest";
+import { getTestAuth, requireTestAuth } from "../fixtures/auth";
+import { getTestBaseUrl } from "../fixtures/env";
 
-const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:5001";
+const BASE_URL = getTestBaseUrl();
 
 /**
  * Parse SSE (Server-Sent Events) response to extract JSON data.
@@ -117,10 +118,11 @@ describe("MCP OAuth Integration", () => {
 	});
 
 	describe("MCP with real authentication", () => {
+		beforeAll(() => {
+			requireTestAuth();
+		});
+
 		test("POST /mcp with valid token succeeds", async () => {
-			if (!hasTestAuth()) {
-				throw new Error("Test auth not configured");
-			}
 			const auth = await getTestAuth();
 			if (!auth) throw new Error("Failed to get test auth");
 
@@ -151,9 +153,6 @@ describe("MCP OAuth Integration", () => {
 		});
 
 		test("test_auth tool returns correct user email", async () => {
-			if (!hasTestAuth()) {
-				throw new Error("Test auth not configured");
-			}
 			const auth = await getTestAuth();
 			if (!auth) throw new Error("Failed to get test auth");
 
@@ -195,9 +194,6 @@ describe("MCP OAuth Integration", () => {
 		});
 
 		test("health_check tool connects to Convex successfully", async () => {
-			if (!hasTestAuth()) {
-				throw new Error("Test auth not configured");
-			}
 			const auth = await getTestAuth();
 			if (!auth) throw new Error("Failed to get test auth");
 

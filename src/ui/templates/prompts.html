@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prompts</title>
+  <link rel="stylesheet" href="/shared/themes/base.css">
+  <link rel="stylesheet" href="/shared/themes/tokyo-night.css">
+</head>
+<body class="module prompts-module">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>Prompts</h2>
+      <button id="new-prompt-btn" class="btn-primary">New Prompt</button>
+    </div>
+    <div id="prompt-list" class="prompt-list">
+      <!-- Populated by JavaScript -->
+    </div>
+  </aside>
+
+  <main class="content">
+    <div id="empty-state" class="empty-state">
+      Select a prompt to view
+    </div>
+    <article id="prompt-view" class="prompt-view" style="display: none;">
+      <header class="prompt-header">
+        <h1 id="prompt-slug" class="prompt-slug"></h1>
+        <p id="prompt-description" class="prompt-description"></p>
+      </header>
+      <div id="prompt-content" class="prompt-content"></div>
+      <div class="prompt-actions">
+        <button id="copy-btn" class="btn-secondary">Copy</button>
+      </div>
+    </article>
+  </main>
+
+  <script>
+    // State
+    let prompts = [];
+    let selectedSlug = null;
+
+    // Load prompts on init
+    async function loadPrompts(query = '') {
+      const trimmed = query.trim();
+      const url = trimmed
+        ? `/api/prompts?q=${encodeURIComponent(trimmed)}`
+        : "/api/prompts";
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: { "content-type": "application/json" },
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = await response.json();
+      prompts = Array.isArray(data) ? data : [];
+      renderList(prompts);
+
+      if (selectedSlug) {
+        const stillExists = prompts.some((prompt) => prompt.slug === selectedSlug);
+        if (stillExists) {
+          selectPrompt(selectedSlug);
+        }
+      }
+    }
+
+    // Render prompt list
+    function renderList(items) {
+      const listEl = document.getElementById("prompt-list");
+      if (!listEl) return;
+
+      listEl.innerHTML = "";
+
+      items.forEach((prompt) => {
+        const item = document.createElement("div");
+        item.className = "prompt-item";
+        item.dataset.slug = prompt.slug;
+
+        if (prompt.slug === selectedSlug) {
+          item.classList.add("selected");
+        }
+
+        const tagsHtml = (prompt.tags || [])
+          .map((tag) => `<span class="tag">${tag}</span>`)
+          .join(" ");
+
+        item.innerHTML = `
+          <div class="prompt-name">${prompt.name}</div>
+          <div class="prompt-slug">${prompt.slug}</div>
+          <div class="prompt-tags">${tagsHtml}</div>
+        `;
+
+        item.addEventListener("click", () => selectPrompt(prompt.slug));
+        listEl.appendChild(item);
+      });
+    }
+
+    // Select prompt
+    function selectPrompt(slug) {
+      const prompt = prompts.find((item) => item.slug === slug);
+      if (!prompt) {
+        return;
+      }
+
+      selectedSlug = slug;
+
+      document.querySelectorAll(".prompt-item").forEach((item) => {
+        if (item.dataset.slug === slug) {
+          item.classList.add("selected");
+        } else {
+          item.classList.remove("selected");
+        }
+      });
+
+      const emptyState = document.getElementById("empty-state");
+      const promptView = document.getElementById("prompt-view");
+      if (emptyState) emptyState.style.display = "none";
+      if (promptView) promptView.style.display = "block";
+
+      const slugEl = document.getElementById("prompt-slug");
+      const descEl = document.getElementById("prompt-description");
+      const contentEl = document.getElementById("prompt-content");
+      if (slugEl) slugEl.textContent = prompt.slug;
+      if (descEl) descEl.textContent = prompt.description;
+      if (contentEl) contentEl.textContent = prompt.content;
+
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: "prompts:selected", slug }, "*");
+      }
+    }
+
+    // Copy to clipboard
+    async function copyContent() {
+      const prompt = prompts.find((item) => item.slug === selectedSlug);
+      const content = prompt?.content ?? "";
+      if (!content) return;
+
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(content);
+      }
+
+      const copyBtn = document.getElementById("copy-btn");
+      if (!copyBtn) return;
+      const originalText = copyBtn.textContent ?? "Copy";
+      copyBtn.textContent = "Copied!";
+      setTimeout(() => {
+        copyBtn.textContent = originalText;
+      }, 1200);
+    }
+
+    // Handle search from shell
+    window.addEventListener('message', (e) => {
+      if (e.data?.type === 'shell:search') {
+        loadPrompts(e.data.query);
+      }
+    });
+
+    // New prompt navigation
+    document.getElementById('new-prompt-btn').addEventListener('click', () => {
+      window.parent.postMessage({ type: 'module:navigate', path: '/prompts/new' }, '*');
+    });
+
+    // Copy button
+    document.getElementById('copy-btn').addEventListener('click', copyContent);
+
+    // Initial load - deferred to allow test mocking
+    // In production, call loadPrompts() after DOMContentLoaded
+    // For TDD: tests will call window.loadPrompts() after setting up mocks
+    window.loadPrompts = loadPrompts;
+
+    if (!navigator.userAgent.includes("jsdom")) {
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => {
+          loadPrompts();
+        });
+      } else {
+        loadPrompts();
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Prompt</title>
+  <link rel="stylesheet" href="/shared/themes/base.css">
+  <link rel="stylesheet" href="/shared/themes/tokyo-night.css">
+</head>
+<body class="module editor-module">
+  <form id="prompt-form" class="prompt-form">
+    <div class="form-group">
+      <label for="slug">Slug</label>
+      <input type="text" id="slug" name="slug" required />
+      <span id="slug-error" class="error-message"></span>
+    </div>
+
+    <div class="form-group">
+      <label for="name">Name</label>
+      <input type="text" id="name" name="name" required />
+      <span id="name-error" class="error-message"></span>
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description</label>
+      <textarea id="description" name="description" rows="2"></textarea>
+      <span id="description-error" class="error-message"></span>
+    </div>
+
+    <div class="form-group">
+      <label for="content">Content</label>
+      <textarea id="content" name="content" rows="10" required></textarea>
+      <span id="content-error" class="error-message"></span>
+    </div>
+
+    <div class="form-group">
+      <label for="tags">Tags (comma-separated)</label>
+      <input type="text" id="tags" name="tags" />
+      <span id="tags-error" class="error-message"></span>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" id="cancel-btn" class="btn-secondary">Cancel</button>
+      <button type="submit" id="submit-btn" class="btn-primary">Save Prompt</button>
+    </div>
+
+    <div id="form-error" class="form-error"></div>
+  </form>
+
+  <script>
+    const SLUG_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+    const LIMITS = {
+      slug: 200,
+      name: 200,
+      description: 2000,
+      content: 100000,
+      tag: 100,
+      tagsMax: 50,
+    };
+
+    function setFieldError(field, message) {
+      const el = document.getElementById(`${field}-error`);
+      if (el) {
+        el.textContent = message;
+      }
+    }
+
+    function parseTags(value) {
+      return value
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0);
+    }
+
+    // Validation
+    function validateSlug(value) {
+      const trimmed = value.trim();
+      let message = "";
+
+      if (!trimmed) {
+        message = "Slug is required";
+      } else if (trimmed.length > LIMITS.slug) {
+        message = "Slug must be 200 characters or less";
+      } else if (!SLUG_REGEX.test(trimmed)) {
+        message = "Slug must be lowercase letters, numbers, and dashes";
+      }
+
+      setFieldError("slug", message);
+      return message === "";
+    }
+
+    function validateForm() {
+      const slugInput = document.getElementById("slug");
+      const nameInput = document.getElementById("name");
+      const descriptionInput = document.getElementById("description");
+      const contentInput = document.getElementById("content");
+      const tagsInput = document.getElementById("tags");
+
+      const slugValue = slugInput ? slugInput.value : "";
+      const nameValue = nameInput ? nameInput.value.trim() : "";
+      const descriptionValue = descriptionInput ? descriptionInput.value.trim() : "";
+      const contentValue = contentInput ? contentInput.value.trim() : "";
+      const tagsValue = tagsInput ? tagsInput.value : "";
+
+      const slugValid = validateSlug(slugValue);
+
+      let nameMessage = "";
+      if (!nameValue) {
+        nameMessage = "Name is required";
+      } else if (nameValue.length > LIMITS.name) {
+        nameMessage = "Name must be 200 characters or less";
+      }
+      setFieldError("name", nameMessage);
+
+      let descriptionMessage = "";
+      if (descriptionValue.length > LIMITS.description) {
+        descriptionMessage = "Description must be 2,000 characters or less";
+      }
+      setFieldError("description", descriptionMessage);
+
+      let contentMessage = "";
+      if (!contentValue) {
+        contentMessage = "Content is required";
+      } else if (contentValue.length > LIMITS.content) {
+        contentMessage = "Content must be 100,000 characters or less";
+      }
+      setFieldError("content", contentMessage);
+
+      const tags = parseTags(tagsValue);
+      let tagsMessage = "";
+      if (tags.length > LIMITS.tagsMax) {
+        tagsMessage = "Maximum 50 tags allowed";
+      } else if (tags.some((tag) => tag.length > LIMITS.tag)) {
+        tagsMessage = "Each tag must be 100 characters or less";
+      }
+      setFieldError("tags", tagsMessage);
+
+      return (
+        slugValid &&
+        !nameMessage &&
+        !descriptionMessage &&
+        !contentMessage &&
+        !tagsMessage
+      );
+    }
+
+    // Submit
+    async function submitForm(e) {
+      if (e?.preventDefault) {
+        e.preventDefault();
+      }
+
+      const formError = document.getElementById("form-error");
+      if (formError) formError.textContent = "";
+
+      if (!validateForm()) {
+        return;
+      }
+
+      const slugInput = document.getElementById("slug");
+      const nameInput = document.getElementById("name");
+      const descriptionInput = document.getElementById("description");
+      const contentInput = document.getElementById("content");
+      const tagsInput = document.getElementById("tags");
+
+      const tags = parseTags(tagsInput ? tagsInput.value : "");
+
+      const payload = {
+        prompts: [
+          {
+            slug: slugInput ? slugInput.value.trim() : "",
+            name: nameInput ? nameInput.value.trim() : "",
+            description: descriptionInput ? descriptionInput.value.trim() : "",
+            content: contentInput ? contentInput.value.trim() : "",
+            tags,
+          },
+        ],
+      };
+
+      try {
+        const response = await fetch("/api/prompts", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (response.ok) {
+          window.parent.postMessage(
+            { type: "module:navigate", path: "/prompts" },
+            "*",
+          );
+          return;
+        }
+
+        let errorMessage = "";
+        try {
+          const data = await response.json();
+          if (data && typeof data.error === "string") {
+            errorMessage = data.error;
+          }
+        } catch {
+          // ignore parse errors
+        }
+
+        if (response.status === 409) {
+          errorMessage = errorMessage || "Slug already exists";
+        }
+
+        if (!errorMessage) {
+          errorMessage = "Failed to save prompt";
+        }
+
+        if (formError) formError.textContent = errorMessage;
+      } catch {
+        if (formError) formError.textContent = "Failed to save prompt";
+      }
+    }
+
+    // Cancel
+    function cancel() {
+      window.parent.postMessage({ type: 'module:navigate', path: '/prompts' }, '*');
+    }
+
+    // Event listeners
+    document.getElementById('prompt-form').addEventListener('submit', submitForm);
+    document.getElementById('cancel-btn').addEventListener('click', cancel);
+
+    // Blur validation
+    document.getElementById('slug').addEventListener('blur', (e) => {
+      validateSlug(e.target.value);
+    });
+  </script>
+</body>
+</html>

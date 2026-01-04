@@ -1,17 +1,19 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, beforeAll } from "vitest";
 
-import { getTestAuth, hasTestAuth } from "../fixtures/auth";
+import { getTestAuth, requireTestAuth } from "../fixtures/auth";
+import { getTestBaseUrl } from "../fixtures/env";
 import { createExpiredJwt } from "../fixtures/jwt";
 
-const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:5001";
+const BASE_URL = getTestBaseUrl();
 
 describe("Auth API Integration", () => {
+	beforeAll(() => {
+		requireTestAuth();
+	});
+
 	test("Bearer token authenticates successfully", async () => {
-		if (!hasTestAuth()) {
-			throw new Error("Test auth not configured");
-		}
 		const auth = await getTestAuth();
-		if (!auth) throw new Error("Test auth not available");
+		if (!auth) throw new Error("Failed to get test auth");
 
 		const res = await fetch(`${BASE_URL}/api/health`, {
 			headers: { Authorization: `Bearer ${auth.accessToken}` },
@@ -26,11 +28,8 @@ describe("Auth API Integration", () => {
 		// Note: Cookies are signed by Fastify when set via /auth/callback.
 		// For integration tests, Bearer tokens are the reliable approach.
 		// This test verifies the same token works via Bearer header.
-		if (!hasTestAuth()) {
-			throw new Error("Test auth not configured");
-		}
 		const auth = await getTestAuth();
-		if (!auth) throw new Error("Test auth not available");
+		if (!auth) throw new Error("Failed to get test auth");
 
 		const res = await fetch(`${BASE_URL}/api/health`, {
 			headers: {
@@ -42,11 +41,8 @@ describe("Auth API Integration", () => {
 	});
 
 	test("Bearer takes precedence over cookie", async () => {
-		if (!hasTestAuth()) {
-			throw new Error("Test auth not configured");
-		}
 		const auth = await getTestAuth();
-		if (!auth) throw new Error("Test auth not available");
+		if (!auth) throw new Error("Failed to get test auth");
 
 		const res = await fetch(`${BASE_URL}/api/health`, {
 			headers: {

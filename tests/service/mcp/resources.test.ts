@@ -11,7 +11,7 @@ import { describe, expect, test, beforeEach, vi } from "vitest";
 import type { McpDependencies } from "../../../src/api/mcp";
 
 // Track resources/list and resources/read calls
-let lastRequest: { method: string; params?: unknown } | null = null;
+let _lastRequest: { method: string; params?: unknown } | null = null;
 
 // Hoisted mocks
 const mockValidateJwt = vi.hoisted(() => vi.fn(async () => ({ valid: true })));
@@ -73,7 +73,7 @@ function createMockDeps(): McpDependencies {
 		transport: {
 			handleRequest: vi.fn(async (request: Request): Promise<Response> => {
 				const body = (await request.json()) as JsonRpcRequest;
-				lastRequest = body;
+				_lastRequest = body;
 
 				// Handle resources/list
 				if (body.method === "resources/list") {
@@ -157,7 +157,7 @@ describe("MCP resources", () => {
 	let app: ReturnType<typeof Fastify>;
 
 	beforeEach(async () => {
-		lastRequest = null;
+		_lastRequest = null;
 		app = Fastify({ logger: false });
 		app.register(cookie, { secret: process.env.COOKIE_SECRET });
 		registerMcpRoutes(app, createMockDeps());

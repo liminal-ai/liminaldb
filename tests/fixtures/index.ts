@@ -1,4 +1,5 @@
-export * from "./auth";
+export { getTestAuth, requireTestAuth, clearAuthCache } from "./auth";
+export type { TestAuth } from "./auth";
 export * from "./jwt";
 export * from "./mockReply";
 export type { MockReplyType } from "./mockReply";

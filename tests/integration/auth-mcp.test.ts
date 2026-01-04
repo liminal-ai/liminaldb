@@ -1,16 +1,18 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, beforeAll } from "vitest";
 
-import { getTestAuth, hasTestAuth } from "../fixtures/auth";
+import { getTestAuth, requireTestAuth } from "../fixtures/auth";
+import { getTestBaseUrl } from "../fixtures/env";
 
-const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:5001";
+const BASE_URL = getTestBaseUrl();
 
 describe("MCP Integration Auth", () => {
+	beforeAll(() => {
+		requireTestAuth();
+	});
+
 	test("MCP accepts Bearer token and returns data", async () => {
-		if (!hasTestAuth()) {
-			throw new Error("Test auth not configured");
-		}
 		const auth = await getTestAuth();
-		if (!auth) throw new Error("Test auth not available");
+		if (!auth) throw new Error("Failed to get test auth");
 
 		const res = await fetch(`${BASE_URL}/mcp`, {
 			method: "POST",
@@ -40,11 +42,8 @@ describe("MCP Integration Auth", () => {
 	});
 
 	test("MCP uses Bearer token over cookie", async () => {
-		if (!hasTestAuth()) {
-			throw new Error("Test auth not configured");
-		}
 		const auth = await getTestAuth();
-		if (!auth) throw new Error("Test auth not available");
+		if (!auth) throw new Error("Failed to get test auth");
 
 		const res = await fetch(`${BASE_URL}/mcp`, {
 			method: "POST",
@@ -61,11 +60,8 @@ describe("MCP Integration Auth", () => {
 	});
 
 	test("MCP tool respects RLS and returns scoped data", async () => {
-		if (!hasTestAuth()) {
-			throw new Error("Test auth not configured");
-		}
 		const auth = await getTestAuth();
-		if (!auth) throw new Error("Test auth not available");
+		if (!auth) throw new Error("Failed to get test auth");
 
 		const res = await fetch(`${BASE_URL}/mcp`, {
 			method: "POST",
