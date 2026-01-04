@@ -1,67 +1,41 @@
-import { describe, test, expect, beforeAll, afterAll, afterEach } from "vitest";
-import Fastify from "fastify";
-import cookie from "@fastify/cookie";
+import { describe, test, expect, beforeAll, afterEach } from "vitest";
 import {
 	getTestAuth,
 	requireTestAuth,
 	type TestAuth,
 } from "../../fixtures/auth";
-import { requireEnv } from "../../fixtures/env";
+import { getTestBaseUrl } from "../../fixtures/env";
 
 /**
  * Integration tests for UI prompts flow.
- * Tests create → list → view happy path using app.inject().
- * Consistent with ui-auth.test.ts pattern.
+ * Tests API and module endpoints against the real staging server.
  */
 
 describe("UI Prompts Integration", () => {
-	let app: ReturnType<typeof Fastify>;
-	let auth!: TestAuth;
+	let baseUrl: string;
+	let auth: TestAuth;
 	const createdSlugs: string[] = [];
-	const cookieSecret = requireEnv("COOKIE_SECRET");
 
 	beforeAll(async () => {
 		requireTestAuth();
+		baseUrl = getTestBaseUrl();
 		const resolvedAuth = await getTestAuth();
 		if (!resolvedAuth) {
 			throw new Error("Failed to get test auth");
 		}
 		auth = resolvedAuth;
-
-		// Import routes
-		const { registerAppRoutes } = await import("../../../src/routes/app");
-		const { registerModuleRoutes } = await import(
-			"../../../src/routes/modules"
-		);
-		const { registerPromptRoutes } = await import(
-			"../../../src/routes/prompts"
-		);
-		const { registerAuthRoutes } = await import("../../../src/routes/auth");
-
-		app = Fastify();
-		app.register(cookie, { secret: cookieSecret });
-		registerAuthRoutes(app);
-		registerAppRoutes(app);
-		registerModuleRoutes(app);
-		registerPromptRoutes(app);
-		await app.ready();
-	});
-
-	afterAll(async () => {
-		if (app) await app.close();
 	});
 
 	afterEach(async () => {
 		// Cleanup created prompts
 		for (const slug of createdSlugs) {
 			try {
-				await app.inject({
+				await fetch(`${baseUrl}/api/prompts/${slug}`, {
 					method: "DELETE",
-					url: `/api/prompts/${slug}`,
-					headers: { authorization: `Bearer ${auth.accessToken}` },
+					headers: { Authorization: `Bearer ${auth.accessToken}` },
 				});
 			} catch {
-				// Ignore
+				// Ignore cleanup errors
 			}
 		}
 		createdSlugs.length = 0;
@@ -72,19 +46,28 @@ describe("UI Prompts Integration", () => {
 		return slug;
 	}
 
-	describe("Happy path: Create and view prompt", () => {
+	describe("API endpoints", () => {
+		test("GET /api/prompts with auth returns prompt list", async () => {
+			const response = await fetch(`${baseUrl}/api/prompts`, {
+				headers: { Authorization: `Bearer ${auth.accessToken}` },
+			});
+
+			expect(response.status).toBe(200);
+			const prompts = await response.json();
+			expect(Array.isArray(prompts)).toBe(true);
+		});
+
 		test("created prompt appears in list API", async () => {
 			const slug = trackSlug(`ui-test-${Date.now()}`);
 
 			// Create via API
-			const createRes = await app.inject({
+			const createRes = await fetch(`${baseUrl}/api/prompts`, {
 				method: "POST",
-				url: "/api/prompts",
 				headers: {
-					authorization: `Bearer ${auth.accessToken}`,
-					"content-type": "application/json",
+					Authorization: `Bearer ${auth.accessToken}`,
+					"Content-Type": "application/json",
 				},
-				payload: {
+				body: JSON.stringify({
 					prompts: [
 						{
 							slug,
@@ -94,22 +77,44 @@ describe("UI Prompts Integration", () => {
 							tags: ["ui-test"],
 						},
 					],
-				},
+				}),
 			});
 
-			expect(createRes.statusCode).toBe(201);
+			expect(createRes.status).toBe(201);
 
 			// Fetch list
-			const listRes = await app.inject({
-				method: "GET",
-				url: "/api/prompts",
-				headers: { authorization: `Bearer ${auth.accessToken}` },
+			const listRes = await fetch(`${baseUrl}/api/prompts`, {
+				headers: { Authorization: `Bearer ${auth.accessToken}` },
 			});
 
-			expect(listRes.statusCode).toBe(200);
-			const prompts = listRes.json();
-			const found = prompts.find((p: { slug: string }) => p.slug === slug);
+			expect(listRes.status).toBe(200);
+			const prompts = (await listRes.json()) as Array<{ slug: string }>;
+			const found = prompts.find((p) => p.slug === slug);
 			expect(found).toBeDefined();
+		});
+	});
+
+	describe("Module endpoints", () => {
+		test("GET /_m/prompts returns HTML", async () => {
+			const response = await fetch(`${baseUrl}/_m/prompts`, {
+				headers: { Authorization: `Bearer ${auth.accessToken}` },
+			});
+
+			expect(response.status).toBe(200);
+			expect(response.headers.get("content-type")).toContain("text/html");
+			const body = await response.text();
+			expect(body.length).toBeGreaterThan(0);
+		});
+
+		test("GET /_m/prompt-editor returns HTML", async () => {
+			const response = await fetch(`${baseUrl}/_m/prompt-editor`, {
+				headers: { Authorization: `Bearer ${auth.accessToken}` },
+			});
+
+			expect(response.status).toBe(200);
+			expect(response.headers.get("content-type")).toContain("text/html");
+			const body = await response.text();
+			expect(body.length).toBeGreaterThan(0);
 		});
 	});
 });
