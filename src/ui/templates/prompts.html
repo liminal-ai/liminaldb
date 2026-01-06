@@ -6,12 +6,13 @@
   <title>Prompts</title>
   <link rel="stylesheet" href="/shared/themes/base.css">
   <link rel="stylesheet" href="/shared/themes/tokyo-night.css">
+  <link rel="stylesheet" href="/shared/prompt-viewer.css">
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
 </head>
 <body class="module prompts-module">
   <aside class="sidebar">
     <div class="sidebar-header">
-      <h2>Prompts</h2>
-      <button id="new-prompt-btn" class="btn-primary">New Prompt</button>
+      <button id="new-prompt-btn" class="btn-primary">+ New</button>
     </div>
     <div id="prompt-list" class="prompt-list">
       <!-- Populated by JavaScript -->
@@ -27,13 +28,28 @@
         <h1 id="prompt-slug" class="prompt-slug"></h1>
         <p id="prompt-description" class="prompt-description"></p>
       </header>
-      <div id="prompt-content" class="prompt-content"></div>
-      <div class="prompt-actions">
-        <button id="copy-btn" class="btn-secondary">Copy</button>
+
+      <!-- Prompt Viewer Component -->
+      <div class="prompt-viewer view-rendered" id="promptViewer">
+        <div class="prompt-viewer-header">
+          <button class="copy-btn-primary" id="copy-btn" title="Copy to clipboard">Copy</button>
+          <div class="prompt-viewer-actions">
+            <button class="prompt-viewer-btn active" data-view="rendered">Rendered</button>
+            <button class="prompt-viewer-btn" data-view="semantic">Semantic</button>
+            <button class="prompt-viewer-btn" data-view="plain">Plain</button>
+          </div>
+        </div>
+        <div class="prompt-viewer-content" id="promptContent"></div>
+        <div class="prompt-viewer-stats">
+          <span class="prompt-viewer-stat">tags <span class="prompt-viewer-stat-value" id="statTags">0</span></span>
+          <span class="prompt-viewer-stat">vars <span class="prompt-viewer-stat-value" id="statVars">0</span></span>
+          <span class="prompt-viewer-stat">chars <span class="prompt-viewer-stat-value" id="statChars">0</span></span>
+        </div>
       </div>
     </article>
   </main>
 
+  <script src="/js/prompt-viewer.js"></script>
   <script>
     // Escape HTML to prevent XSS
     function escapeHtml(str) {
@@ -45,13 +61,44 @@
     // State
     let prompts = [];
     let selectedSlug = null;
+    let currentView = localStorage.getItem('promptViewMode') || 'rendered';
+    let rawPrompt = '';
+
+    // Initialize view mode from localStorage
+    function initViewMode() {
+      const viewer = document.getElementById('promptViewer');
+      viewer.className = `prompt-viewer view-${currentView}`;
+      viewer.querySelectorAll('[data-view]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === currentView);
+      });
+    }
+
+    // Display prompt content with current view mode
+    function displayPromptContent(content) {
+      rawPrompt = content;
+      const contentEl = document.getElementById('promptContent');
+
+      const { html, stats } = renderPrompt(content, currentView);
+      contentEl.innerHTML = html || '<span style="color: var(--text-muted)">No content</span>';
+
+      document.getElementById('statTags').textContent = stats.tags;
+      document.getElementById('statVars').textContent = stats.vars;
+      document.getElementById('statChars').textContent = content.length;
+    }
 
     // Load prompts on init
-    async function loadPrompts(query = '') {
+    async function loadPrompts(query = '', tags = []) {
+      const params = new URLSearchParams();
       const trimmed = query.trim();
-      const url = trimmed
-        ? `/api/prompts?q=${encodeURIComponent(trimmed)}`
-        : "/api/prompts";
+      if (trimmed) {
+        params.set('q', trimmed);
+      }
+      if (tags.length > 0) {
+        params.set('tags', tags.join(','));
+      }
+
+      const queryString = params.toString();
+      const url = queryString ? `/api/prompts?${queryString}` : "/api/prompts";
 
       const response = await fetch(url, {
         method: "GET",
@@ -130,10 +177,11 @@
 
       const slugEl = document.getElementById("prompt-slug");
       const descEl = document.getElementById("prompt-description");
-      const contentEl = document.getElementById("prompt-content");
       if (slugEl) slugEl.textContent = prompt.slug;
       if (descEl) descEl.textContent = prompt.description;
-      if (contentEl) contentEl.textContent = prompt.content;
+
+      // Use prompt viewer to display content
+      displayPromptContent(prompt.content || '');
 
       if (window.parent && window.parent !== window) {
         window.parent.postMessage({ type: "prompts:selected", slug }, "*");
@@ -142,30 +190,46 @@
 
     // Copy to clipboard
     async function copyContent() {
-      const prompt = prompts.find((item) => item.slug === selectedSlug);
-      const content = prompt?.content ?? "";
-      if (!content) return;
+      if (!rawPrompt) return;
 
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(content);
+      try {
+        await navigator.clipboard.writeText(rawPrompt);
+        const copyBtn = document.getElementById("copy-btn");
+        if (!copyBtn) return;
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => {
+          copyBtn.textContent = originalText;
+        }, 1200);
+      } catch (err) {
+        console.error('Failed to copy:', err);
       }
-
-      const copyBtn = document.getElementById("copy-btn");
-      if (!copyBtn) return;
-      const originalText = copyBtn.textContent ?? "Copy";
-      copyBtn.textContent = "Copied!";
-      setTimeout(() => {
-        copyBtn.textContent = originalText;
-      }, 1200);
     }
 
-    // Handle search from shell
+    // View toggle buttons
+    document.getElementById('promptViewer').querySelectorAll('[data-view]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const viewer = document.getElementById('promptViewer');
+        viewer.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentView = btn.dataset.view;
+        localStorage.setItem('promptViewMode', currentView);
+        viewer.className = `prompt-viewer view-${currentView}`;
+        if (rawPrompt) displayPromptContent(rawPrompt);
+      });
+    });
+
+    // Handle messages from shell
     window.addEventListener('message', (e) => {
       // Only accept messages from same origin (shell)
       if (e.origin !== window.location.origin) return;
 
       if (e.data?.type === 'shell:search') {
+        // Legacy: search only
         loadPrompts(e.data.query);
+      } else if (e.data?.type === 'shell:filter') {
+        // New: search + tag filtering
+        loadPrompts(e.data.query || '', e.data.tags || []);
       }
     });
 
@@ -176,6 +240,9 @@
 
     // Copy button
     document.getElementById('copy-btn').addEventListener('click', copyContent);
+
+    // Initialize view mode
+    initViewMode();
 
     // Initial load - deferred to allow test mocking
     // In production, call loadPrompts() after DOMContentLoaded

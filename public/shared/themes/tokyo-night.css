@@ -29,6 +29,7 @@
   /* Status */
   --success: #9ece6a;
   --error: #f7768e;
+  --error-dim: rgba(247, 118, 142, 0.15);
   --warning: #e0af68;
   --info: #7dcfff;
 }
