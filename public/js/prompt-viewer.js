@@ -4,13 +4,18 @@
  */
 
 // Initialize markdown-it (assumes it's loaded globally or import it)
-const md = window.markdownit({
-	html: false,
-	xhtmlOut: false,
-	breaks: true,
-	linkify: true,
-	typographer: false,
-});
+if (typeof window.markdownit !== "function") {
+	console.warn("markdown-it not loaded. Rendered view will not work.");
+}
+const md = window.markdownit
+	? window.markdownit({
+			html: false,
+			xhtmlOut: false,
+			breaks: true,
+			linkify: true,
+			typographer: false,
+		})
+	: null;
 
 /**
  * Semantic Parser - shows syntax but muted, content prominent
@@ -66,7 +71,7 @@ class SemanticParser {
 			} else if (this.input[this.pos] === "`" && !this.lookingAt("```")) {
 				result += this.parseInlineCode();
 			} else {
-				result += this.escapeHtml(this.input[this.pos]);
+				result += escapeHtml(this.input[this.pos]);
 				this.pos++;
 			}
 		}
@@ -107,10 +112,10 @@ class SemanticParser {
 		if (!isClosing) this.stats.tags++;
 
 		if (isClosing) {
-			return `<span class="xml-bracket">&lt;/</span><span class="xml-name">${this.escapeHtml(tagName)}</span><span class="xml-bracket">&gt;</span>`;
+			return `<span class="xml-bracket">&lt;/</span><span class="xml-name">${escapeHtml(tagName)}</span><span class="xml-bracket">&gt;</span>`;
 		} else {
 			const rest = tag.slice(1 + tagName.length, -1);
-			return `<span class="xml-bracket">&lt;</span><span class="xml-name">${this.escapeHtml(tagName)}</span><span class="xml-bracket">${this.escapeHtml(rest)}&gt;</span>`;
+			return `<span class="xml-bracket">&lt;</span><span class="xml-name">${escapeHtml(tagName)}</span><span class="xml-bracket">${escapeHtml(rest)}&gt;</span>`;
 		}
 	}
 
@@ -124,7 +129,7 @@ class SemanticParser {
 		const closeBraces = this.lookingAt("}}");
 		if (closeBraces) this.pos += 2;
 		this.stats.vars++;
-		return `<span class="var-brace">{{</span><span class="var-name">${this.escapeHtml(varName.trim())}</span><span class="var-brace">${closeBraces ? "}}" : ""}</span>`;
+		return `<span class="var-brace">{{</span><span class="var-name">${escapeHtml(varName.trim())}</span><span class="var-brace">${closeBraces ? "}}" : ""}</span>`;
 	}
 
 	parseCodeBlock() {
@@ -137,7 +142,7 @@ class SemanticParser {
 			this.pos++;
 		}
 		if (lang)
-			result += `<span class="md-codeblock-lang">${this.escapeHtml(lang)}</span>`;
+			result += `<span class="md-codeblock-lang">${escapeHtml(lang)}</span>`;
 		if (this.input[this.pos] === "\n") {
 			result += "\n";
 			this.pos++;
@@ -148,7 +153,7 @@ class SemanticParser {
 			content += this.input[this.pos];
 			this.pos++;
 		}
-		result += `<span class="md-codeblock-content">${this.escapeHtml(content)}</span>`;
+		result += `<span class="md-codeblock-content">${escapeHtml(content)}</span>`;
 
 		if (this.lookingAt("```")) {
 			result += '<span class="md-codeblock-fence">```</span>';
@@ -174,7 +179,7 @@ class SemanticParser {
 			this.pos++;
 		}
 		const level = Math.min(hashes.length, 3);
-		return `<span class="md-header-${level}"><span class="md-hash">${hashes}${space}</span><span class="md-header-text">${this.escapeHtml(text)}</span></span>`;
+		return `<span class="md-header-${level}"><span class="md-hash">${hashes}${space}</span><span class="md-header-text">${escapeHtml(text)}</span></span>`;
 	}
 
 	parseListItem() {
@@ -209,7 +214,7 @@ class SemanticParser {
 			if (this.lookingAt("{{")) {
 				text += this.parseVariable();
 			} else {
-				text += this.escapeHtml(this.input[this.pos]);
+				text += escapeHtml(this.input[this.pos]);
 				this.pos++;
 			}
 		}
@@ -230,7 +235,7 @@ class SemanticParser {
 			if (this.lookingAt("{{")) {
 				text += this.parseVariable();
 			} else {
-				text += this.escapeHtml(this.input[this.pos]);
+				text += escapeHtml(this.input[this.pos]);
 				this.pos++;
 			}
 		}
@@ -248,19 +253,11 @@ class SemanticParser {
 		}
 		const hasClose = this.input[this.pos] === "`";
 		if (hasClose) this.pos++;
-		return `<span class="md-code-marker">\`</span><span class="md-code-text">${this.escapeHtml(text)}</span>${hasClose ? '<span class="md-code-marker">\`</span>' : ""}`;
+		return `<span class="md-code-marker">\`</span><span class="md-code-text">${escapeHtml(text)}</span>${hasClose ? '<span class="md-code-marker">\`</span>' : ""}`;
 	}
 
 	lookingAt(str) {
 		return this.input.slice(this.pos, this.pos + str.length) === str;
-	}
-
-	escapeHtml(str) {
-		return str
-			.replace(/&/g, "&amp;")
-			.replace(/</g, "&lt;")
-			.replace(/>/g, "&gt;")
-			.replace(/"/g, "&quot;");
 	}
 }
 
@@ -268,6 +265,13 @@ class SemanticParser {
  * Render markdown with muted XML tags and styled variables
  */
 function renderMarkdown(input) {
+	if (!md) {
+		return {
+			html: escapeHtml(input),
+			stats: { tags: 0, vars: 0, chars: input.length },
+		};
+	}
+
 	const tags = (input.match(/<[a-zA-Z_][a-zA-Z0-9_-]*/g) || []).length;
 	const vars = (input.match(/\{\{[^}]+\}\}/g) || []).length;
 
@@ -293,9 +297,10 @@ function renderMarkdown(input) {
 			const idx = preserved.length;
 			const isClosing = tagName.startsWith("/");
 			const name = isClosing ? tagName.slice(1) : tagName;
+			const safeAttrs = escapeHtml(attrs);
 			const display = isClosing
 				? `&lt;/${name}&gt;`
-				: `&lt;${name}${attrs}&gt;`;
+				: `&lt;${name}${safeAttrs}&gt;`;
 			preserved.push(`<span class="rendered-xml-tag">${display}</span>`);
 			return `%%%PROTECTED_${idx}%%%`;
 		},
@@ -304,18 +309,10 @@ function renderMarkdown(input) {
 	let html = md.render(protectedInput);
 
 	preserved.forEach((content, idx) => {
-		html = html.replace(`%%%PROTECTED_${idx}%%%`, content);
+		html = html.replaceAll(`%%%PROTECTED_${idx}%%%`, content);
 	});
 
 	return { html, stats: { tags, vars } };
-}
-
-function escapeHtml(str) {
-	return str
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;");
 }
 
 /**

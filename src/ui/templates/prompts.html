@@ -197,7 +197,7 @@
       if (selectedSlug) {
         const stillExists = prompts.some((prompt) => prompt.slug === selectedSlug);
         if (stillExists) {
-          selectPrompt(selectedSlug);
+          selectPrompt(selectedSlug, { trackHistory: false });
         }
       }
     }

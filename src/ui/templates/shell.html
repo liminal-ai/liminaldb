@@ -220,6 +220,7 @@
 
     // Broadcast search and tag filters to module
     function broadcastFilters() {
+      if (!moduleFrame.contentWindow) return;
       moduleFrame.contentWindow.postMessage({
         type: 'shell:filter',
         query: searchInput.value,
