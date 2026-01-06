@@ -4,10 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prompts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/shared/themes/base.css">
   <link rel="stylesheet" href="/shared/themes/tokyo-night.css">
   <link rel="stylesheet" href="/shared/prompt-viewer.css">
-  <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js" integrity="sha384-wLhprpjsmjc/XYIcF+LpMxd8yS1gss6jhevOp6F6zhiIoFK6AmHtm4bGKtehTani" crossorigin="anonymous"></script>
 </head>
 <body class="module prompts-module">
   <aside class="sidebar">
@@ -49,20 +52,19 @@
     </article>
   </main>
 
+  <script src="/js/utils.js"></script>
   <script src="/js/prompt-viewer.js"></script>
   <script>
-    // Escape HTML to prevent XSS
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
-    }
-
     // State
     let prompts = [];
     let selectedSlug = null;
     let currentMode = 'empty'; // 'empty' | 'view' | 'edit' | 'new'
-    let currentView = localStorage.getItem('promptViewMode') || 'rendered';
+    let currentView = 'rendered';
+    try {
+      currentView = localStorage.getItem('promptViewMode') || 'rendered';
+    } catch (e) {
+      // localStorage unavailable (private browsing, etc.)
+    }
     let rawPrompt = '';
 
     // ============================================
@@ -84,7 +86,7 @@
             mode: currentMode
           },
           trackHistory
-        }, '*');
+        }, window.location.origin);
       }
     }
 
@@ -93,7 +95,7 @@
      */
     function notifyShellReady() {
       if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type: 'portlet:ready' }, '*');
+        window.parent.postMessage({ type: 'portlet:ready' }, window.location.origin);
       }
     }
 
@@ -293,7 +295,11 @@
         viewer.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentView = btn.dataset.view;
-        localStorage.setItem('promptViewMode', currentView);
+        try {
+          localStorage.setItem('promptViewMode', currentView);
+        } catch (e) {
+          // localStorage unavailable (private browsing, etc.)
+        }
         viewer.className = `prompt-viewer view-${currentView}`;
         if (rawPrompt) displayPromptContent(rawPrompt);
       });
@@ -326,7 +332,7 @@
 
     // New prompt navigation
     document.getElementById('new-prompt-btn').addEventListener('click', () => {
-      window.parent.postMessage({ type: 'module:navigate', path: '/prompts/new' }, '*');
+      window.parent.postMessage({ type: 'module:navigate', path: '/prompts/new' }, window.location.origin);
     });
 
     // Copy button

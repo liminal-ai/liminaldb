@@ -90,7 +90,8 @@ async function listPromptsHandler(
 			limit: limit ? parseInt(limit, 10) : undefined,
 		});
 
-		// Filter by tags if provided (comma-separated)
+		// TODO: Tag filtering is done post-fetch which is inefficient for large
+		// collections. Consider pushing filter logic to Convex query layer.
 		let filtered = prompts;
 		if (tags) {
 			const tagList = tags.split(",").map((t) => t.trim().toLowerCase());
@@ -109,6 +110,10 @@ async function listPromptsHandler(
 /**
  * GET /api/prompts/tags
  * Get all unique tags for the user's prompts
+ *
+ * TODO: For large prompt collections, this is inefficient as it fetches
+ * all prompts to extract tags. Consider adding a dedicated Convex query
+ * that aggregates tags server-side.
  */
 async function listTagsHandler(
 	request: FastifyRequest,

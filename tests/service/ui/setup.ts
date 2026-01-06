@@ -19,6 +19,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
+ * Load shared utilities (escapeHtml, etc.) into jsdom window.
+ * Called before template scripts run since external scripts aren't fetched.
+ */
+async function injectSharedUtils(dom: JSDOM): Promise<void> {
+	const utilsPath = resolve(__dirname, "../../../public/js/utils.js");
+	const utilsContent = await readFile(utilsPath, "utf8");
+	dom.window.eval(utilsContent);
+}
+
+/**
  * Load a template file into jsdom for testing.
  * @param templateName - The template file name (e.g., "prompts.html")
  * @returns A JSDOM instance with the template loaded
@@ -30,11 +40,23 @@ export async function loadTemplate(templateName: string): Promise<JSDOM> {
 	);
 	const html = await readFile(templatePath, "utf8");
 
+	// Create DOM without running scripts first
 	const dom = new JSDOM(html, {
-		runScripts: "dangerously",
+		runScripts: "outside-only",
 		url: "http://localhost:5001",
 		pretendToBeVisual: true,
 	});
+
+	// Inject shared utilities before scripts run
+	await injectSharedUtils(dom);
+
+	// Now execute the inline scripts
+	const scripts = dom.window.document.querySelectorAll("script:not([src])");
+	for (const script of scripts) {
+		if (script.textContent) {
+			dom.window.eval(script.textContent);
+		}
+	}
 
 	return dom;
 }

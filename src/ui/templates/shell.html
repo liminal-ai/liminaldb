@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/shared/themes/tokyo-night.css">
 </head>
 <body class="shell">
+  <script src="/js/utils.js"></script>
   <header class="shell-header">
     <div class="search-group">
       <input type="search" id="search-input" class="search-input" placeholder="Search prompts..." />
@@ -119,7 +120,7 @@
         moduleFrame.contentWindow.postMessage({
           type: 'shell:state',
           state: state
-        }, '*');
+        }, window.location.origin);
       }
     }
 
@@ -223,7 +224,7 @@
         type: 'shell:filter',
         query: searchInput.value,
         tags: selectedTags
-      }, '*');
+      }, window.location.origin);
     }
 
     // Toggle dropdown visibility
@@ -290,13 +291,6 @@
           break;
       }
     });
-
-    // Escape HTML helper
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
-    }
 
     // Initialize
     initHistoryState();

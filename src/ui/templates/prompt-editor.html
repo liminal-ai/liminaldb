@@ -187,7 +187,7 @@
         if (response.ok) {
           window.parent.postMessage(
             { type: "module:navigate", path: "/prompts" },
-            "*",
+            window.location.origin,
           );
           return;
         }
@@ -218,7 +218,7 @@
 
     // Cancel
     function cancel() {
-      window.parent.postMessage({ type: 'module:navigate', path: '/prompts' }, '*');
+      window.parent.postMessage({ type: 'module:navigate', path: '/prompts' }, window.location.origin);
     }
 
     // Event listeners

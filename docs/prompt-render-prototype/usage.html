@@ -1,0 +1,105 @@
+<!-- 
+  Prompt Viewer Component
+  
+  Dependencies:
+  - markdown-it CDN (or npm)
+  - prompt-viewer.css
+  - prompt-viewer.js
+  - Your Tokyo Night CSS variables
+-->
+
+<!-- Add to your <head> -->
+<script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
+<link rel="stylesheet" href="/css/prompt-viewer.css">
+
+<!-- Component HTML -->
+<div class="prompt-viewer view-semantic" id="promptViewer">
+  <div class="prompt-viewer-header">
+    <span class="prompt-viewer-title">View</span>
+    <div class="prompt-viewer-actions">
+      <button class="prompt-viewer-btn active" data-view="semantic">Semantic</button>
+      <button class="prompt-viewer-btn" data-view="plain">Plain</button>
+      <button class="prompt-viewer-btn" data-view="rendered">Rendered</button>
+      <button class="prompt-viewer-btn" id="copyBtn" title="Copy to clipboard">Copy</button>
+    </div>
+  </div>
+  <div class="prompt-viewer-content" id="promptContent"></div>
+  <div class="prompt-viewer-stats">
+    <span class="prompt-viewer-stat">tags <span class="prompt-viewer-stat-value" id="statTags">0</span></span>
+    <span class="prompt-viewer-stat">vars <span class="prompt-viewer-stat-value" id="statVars">0</span></span>
+    <span class="prompt-viewer-stat">chars <span class="prompt-viewer-stat-value" id="statChars">0</span></span>
+  </div>
+</div>
+
+<!-- Add before closing </body> -->
+<script src="/js/prompt-viewer.js"></script>
+<script>
+(function() {
+  const viewer = document.getElementById('promptViewer');
+  const content = document.getElementById('promptContent');
+  const copyBtn = document.getElementById('copyBtn');
+  
+  let currentView = 'semantic';
+  let rawPrompt = ''; // Store raw prompt text
+  
+  /**
+   * Render prompt with current view mode
+   * @param {string} promptText - raw prompt content
+   */
+  function displayPrompt(promptText) {
+    rawPrompt = promptText;
+    
+    const { html, stats } = renderPrompt(promptText, currentView);
+    content.innerHTML = html || '<span style="color: var(--text-muted)">No content</span>';
+    
+    document.getElementById('statTags').textContent = stats.tags;
+    document.getElementById('statVars').textContent = stats.vars;
+    document.getElementById('statChars').textContent = promptText.length;
+    
+    viewer.className = `prompt-viewer view-${currentView}`;
+  }
+  
+  // View toggle buttons
+  viewer.querySelectorAll('[data-view]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      viewer.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentView = btn.dataset.view;
+      if (rawPrompt) displayPrompt(rawPrompt);
+    });
+  });
+  
+  // Copy button
+  copyBtn.addEventListener('click', async () => {
+    if (!rawPrompt) return;
+    
+    try {
+      await navigator.clipboard.writeText(rawPrompt);
+      const originalText = copyBtn.textContent;
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => {
+        copyBtn.textContent = originalText;
+      }, 1500);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  });
+  
+  // Expose for external use
+  window.promptViewer = {
+    display: displayPrompt,
+    setView: (view) => {
+      currentView = view;
+      viewer.querySelectorAll('[data-view]').forEach(b => {
+        b.classList.toggle('active', b.dataset.view === view);
+      });
+      if (rawPrompt) displayPrompt(rawPrompt);
+    },
+    getRaw: () => rawPrompt
+  };
+})();
+
+// Usage example:
+// promptViewer.display('Your prompt content here...');
+// promptViewer.setView('rendered');
+</script>
