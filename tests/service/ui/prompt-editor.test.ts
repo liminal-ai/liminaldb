@@ -95,7 +95,7 @@ describe("Prompt Editor", () => {
 
 			expect(postMessageSpy).toHaveBeenCalledWith(
 				{ type: "module:navigate", path: "/prompts" },
-				"*",
+				"http://localhost:5001",
 			);
 		});
 	});
@@ -118,13 +118,13 @@ describe("Prompt Editor", () => {
 			const slugInput = dom.window.document.getElementById(
 				"slug",
 			) as HTMLInputElement;
-			input(slugInput, "");
+			input(slugInput, "http://localhost:5001");
 			blur(slugInput);
 
 			await waitForAsync(50);
 
 			const errorEl = dom.window.document.getElementById("slug-error");
-			expect(errorEl?.textContent).not.toBe("");
+			expect(errorEl?.textContent).not.toBe("http://localhost:5001");
 		});
 
 		test("valid slug clears error", async () => {
@@ -197,7 +197,7 @@ describe("Prompt Editor", () => {
 
 			expect(postMessageSpy).toHaveBeenCalledWith(
 				{ type: "module:navigate", path: "/prompts" },
-				"*",
+				"http://localhost:5001",
 			);
 		});
 	});

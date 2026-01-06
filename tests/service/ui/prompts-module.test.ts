@@ -131,8 +131,8 @@ describe("Prompts Module", () => {
 
 			await waitForAsync(50);
 
-			const contentEl = dom.window.document.getElementById("prompt-content");
-			expect(contentEl?.textContent).toContain("You are a code reviewer");
+			const contentEl = dom.window.document.getElementById("promptContent");
+			expect(contentEl?.textContent).toContain("code reviewer");
 		});
 
 		test("clicked item has selected class", async () => {
@@ -224,7 +224,7 @@ describe("Prompts Module", () => {
 
 			expect(postMessageSpy).toHaveBeenCalledWith(
 				{ type: "module:navigate", path: "/prompts/new" },
-				"*",
+				"http://localhost:5001",
 			);
 		});
 	});

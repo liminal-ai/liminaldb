@@ -47,8 +47,16 @@ export async function loadTemplate(templateName: string): Promise<JSDOM> {
 		pretendToBeVisual: true,
 	});
 
+	// Mock console.warn to suppress markdown-it warning
+	dom.window.console.warn = () => {};
+
 	// Inject shared utilities before scripts run
 	await injectSharedUtils(dom);
+
+	// Inject prompt-viewer.js for templates that need it
+	if (templateName === "prompts.html") {
+		await injectPromptViewer(dom);
+	}
 
 	// Now execute the inline scripts
 	const scripts = dom.window.document.querySelectorAll("script:not([src])");
@@ -249,4 +257,37 @@ export function postMessage(dom: JSDOM, data: unknown): void {
 		origin: "http://localhost:5001",
 	});
 	dom.window.dispatchEvent(event);
+}
+
+/**
+ * Load prompt-viewer.js into jsdom for testing.
+ * @param dom - The JSDOM instance
+ */
+export async function injectPromptViewer(dom: JSDOM): Promise<void> {
+	const viewerPath = resolve(__dirname, "../../../public/js/prompt-viewer.js");
+	const viewerContent = await readFile(viewerPath, "utf8");
+	dom.window.eval(viewerContent);
+}
+
+/**
+ * Create a minimal DOM for testing prompt-viewer in isolation.
+ * @returns A JSDOM instance with utils and prompt-viewer loaded
+ */
+export async function createPromptViewerTestEnv(): Promise<JSDOM> {
+	const dom = new JSDOM("<!DOCTYPE html><html><body></body></html>", {
+		runScripts: "outside-only",
+		url: "http://localhost:5001",
+		pretendToBeVisual: true,
+	});
+
+	// Mock console.warn to suppress markdown-it warning
+	dom.window.console.warn = () => {};
+
+	// Inject utils (escapeHtml)
+	await injectSharedUtils(dom);
+
+	// Inject prompt-viewer
+	await injectPromptViewer(dom);
+
+	return dom;
 }
