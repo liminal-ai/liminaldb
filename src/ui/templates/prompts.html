@@ -61,8 +61,86 @@
     // State
     let prompts = [];
     let selectedSlug = null;
+    let currentMode = 'empty'; // 'empty' | 'view' | 'edit' | 'new'
     let currentView = localStorage.getItem('promptViewMode') || 'rendered';
     let rawPrompt = '';
+
+    // ============================================
+    // SHELL COMMUNICATION
+    // ============================================
+
+    /**
+     * Notify shell of portlet state change for history tracking.
+     * @param {Object} options
+     * @param {boolean} options.trackHistory - Whether to add to browser history (default: true)
+     */
+    function notifyShellStateChange(trackHistory = true) {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          type: 'history:push',
+          state: {
+            portlet: 'prompts',
+            slug: selectedSlug,
+            mode: currentMode
+          },
+          trackHistory
+        }, '*');
+      }
+    }
+
+    /**
+     * Signal to shell that portlet is ready to receive state.
+     */
+    function notifyShellReady() {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'portlet:ready' }, '*');
+      }
+    }
+
+    /**
+     * Restore portlet state from shell (e.g., on back/forward navigation).
+     * @param {Object} state - State object from shell
+     */
+    function restoreState(state) {
+      if (!state) return;
+
+      if (state.slug && state.mode === 'view') {
+        // Need to select the prompt - it might not be loaded yet
+        if (prompts.length > 0) {
+          selectPrompt(state.slug, { trackHistory: false });
+        } else {
+          // Prompts not loaded yet - store for after load
+          selectedSlug = state.slug;
+          currentMode = 'view';
+        }
+      } else if (state.mode === 'empty' || !state.slug) {
+        clearSelection({ trackHistory: false });
+      }
+      // 'edit' and 'new' modes will be handled when those features are added
+    }
+
+    /**
+     * Clear current selection and show empty state.
+     * @param {Object} options
+     * @param {boolean} options.trackHistory - Whether to add to browser history
+     */
+    function clearSelection({ trackHistory = true } = {}) {
+      selectedSlug = null;
+      currentMode = 'empty';
+
+      document.querySelectorAll(".prompt-item").forEach((item) => {
+        item.classList.remove("selected");
+      });
+
+      const emptyState = document.getElementById("empty-state");
+      const promptView = document.getElementById("prompt-view");
+      if (emptyState) emptyState.style.display = "flex";
+      if (promptView) promptView.style.display = "none";
+
+      if (trackHistory) {
+        notifyShellStateChange(true);
+      }
+    }
 
     // Initialize view mode from localStorage
     function initViewMode() {
@@ -154,13 +232,14 @@
     }
 
     // Select prompt
-    function selectPrompt(slug) {
+    function selectPrompt(slug, { trackHistory = true } = {}) {
       const prompt = prompts.find((item) => item.slug === slug);
       if (!prompt) {
         return;
       }
 
       selectedSlug = slug;
+      currentMode = 'view';
 
       document.querySelectorAll(".prompt-item").forEach((item) => {
         if (item.dataset.slug === slug) {
@@ -183,8 +262,9 @@
       // Use prompt viewer to display content
       displayPromptContent(prompt.content || '');
 
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type: "prompts:selected", slug }, "*");
+      // Notify shell for history tracking
+      if (trackHistory) {
+        notifyShellStateChange(true);
       }
     }
 
@@ -224,12 +304,23 @@
       // Only accept messages from same origin (shell)
       if (e.origin !== window.location.origin) return;
 
-      if (e.data?.type === 'shell:search') {
-        // Legacy: search only
-        loadPrompts(e.data.query);
-      } else if (e.data?.type === 'shell:filter') {
-        // New: search + tag filtering
-        loadPrompts(e.data.query || '', e.data.tags || []);
+      const { type, ...payload } = e.data || {};
+
+      switch (type) {
+        case 'shell:search':
+          // Legacy: search only
+          loadPrompts(payload.query);
+          break;
+
+        case 'shell:filter':
+          // Search + tag filtering
+          loadPrompts(payload.query || '', payload.tags || []);
+          break;
+
+        case 'shell:state':
+          // Restore state from shell (back/forward navigation or initial load)
+          restoreState(payload.state);
+          break;
       }
     });
 
@@ -248,14 +339,31 @@
     // In production, call loadPrompts() after DOMContentLoaded
     // For TDD: tests will call window.loadPrompts() after setting up mocks
     window.loadPrompts = loadPrompts;
+    window.selectPrompt = selectPrompt;
+    window.clearSelection = clearSelection;
+    window.restoreState = restoreState;
+
+    async function init() {
+      await loadPrompts();
+
+      // If we already have a slug from restoreState (before prompts loaded),
+      // select it now that prompts are available
+      if (selectedSlug && prompts.length > 0) {
+        const prompt = prompts.find(p => p.slug === selectedSlug);
+        if (prompt) {
+          selectPrompt(selectedSlug, { trackHistory: false });
+        }
+      }
+
+      // Tell shell we're ready to receive state
+      notifyShellReady();
+    }
 
     if (!navigator.userAgent.includes("jsdom")) {
       if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", () => {
-          loadPrompts();
-        });
+        document.addEventListener("DOMContentLoaded", init);
       } else {
-        loadPrompts();
+        init();
       }
     }
   </script>

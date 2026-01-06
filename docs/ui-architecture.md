@@ -76,6 +76,46 @@ window.addEventListener('message', (event) => {
 
 Components declare what events they emit and consume. No shared libraries required.
 
+### 5. History & Navigation
+
+**Principle:** Shell owns browser history, portlets own DOM state.
+
+Portlets manage their own DOM (view/edit mode swaps, selections) but notify the shell of state changes. The shell manages `pushState`/`popstate` for back/forward navigation.
+
+**URL Structure:**
+```
+/prompts                    → list, nothing selected
+/prompts/:slug              → prompt selected, view mode
+/prompts/:slug/edit         → prompt selected, edit mode
+/prompts/new                → new prompt form
+```
+
+**Message Protocol:**
+
+```js
+// Portlet → Shell: State changed, add to history
+parent.postMessage({
+  type: 'history:push',
+  state: { portlet: 'prompts', slug: 'sql-query', mode: 'view' },
+  trackHistory: true  // false to suppress history entry
+}, '*')
+
+// Portlet → Shell: Ready to receive initial state
+parent.postMessage({ type: 'portlet:ready' }, '*')
+
+// Shell → Portlet: Restore state (on back/forward or initial load)
+iframe.postMessage({
+  type: 'shell:state',
+  state: { slug: 'sql-query', mode: 'view' }
+}, '*')
+```
+
+**Flow:**
+1. User clicks prompt → Portlet updates DOM → Portlet sends `history:push`
+2. Shell receives → Calls `history.pushState()` → URL updates
+3. User clicks Back → Browser fires `popstate` → Shell receives
+4. Shell sends `shell:state` → Portlet restores previous selection
+
 ---
 
 ## Component Structure
@@ -298,9 +338,9 @@ Package components for ChatGPT widgets, MCP surfaces, Tauri desktop.
 
 - [ ] Resize protocol between components and shell
 - [ ] Focus management across component boundaries
-- [ ] Deep linking / URL state strategy
+- [x] Deep linking / URL state strategy *(Resolved: See section 5 - History & Navigation)*
 - [ ] Component loading states and skeleton screens
 
 ---
 
-*Draft v0.1 - Subject to revision*
+*Draft v0.2 - Updated with history/navigation patterns (Phase 5b)*

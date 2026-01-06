@@ -92,6 +92,72 @@ describe("UI Prompts Integration", () => {
 			const found = prompts.find((p) => p.slug === slug);
 			expect(found).toBeDefined();
 		});
+
+		test("GET /api/prompts/tags returns unique tags array", async () => {
+			// Create a prompt with tags
+			const slug = trackSlug(`tags-test-${Date.now()}`);
+			await fetch(`${baseUrl}/api/prompts`, {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${auth.accessToken}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					prompts: [
+						{
+							slug,
+							name: "Tags Test",
+							description: "Test tags endpoint",
+							content: "Content",
+							tags: ["unique-tag-test"],
+						},
+					],
+				}),
+			});
+
+			const response = await fetch(`${baseUrl}/api/prompts/tags`, {
+				headers: { Authorization: `Bearer ${auth.accessToken}` },
+			});
+
+			expect(response.status).toBe(200);
+			const tags = await response.json();
+			expect(Array.isArray(tags)).toBe(true);
+			expect(tags).toContain("unique-tag-test");
+		});
+
+		test("GET /api/prompts with tags filter returns filtered results", async () => {
+			const slug = trackSlug(`filter-test-${Date.now()}`);
+			await fetch(`${baseUrl}/api/prompts`, {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${auth.accessToken}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					prompts: [
+						{
+							slug,
+							name: "Filter Test",
+							description: "Test tag filtering",
+							content: "Content",
+							tags: ["filter-test-tag"],
+						},
+					],
+				}),
+			});
+
+			const response = await fetch(
+				`${baseUrl}/api/prompts?tags=filter-test-tag`,
+				{
+					headers: { Authorization: `Bearer ${auth.accessToken}` },
+				},
+			);
+
+			expect(response.status).toBe(200);
+			const prompts = (await response.json()) as Array<{ slug: string }>;
+			expect(prompts.length).toBeGreaterThan(0);
+			expect(prompts.some((p) => p.slug === slug)).toBe(true);
+		});
 	});
 
 	describe("Module endpoints", () => {
@@ -115,6 +181,86 @@ describe("UI Prompts Integration", () => {
 			expect(response.headers.get("content-type")).toContain("text/html");
 			const body = await response.text();
 			expect(body.length).toBeGreaterThan(0);
+		});
+	});
+
+	describe("Deep-link routes (history support)", () => {
+		test("GET /prompts/:slug returns shell HTML for deep-linking", async () => {
+			// First create a prompt to ensure slug exists
+			const slug = trackSlug(`deep-link-test-${Date.now()}`);
+			await fetch(`${baseUrl}/api/prompts`, {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${auth.accessToken}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					prompts: [
+						{
+							slug,
+							name: "Deep Link Test",
+							description: "Test deep linking",
+							content: "Content",
+							tags: [],
+						},
+					],
+				}),
+			});
+
+			// Test deep-link route
+			const response = await fetch(`${baseUrl}/prompts/${slug}`, {
+				headers: { Authorization: `Bearer ${auth.accessToken}` },
+			});
+
+			expect(response.status).toBe(200);
+			expect(response.headers.get("content-type")).toContain("text/html");
+			const body = await response.text();
+			// Should be shell.html with prompts module
+			expect(body).toContain("/_m/prompts");
+			expect(body).toContain("LIMINAL");
+		});
+
+		test("GET /prompts/:slug/edit returns shell HTML for edit mode deep-linking", async () => {
+			const slug = trackSlug(`edit-link-test-${Date.now()}`);
+			await fetch(`${baseUrl}/api/prompts`, {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${auth.accessToken}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					prompts: [
+						{
+							slug,
+							name: "Edit Link Test",
+							description: "Test edit deep linking",
+							content: "Content",
+							tags: [],
+						},
+					],
+				}),
+			});
+
+			const response = await fetch(`${baseUrl}/prompts/${slug}/edit`, {
+				headers: { Authorization: `Bearer ${auth.accessToken}` },
+			});
+
+			expect(response.status).toBe(200);
+			expect(response.headers.get("content-type")).toContain("text/html");
+			const body = await response.text();
+			expect(body).toContain("/_m/prompts");
+		});
+
+		test("GET /prompts/new returns shell HTML with editor module", async () => {
+			const response = await fetch(`${baseUrl}/prompts/new`, {
+				headers: { Authorization: `Bearer ${auth.accessToken}` },
+			});
+
+			expect(response.status).toBe(200);
+			expect(response.headers.get("content-type")).toContain("text/html");
+			const body = await response.text();
+			// New prompt uses prompt-editor module
+			expect(body).toContain("/_m/prompt-editor");
 		});
 	});
 });

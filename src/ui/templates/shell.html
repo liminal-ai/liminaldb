@@ -47,6 +47,100 @@
     let selectedTags = [];
     let debounceTimer;
 
+    // ============================================
+    // HISTORY / ROUTER
+    // ============================================
+
+    /**
+     * Parse current URL path to extract portlet state.
+     * Pattern: /prompts/:slug?/:mode?
+     * Examples:
+     *   /prompts           → { portlet: 'prompts', slug: null, mode: 'empty' }
+     *   /prompts/sql-query → { portlet: 'prompts', slug: 'sql-query', mode: 'view' }
+     *   /prompts/sql-query/edit → { portlet: 'prompts', slug: 'sql-query', mode: 'edit' }
+     *   /prompts/new       → { portlet: 'prompts', slug: null, mode: 'new' }
+     */
+    function parseUrlState() {
+      const path = window.location.pathname;
+      const parts = path.split('/').filter(Boolean);
+
+      // Default state
+      const state = {
+        portlet: 'prompts',
+        slug: null,
+        mode: 'empty'
+      };
+
+      if (parts[0] === 'prompts') {
+        if (parts[1] === 'new') {
+          state.mode = 'new';
+        } else if (parts[1]) {
+          state.slug = parts[1];
+          state.mode = parts[2] === 'edit' ? 'edit' : 'view';
+        }
+      }
+
+      return state;
+    }
+
+    /**
+     * Build URL path from state object.
+     */
+    function buildUrlPath(state) {
+      if (state.mode === 'new') {
+        return '/prompts/new';
+      }
+      if (state.slug) {
+        return state.mode === 'edit'
+          ? `/prompts/${state.slug}/edit`
+          : `/prompts/${state.slug}`;
+      }
+      return '/prompts';
+    }
+
+    /**
+     * Push state to browser history and update URL.
+     */
+    function pushHistoryState(state, trackHistory = true) {
+      const url = buildUrlPath(state);
+
+      if (trackHistory) {
+        history.pushState(state, '', url);
+      } else {
+        history.replaceState(state, '', url);
+      }
+    }
+
+    /**
+     * Send state to portlet for restoration.
+     */
+    function sendStateToPortlet(state) {
+      if (moduleFrame.contentWindow) {
+        moduleFrame.contentWindow.postMessage({
+          type: 'shell:state',
+          state: state
+        }, '*');
+      }
+    }
+
+    /**
+     * Handle browser back/forward navigation.
+     */
+    window.addEventListener('popstate', (e) => {
+      const state = e.state || parseUrlState();
+      sendStateToPortlet(state);
+    });
+
+    /**
+     * Initialize history state on page load.
+     * Replace current history entry with parsed state.
+     */
+    function initHistoryState() {
+      const state = parseUrlState();
+      history.replaceState(state, '', window.location.pathname);
+      return state;
+    }
+
     // Fetch all unique tags from API
     async function loadTags() {
       try {
@@ -166,15 +260,34 @@
       }
     });
 
-    // Handle navigation from modules
+    // Handle messages from portlets
     window.addEventListener('message', (e) => {
       if (e.origin !== window.location.origin) return;
 
-      if (e.data?.type === 'module:navigate') {
-        const path = e.data.path;
-        if (typeof path === 'string' && path.startsWith('/') && !path.startsWith('//')) {
-          window.location.href = path;
-        }
+      const { type, ...payload } = e.data || {};
+
+      switch (type) {
+        case 'module:navigate':
+          // Full page navigation (portlet change)
+          const path = payload.path;
+          if (typeof path === 'string' && path.startsWith('/') && !path.startsWith('//')) {
+            window.location.href = path;
+          }
+          break;
+
+        case 'history:push':
+          // Portlet state change - update browser history
+          if (payload.state) {
+            const trackHistory = payload.trackHistory !== false;
+            pushHistoryState(payload.state, trackHistory);
+          }
+          break;
+
+        case 'portlet:ready':
+          // Portlet loaded and ready - send initial state
+          const initialState = parseUrlState();
+          sendStateToPortlet(initialState);
+          break;
       }
     });
 
@@ -186,6 +299,7 @@
     }
 
     // Initialize
+    initHistoryState();
     loadTags();
   </script>
 </body>
