@@ -41,6 +41,11 @@ export function registerPromptRoutes(fastify: FastifyInstance): void {
 		{ preHandler: authMiddleware },
 		listPromptsHandler,
 	);
+	fastify.get(
+		"/api/prompts/tags",
+		{ preHandler: authMiddleware },
+		listTagsHandler,
+	);
 	fastify.post(
 		"/api/prompts",
 		{ preHandler: authMiddleware },
@@ -60,7 +65,7 @@ export function registerPromptRoutes(fastify: FastifyInstance): void {
 
 /**
  * GET /api/prompts
- * List prompts with optional search
+ * List prompts with optional search and tag filtering
  */
 async function listPromptsHandler(
 	request: FastifyRequest,
@@ -71,7 +76,11 @@ async function listPromptsHandler(
 		return reply.code(401).send({ error: "Not authenticated" });
 	}
 
-	const { q, limit } = request.query as { q?: string; limit?: string };
+	const { q, limit, tags } = request.query as {
+		q?: string;
+		limit?: string;
+		tags?: string;
+	};
 
 	try {
 		const prompts = await convex.query(api.prompts.listPrompts, {
@@ -81,10 +90,60 @@ async function listPromptsHandler(
 			limit: limit ? parseInt(limit, 10) : undefined,
 		});
 
-		return reply.code(200).send(prompts);
+		// TODO: Tag filtering is done post-fetch which is inefficient for large
+		// collections. Consider pushing filter logic to Convex query layer.
+		let filtered = prompts;
+		if (tags) {
+			const tagList = tags
+				.split(",")
+				.map((t) => t.trim().toLowerCase())
+				.filter((t) => t.length > 0 && t.length <= 50) // Validate tag length
+				.slice(0, 20); // Limit to 20 tags max
+			filtered = prompts.filter((prompt) =>
+				tagList.some((tag) => prompt.tags.some((t) => t.toLowerCase() === tag)),
+			);
+		}
+
+		return reply.code(200).send(filtered);
 	} catch (error) {
 		request.log.error({ err: error, userId }, "Failed to list prompts");
 		return reply.code(500).send({ error: "Failed to list prompts" });
+	}
+}
+
+/**
+ * GET /api/prompts/tags
+ * Get all unique tags for the user's prompts
+ *
+ * TODO: For large prompt collections, this is inefficient as it fetches
+ * all prompts to extract tags. Consider adding a dedicated Convex query
+ * that aggregates tags server-side.
+ */
+async function listTagsHandler(
+	request: FastifyRequest,
+	reply: FastifyReply,
+): Promise<void> {
+	const userId = request.user?.id;
+	if (!userId) {
+		return reply.code(401).send({ error: "Not authenticated" });
+	}
+
+	try {
+		const prompts = await convex.query(api.prompts.listPrompts, {
+			apiKey: config.convexApiKey,
+			userId,
+		});
+
+		// Extract unique tags and sort alphabetically
+		const allTags = prompts.flatMap((p) => p.tags);
+		const uniqueTags = [...new Set(allTags)].sort((a, b) =>
+			a.toLowerCase().localeCompare(b.toLowerCase()),
+		);
+
+		return reply.code(200).send(uniqueTags);
+	} catch (error) {
+		request.log.error({ err: error, userId }, "Failed to list tags");
+		return reply.code(500).send({ error: "Failed to list tags" });
 	}
 }
 

@@ -4,14 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prompts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/shared/themes/base.css">
   <link rel="stylesheet" href="/shared/themes/tokyo-night.css">
+  <link rel="stylesheet" href="/shared/prompt-viewer.css">
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js" integrity="sha384-wLhprpjsmjc/XYIcF+LpMxd8yS1gss6jhevOp6F6zhiIoFK6AmHtm4bGKtehTani" crossorigin="anonymous"></script>
 </head>
 <body class="module prompts-module">
   <aside class="sidebar">
     <div class="sidebar-header">
-      <h2>Prompts</h2>
-      <button id="new-prompt-btn" class="btn-primary">New Prompt</button>
+      <button id="new-prompt-btn" class="btn-primary">+ New</button>
     </div>
     <div id="prompt-list" class="prompt-list">
       <!-- Populated by JavaScript -->
@@ -27,31 +31,154 @@
         <h1 id="prompt-slug" class="prompt-slug"></h1>
         <p id="prompt-description" class="prompt-description"></p>
       </header>
-      <div id="prompt-content" class="prompt-content"></div>
-      <div class="prompt-actions">
-        <button id="copy-btn" class="btn-secondary">Copy</button>
+
+      <!-- Prompt Viewer Component -->
+      <div class="prompt-viewer view-rendered" id="promptViewer">
+        <div class="prompt-viewer-header">
+          <button class="copy-btn-primary" id="copy-btn" title="Copy to clipboard">Copy</button>
+          <div class="prompt-viewer-actions">
+            <button class="prompt-viewer-btn active" data-view="rendered">Rendered</button>
+            <button class="prompt-viewer-btn" data-view="semantic">Semantic</button>
+            <button class="prompt-viewer-btn" data-view="plain">Plain</button>
+          </div>
+        </div>
+        <div class="prompt-viewer-content" id="promptContent"></div>
+        <div class="prompt-viewer-stats">
+          <span class="prompt-viewer-stat">tags <span class="prompt-viewer-stat-value" id="statTags">0</span></span>
+          <span class="prompt-viewer-stat">vars <span class="prompt-viewer-stat-value" id="statVars">0</span></span>
+          <span class="prompt-viewer-stat">chars <span class="prompt-viewer-stat-value" id="statChars">0</span></span>
+        </div>
       </div>
     </article>
   </main>
 
+  <script src="/js/utils.js"></script>
+  <script src="/js/prompt-viewer.js"></script>
   <script>
-    // Escape HTML to prevent XSS
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
-    }
-
     // State
     let prompts = [];
     let selectedSlug = null;
+    let currentMode = 'empty'; // 'empty' | 'view' | 'edit' | 'new'
+    let currentView = 'rendered';
+    try {
+      currentView = localStorage.getItem('promptViewMode') || 'rendered';
+    } catch (e) {
+      // localStorage unavailable (private browsing, etc.)
+    }
+    let rawPrompt = '';
+
+    // ============================================
+    // SHELL COMMUNICATION
+    // ============================================
+
+    /**
+     * Notify shell of portlet state change for history tracking.
+     * @param {Object} options
+     * @param {boolean} options.trackHistory - Whether to add to browser history (default: true)
+     */
+    function notifyShellStateChange(trackHistory = true) {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          type: 'history:push',
+          state: {
+            portlet: 'prompts',
+            slug: selectedSlug,
+            mode: currentMode
+          },
+          trackHistory
+        }, window.location.origin);
+      }
+    }
+
+    /**
+     * Signal to shell that portlet is ready to receive state.
+     */
+    function notifyShellReady() {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'portlet:ready' }, window.location.origin);
+      }
+    }
+
+    /**
+     * Restore portlet state from shell (e.g., on back/forward navigation).
+     * @param {Object} state - State object from shell
+     */
+    function restoreState(state) {
+      if (!state) return;
+
+      if (state.slug && state.mode === 'view') {
+        // Need to select the prompt - it might not be loaded yet
+        if (prompts.length > 0) {
+          selectPrompt(state.slug, { trackHistory: false });
+        } else {
+          // Prompts not loaded yet - store for after load
+          selectedSlug = state.slug;
+          currentMode = 'view';
+        }
+      } else if (state.mode === 'empty' || !state.slug) {
+        clearSelection({ trackHistory: false });
+      }
+      // 'edit' and 'new' modes will be handled when those features are added
+    }
+
+    /**
+     * Clear current selection and show empty state.
+     * @param {Object} options
+     * @param {boolean} options.trackHistory - Whether to add to browser history
+     */
+    function clearSelection({ trackHistory = true } = {}) {
+      selectedSlug = null;
+      currentMode = 'empty';
+
+      document.querySelectorAll(".prompt-item").forEach((item) => {
+        item.classList.remove("selected");
+      });
+
+      const emptyState = document.getElementById("empty-state");
+      const promptView = document.getElementById("prompt-view");
+      if (emptyState) emptyState.style.display = "flex";
+      if (promptView) promptView.style.display = "none";
+
+      if (trackHistory) {
+        notifyShellStateChange(true);
+      }
+    }
+
+    // Initialize view mode from localStorage
+    function initViewMode() {
+      const viewer = document.getElementById('promptViewer');
+      viewer.className = `prompt-viewer view-${currentView}`;
+      viewer.querySelectorAll('[data-view]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === currentView);
+      });
+    }
+
+    // Display prompt content with current view mode
+    function displayPromptContent(content) {
+      rawPrompt = content;
+      const contentEl = document.getElementById('promptContent');
+
+      const { html, stats } = renderPrompt(content, currentView);
+      contentEl.innerHTML = html || '<span style="color: var(--text-muted)">No content</span>';
+
+      document.getElementById('statTags').textContent = stats.tags;
+      document.getElementById('statVars').textContent = stats.vars;
+      document.getElementById('statChars').textContent = content.length;
+    }
 
     // Load prompts on init
-    async function loadPrompts(query = '') {
+    async function loadPrompts(query = '', tags = []) {
+      const params = new URLSearchParams();
       const trimmed = query.trim();
-      const url = trimmed
-        ? `/api/prompts?q=${encodeURIComponent(trimmed)}`
-        : "/api/prompts";
+      if (trimmed) {
+        params.set('q', trimmed);
+      }
+      if (tags.length > 0) {
+        params.set('tags', tags.join(','));
+      }
+
+      const queryString = params.toString();
+      const url = queryString ? `/api/prompts?${queryString}` : "/api/prompts";
 
       const response = await fetch(url, {
         method: "GET",
@@ -70,7 +197,7 @@
       if (selectedSlug) {
         const stillExists = prompts.some((prompt) => prompt.slug === selectedSlug);
         if (stillExists) {
-          selectPrompt(selectedSlug);
+          selectPrompt(selectedSlug, { trackHistory: false });
         }
       }
     }
@@ -107,13 +234,14 @@
     }
 
     // Select prompt
-    function selectPrompt(slug) {
+    function selectPrompt(slug, { trackHistory = true } = {}) {
       const prompt = prompts.find((item) => item.slug === slug);
       if (!prompt) {
         return;
       }
 
       selectedSlug = slug;
+      currentMode = 'view';
 
       document.querySelectorAll(".prompt-item").forEach((item) => {
         if (item.dataset.slug === slug) {
@@ -130,65 +258,118 @@
 
       const slugEl = document.getElementById("prompt-slug");
       const descEl = document.getElementById("prompt-description");
-      const contentEl = document.getElementById("prompt-content");
       if (slugEl) slugEl.textContent = prompt.slug;
       if (descEl) descEl.textContent = prompt.description;
-      if (contentEl) contentEl.textContent = prompt.content;
 
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type: "prompts:selected", slug }, "*");
+      // Use prompt viewer to display content
+      displayPromptContent(prompt.content || '');
+
+      // Notify shell for history tracking
+      if (trackHistory) {
+        notifyShellStateChange(true);
       }
     }
 
     // Copy to clipboard
     async function copyContent() {
-      const prompt = prompts.find((item) => item.slug === selectedSlug);
-      const content = prompt?.content ?? "";
-      if (!content) return;
+      if (!rawPrompt) return;
 
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(content);
+      try {
+        await navigator.clipboard.writeText(rawPrompt);
+        const copyBtn = document.getElementById("copy-btn");
+        if (!copyBtn) return;
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => {
+          copyBtn.textContent = originalText;
+        }, 1200);
+      } catch (err) {
+        console.error('Failed to copy:', err);
       }
-
-      const copyBtn = document.getElementById("copy-btn");
-      if (!copyBtn) return;
-      const originalText = copyBtn.textContent ?? "Copy";
-      copyBtn.textContent = "Copied!";
-      setTimeout(() => {
-        copyBtn.textContent = originalText;
-      }, 1200);
     }
 
-    // Handle search from shell
+    // View toggle buttons
+    document.getElementById('promptViewer').querySelectorAll('[data-view]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const viewer = document.getElementById('promptViewer');
+        viewer.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentView = btn.dataset.view;
+        try {
+          localStorage.setItem('promptViewMode', currentView);
+        } catch (e) {
+          // localStorage unavailable (private browsing, etc.)
+        }
+        viewer.className = `prompt-viewer view-${currentView}`;
+        if (rawPrompt) displayPromptContent(rawPrompt);
+      });
+    });
+
+    // Handle messages from shell
     window.addEventListener('message', (e) => {
       // Only accept messages from same origin (shell)
       if (e.origin !== window.location.origin) return;
 
-      if (e.data?.type === 'shell:search') {
-        loadPrompts(e.data.query);
+      const { type, ...payload } = e.data || {};
+
+      switch (type) {
+        case 'shell:search':
+          // Legacy: search only
+          loadPrompts(payload.query);
+          break;
+
+        case 'shell:filter':
+          // Search + tag filtering
+          loadPrompts(payload.query || '', payload.tags || []);
+          break;
+
+        case 'shell:state':
+          // Restore state from shell (back/forward navigation or initial load)
+          restoreState(payload.state);
+          break;
       }
     });
 
     // New prompt navigation
     document.getElementById('new-prompt-btn').addEventListener('click', () => {
-      window.parent.postMessage({ type: 'module:navigate', path: '/prompts/new' }, '*');
+      window.parent.postMessage({ type: 'module:navigate', path: '/prompts/new' }, window.location.origin);
     });
 
     // Copy button
     document.getElementById('copy-btn').addEventListener('click', copyContent);
 
+    // Initialize view mode
+    initViewMode();
+
     // Initial load - deferred to allow test mocking
     // In production, call loadPrompts() after DOMContentLoaded
     // For TDD: tests will call window.loadPrompts() after setting up mocks
     window.loadPrompts = loadPrompts;
+    window.selectPrompt = selectPrompt;
+    window.clearSelection = clearSelection;
+    window.restoreState = restoreState;
+
+    async function init() {
+      await loadPrompts();
+
+      // If we already have a slug from restoreState (before prompts loaded),
+      // select it now that prompts are available
+      if (selectedSlug && prompts.length > 0) {
+        const prompt = prompts.find(p => p.slug === selectedSlug);
+        if (prompt) {
+          selectPrompt(selectedSlug, { trackHistory: false });
+        }
+      }
+
+      // Tell shell we're ready to receive state
+      notifyShellReady();
+    }
 
     if (!navigator.userAgent.includes("jsdom")) {
       if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", () => {
-          loadPrompts();
-        });
+        document.addEventListener("DOMContentLoaded", init);
       } else {
-        loadPrompts();
+        init();
       }
     }
   </script>

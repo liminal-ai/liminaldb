@@ -8,9 +8,17 @@
   <link rel="stylesheet" href="/shared/themes/tokyo-night.css">
 </head>
 <body class="shell">
+  <script src="/js/utils.js"></script>
   <header class="shell-header">
-    <div class="logo">LiminalDB</div>
-    <input type="search" id="search-input" placeholder="Search prompts..." />
+    <div class="search-group">
+      <input type="search" id="search-input" class="search-input" placeholder="Search prompts..." />
+      <div class="tag-picker">
+        <button class="tag-picker-btn" id="tag-picker-btn">Tags</button>
+        <div class="tag-picker-dropdown" id="tag-picker-dropdown"></div>
+      </div>
+      <div class="filter-tags" id="filter-tags"></div>
+    </div>
+    <div class="logo"><strong>LIMINAL</strong>DB</div>
     <div class="user-info">{{email}}</div>
   </header>
 
@@ -22,30 +30,227 @@
     ></iframe>
   </main>
 
-  <footer class="shell-footer">
-    <select id="theme-select">
-      <option value="tokyo-night">Tokyo Night</option>
-    </select>
-  </footer>
-
   <script>
     window.__AUTH__ = {
       userId: "{{userId}}",
       email: "{{email}}"
     };
 
-    // Search broadcast to module
+    // Elements
     const searchInput = document.getElementById('search-input');
     const moduleFrame = document.getElementById('main-module');
+    const tagPickerBtn = document.getElementById('tag-picker-btn');
+    const tagPickerDropdown = document.getElementById('tag-picker-dropdown');
+    const filterTagsContainer = document.getElementById('filter-tags');
 
+    // State
+    let allTags = [];
+    let selectedTags = [];
     let debounceTimer;
+
+    // ============================================
+    // HISTORY / ROUTER
+    // ============================================
+
+    /**
+     * Parse current URL path to extract portlet state.
+     * Pattern: /prompts/:slug?/:mode?
+     * Examples:
+     *   /prompts           → { portlet: 'prompts', slug: null, mode: 'empty' }
+     *   /prompts/sql-query → { portlet: 'prompts', slug: 'sql-query', mode: 'view' }
+     *   /prompts/sql-query/edit → { portlet: 'prompts', slug: 'sql-query', mode: 'edit' }
+     *   /prompts/new       → { portlet: 'prompts', slug: null, mode: 'new' }
+     */
+    function parseUrlState() {
+      const path = window.location.pathname;
+      const parts = path.split('/').filter(Boolean);
+
+      // Default state
+      const state = {
+        portlet: 'prompts',
+        slug: null,
+        mode: 'empty'
+      };
+
+      if (parts[0] === 'prompts') {
+        if (parts[1] === 'new') {
+          state.mode = 'new';
+        } else if (parts[1]) {
+          state.slug = parts[1];
+          state.mode = parts[2] === 'edit' ? 'edit' : 'view';
+        }
+      }
+
+      return state;
+    }
+
+    /**
+     * Build URL path from state object.
+     */
+    function buildUrlPath(state) {
+      if (state.mode === 'new') {
+        return '/prompts/new';
+      }
+      if (state.slug) {
+        return state.mode === 'edit'
+          ? `/prompts/${state.slug}/edit`
+          : `/prompts/${state.slug}`;
+      }
+      return '/prompts';
+    }
+
+    /**
+     * Push state to browser history and update URL.
+     */
+    function pushHistoryState(state, trackHistory = true) {
+      const url = buildUrlPath(state);
+
+      if (trackHistory) {
+        history.pushState(state, '', url);
+      } else {
+        history.replaceState(state, '', url);
+      }
+    }
+
+    /**
+     * Send state to portlet for restoration.
+     */
+    function sendStateToPortlet(state) {
+      if (moduleFrame.contentWindow) {
+        moduleFrame.contentWindow.postMessage({
+          type: 'shell:state',
+          state: state
+        }, window.location.origin);
+      }
+    }
+
+    /**
+     * Handle browser back/forward navigation.
+     */
+    window.addEventListener('popstate', (e) => {
+      const state = e.state || parseUrlState();
+      sendStateToPortlet(state);
+    });
+
+    /**
+     * Initialize history state on page load.
+     * Replace current history entry with parsed state.
+     */
+    function initHistoryState() {
+      const state = parseUrlState();
+      history.replaceState(state, '', window.location.pathname);
+      return state;
+    }
+
+    // Fetch all unique tags from API
+    async function loadTags() {
+      try {
+        const response = await fetch('/api/prompts/tags');
+        if (response.ok) {
+          allTags = await response.json();
+          renderTagPicker();
+        }
+      } catch (err) {
+        console.error('Failed to load tags:', err);
+      }
+    }
+
+    // Render tag picker dropdown
+    function renderTagPicker() {
+      tagPickerDropdown.innerHTML = allTags.map(tag => {
+        const isSelected = selectedTags.includes(tag);
+        return `
+          <div class="tag-picker-item ${isSelected ? 'selected' : ''}" data-tag="${escapeHtml(tag)}">
+            <span class="check">✓</span>
+            <span>${escapeHtml(tag)}</span>
+          </div>
+        `;
+      }).join('');
+
+      // Add click handlers
+      tagPickerDropdown.querySelectorAll('.tag-picker-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const tag = item.dataset.tag;
+          toggleTag(tag);
+        });
+      });
+    }
+
+    // Toggle tag selection
+    function toggleTag(tag) {
+      const index = selectedTags.indexOf(tag);
+      if (index === -1) {
+        selectedTags.push(tag);
+      } else {
+        selectedTags.splice(index, 1);
+      }
+      renderTagPicker();
+      renderFilterPills();
+      broadcastFilters();
+    }
+
+    // Remove tag from selection
+    function removeTag(tag) {
+      const index = selectedTags.indexOf(tag);
+      if (index !== -1) {
+        selectedTags.splice(index, 1);
+        renderTagPicker();
+        renderFilterPills();
+        broadcastFilters();
+      }
+    }
+
+    // Render filter pills in header
+    function renderFilterPills() {
+      filterTagsContainer.innerHTML = selectedTags.map(tag => `
+        <span class="filter-pill">
+          ${escapeHtml(tag)}
+          <button class="remove" data-tag="${escapeHtml(tag)}" title="Remove filter">×</button>
+        </span>
+      `).join('');
+
+      // Add remove handlers
+      filterTagsContainer.querySelectorAll('.remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          removeTag(btn.dataset.tag);
+        });
+      });
+    }
+
+    // Broadcast search and tag filters to module
+    function broadcastFilters() {
+      if (!moduleFrame.contentWindow) return;
+      moduleFrame.contentWindow.postMessage({
+        type: 'shell:filter',
+        query: searchInput.value,
+        tags: selectedTags
+      }, window.location.origin);
+    }
+
+    // Toggle dropdown visibility
+    function toggleDropdown() {
+      tagPickerDropdown.classList.toggle('open');
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.tag-picker')) {
+        tagPickerDropdown.classList.remove('open');
+      }
+    });
+
+    // Tag picker button click
+    tagPickerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleDropdown();
+    });
+
+    // Search input with debounce
     searchInput.addEventListener('input', (e) => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
-        moduleFrame.contentWindow.postMessage({
-          type: 'shell:search',
-          query: e.target.value
-        }, '*');
+        broadcastFilters();
       }, 150);
     });
 
@@ -57,19 +262,40 @@
       }
     });
 
-    // Handle navigation from modules
+    // Handle messages from portlets
     window.addEventListener('message', (e) => {
-      // Only accept messages from same origin
       if (e.origin !== window.location.origin) return;
 
-      if (e.data?.type === 'module:navigate') {
-        // Validate path is internal (starts with / but not //)
-        const path = e.data.path;
-        if (typeof path === 'string' && path.startsWith('/') && !path.startsWith('//')) {
-          window.location.href = path;
-        }
+      const { type, ...payload } = e.data || {};
+
+      switch (type) {
+        case 'module:navigate':
+          // Full page navigation (portlet change)
+          const path = payload.path;
+          if (typeof path === 'string' && path.startsWith('/') && !path.startsWith('//')) {
+            window.location.href = path;
+          }
+          break;
+
+        case 'history:push':
+          // Portlet state change - update browser history
+          if (payload.state) {
+            const trackHistory = payload.trackHistory !== false;
+            pushHistoryState(payload.state, trackHistory);
+          }
+          break;
+
+        case 'portlet:ready':
+          // Portlet loaded and ready - send initial state
+          const initialState = parseUrlState();
+          sendStateToPortlet(initialState);
+          break;
       }
     });
+
+    // Initialize
+    initHistoryState();
+    loadTags();
   </script>
 </body>
 </html>

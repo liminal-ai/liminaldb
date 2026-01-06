@@ -20,11 +20,24 @@ export function registerAppRoutes(fastify: FastifyInstance): void {
 	});
 
 	// User-facing routes require authentication
+	// Order matters: more specific routes first
 	fastify.get("/prompts", { preHandler: authMiddleware }, promptsPageHandler);
 	fastify.get(
 		"/prompts/new",
 		{ preHandler: authMiddleware },
 		newPromptPageHandler,
+	);
+	// Deep-link to specific prompt (view mode)
+	fastify.get(
+		"/prompts/:slug",
+		{ preHandler: authMiddleware },
+		promptsPageHandler,
+	);
+	// Deep-link to specific prompt (edit mode) - future use
+	fastify.get(
+		"/prompts/:slug/edit",
+		{ preHandler: authMiddleware },
+		promptsPageHandler,
 	);
 }
 
