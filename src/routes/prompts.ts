@@ -94,7 +94,11 @@ async function listPromptsHandler(
 		// collections. Consider pushing filter logic to Convex query layer.
 		let filtered = prompts;
 		if (tags) {
-			const tagList = tags.split(",").map((t) => t.trim().toLowerCase());
+			const tagList = tags
+				.split(",")
+				.map((t) => t.trim().toLowerCase())
+				.filter((t) => t.length > 0 && t.length <= 50) // Validate tag length
+				.slice(0, 20); // Limit to 20 tags max
 			filtered = prompts.filter((prompt) =>
 				tagList.some((tag) => prompt.tags.some((t) => t.toLowerCase() === tag)),
 			);
