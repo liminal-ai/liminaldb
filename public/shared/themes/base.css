@@ -840,11 +840,41 @@ select {
 /* Staging item in sidebar */
 .prompt-item.staging {
   border-left-color: var(--accent-secondary);
+  position: relative;
+}
+
+.prompt-item.staging .prompt-name {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .prompt-item.staging .item-status {
   font-size: var(--text-xs);
   color: var(--accent-secondary);
+  margin-top: var(--space-xs);
+}
+
+.prompt-item.staging .remove-staging {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-lg);
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
+}
+
+.prompt-item.staging .remove-staging:hover {
+  opacity: 1;
+  color: var(--error);
 }
 
 /* ============================================
