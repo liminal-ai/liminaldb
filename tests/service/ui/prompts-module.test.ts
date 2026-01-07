@@ -227,10 +227,10 @@ describe("Prompts Module", () => {
 			const emptyState = dom.window.document.getElementById("empty-state");
 			expect(emptyState?.style.display).toBe("none");
 
-			// Staging footer should be visible
-			const stagingFooter =
-				dom.window.document.getElementById("staging-footer");
-			expect(stagingFooter?.style.display).toBe("flex");
+			// Staging header should be hidden (only shows for 2+ prompts)
+			const stagingHeader =
+				dom.window.document.getElementById("staging-header");
+			expect(stagingHeader?.style.display).toBe("none");
 
 			// Staging count should show 1
 			const stagingCount = dom.window.document.getElementById("staging-count");

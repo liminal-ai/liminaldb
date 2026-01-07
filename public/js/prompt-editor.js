@@ -62,7 +62,7 @@ const promptEditor = (function () {
 		containerEl.innerHTML = `
 			<div class="prompt-editor">
 				<div class="editor-form">
-					<div class="form-row">
+					<div class="form-row" data-field="slug">
 						<label for="editor-slug">Slug</label>
 						<input type="text" id="editor-slug" name="slug"
 							value="${escapeHtml(currentData.slug)}"
@@ -70,25 +70,28 @@ const promptEditor = (function () {
 							pattern="[a-z0-9]+(-[a-z0-9]+)*"
 							required>
 						<span class="field-hint">Lowercase letters, numbers, dashes only</span>
+						<span class="field-error" id="error-slug"></span>
 					</div>
 
-					<div class="form-row">
+					<div class="form-row" data-field="name">
 						<label for="editor-name">Name</label>
 						<input type="text" id="editor-name" name="name"
 							value="${escapeHtml(currentData.name)}"
 							placeholder="My Prompt Name"
 							required>
+						<span class="field-error" id="error-name"></span>
 					</div>
 
-					<div class="form-row">
+					<div class="form-row" data-field="description">
 						<label for="editor-description">Description</label>
 						<input type="text" id="editor-description" name="description"
 							value="${escapeHtml(currentData.description)}"
 							placeholder="A brief description of this prompt"
 							required>
+						<span class="field-error" id="error-description"></span>
 					</div>
 
-					<div class="form-row content-row">
+					<div class="form-row content-row" data-field="content">
 						<label for="editor-content">
 							Content
 							<span class="editor-toolbar" id="editor-toolbar" style="visibility: hidden;">
@@ -99,6 +102,7 @@ const promptEditor = (function () {
 						<textarea id="editor-content" name="content"
 							placeholder="Enter your prompt content here..."
 							required>${escapeHtml(currentData.content)}</textarea>
+						<span class="field-error" id="error-content"></span>
 					</div>
 
 					<div class="form-row">
@@ -329,30 +333,67 @@ const promptEditor = (function () {
 	}
 
 	/**
+	 * Clear all field errors
+	 */
+	function clearErrors() {
+		const errorEls = containerEl.querySelectorAll(".field-error");
+		errorEls.forEach((el) => {
+			el.textContent = "";
+			el.classList.remove("visible");
+		});
+		const rows = containerEl.querySelectorAll(".form-row");
+		rows.forEach((row) => {
+			row.classList.remove("has-error");
+		});
+	}
+
+	/**
+	 * Show error on a specific field
+	 */
+	function showFieldError(field, message) {
+		const errorEl = containerEl.querySelector(`#error-${field}`);
+		const row = containerEl.querySelector(`[data-field="${field}"]`);
+		if (errorEl) {
+			errorEl.textContent = message;
+			errorEl.classList.add("visible");
+		}
+		if (row) {
+			row.classList.add("has-error");
+		}
+	}
+
+	/**
 	 * Validate form data
-	 * @returns {string|null} Error message or null if valid
+	 * @returns {Object} Object with errors per field, or empty if valid
 	 */
 	function validate() {
 		const data = getFormData();
+		const errors = {};
 
-		if (!data.slug) return "Slug is required";
-		if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(data.slug)) {
-			return "Slug must be lowercase letters, numbers, and dashes only";
+		if (!data.slug) {
+			errors.slug = "Slug is required";
+		} else if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(data.slug)) {
+			errors.slug = "Lowercase letters, numbers, and dashes only";
 		}
-		if (!data.name) return "Name is required";
-		if (!data.description) return "Description is required";
-		if (!data.content) return "Content is required";
+		if (!data.name) errors.name = "Name is required";
+		if (!data.description) errors.description = "Description is required";
+		if (!data.content) errors.content = "Content is required";
 
-		return null;
+		return errors;
 	}
 
 	/**
 	 * Handle save button click
 	 */
 	function handleSave() {
-		const error = validate();
-		if (error) {
-			window.showToast(error, { type: "error" });
+		clearErrors();
+		const errors = validate();
+		const hasErrors = Object.keys(errors).length > 0;
+
+		if (hasErrors) {
+			Object.entries(errors).forEach(([field, message]) => {
+				showFieldError(field, message);
+			});
 			return;
 		}
 

@@ -734,6 +734,26 @@ select {
   color: var(--text-muted);
 }
 
+.field-error {
+  display: none;
+  font-size: var(--text-xs);
+  color: var(--error);
+  margin-top: var(--space-xs);
+}
+
+.field-error.visible {
+  display: block;
+}
+
+.form-row.has-error input,
+.form-row.has-error textarea {
+  border-color: var(--error);
+}
+
+.form-row.has-error label {
+  color: var(--error);
+}
+
 /* Editor toolbar (appears on selection) */
 .editor-toolbar {
   display: inline-flex;
@@ -852,10 +872,12 @@ select {
 .toast-container {
   position: fixed;
   top: var(--space-lg);
-  right: var(--space-lg);
+  left: 50%;
+  transform: translateX(-50%);
   z-index: calc(var(--z-modal) + 1);
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--space-sm);
   pointer-events: none;
 }
@@ -937,21 +959,23 @@ select {
    BATCH STAGING (Insert Mode)
    ============================================ */
 
-.staging-footer {
+.staging-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: var(--space-md) var(--space-lg);
-  background: var(--bg-surface);
-  border-top: 1px solid var(--border);
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-md);
+  border-radius: var(--radius-md);
 }
 
-.staging-footer .staging-info {
+.staging-header .staging-info {
   font-size: var(--text-sm);
   color: var(--text-muted);
 }
 
-.staging-footer .staging-actions {
+.staging-header .staging-actions {
   display: flex;
   gap: var(--space-md);
 }

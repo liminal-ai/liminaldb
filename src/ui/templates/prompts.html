@@ -27,6 +27,17 @@
       Select a prompt to view
     </div>
 
+    <!-- Batch actions (visible when 2+ staging prompts) -->
+    <div id="staging-header" class="staging-header" style="display: none;">
+      <span class="staging-info">
+        <span id="staging-count">0</span> prompt(s) to save
+      </span>
+      <div class="staging-actions">
+        <button id="discard-all-btn" class="btn-secondary btn-sm">Discard All</button>
+        <button id="save-all-btn" class="btn-primary btn-sm">Save All</button>
+      </div>
+    </div>
+
     <!-- Editor container (for new/edit modes) -->
     <div id="prompt-edit" class="prompt-edit" style="display: none;"></div>
 
@@ -60,17 +71,6 @@
       </div>
     </article>
   </main>
-
-  <!-- Staging footer (visible in insert mode) -->
-  <footer id="staging-footer" class="staging-footer" style="display: none;">
-    <span class="staging-info">
-      <span id="staging-count">0</span> prompt(s) to save
-    </span>
-    <div class="staging-actions">
-      <button id="discard-all-btn" class="btn-secondary btn-sm">Discard All</button>
-      <button id="save-all-btn" class="btn-primary btn-sm">Save All</button>
-    </div>
-  </footer>
 
   <!-- Confirmation Modal -->
   <div id="confirm-modal" class="confirm-modal" style="display: none;">
@@ -430,9 +430,8 @@
         listEl.appendChild(item);
       });
 
-      // Show staging footer
-      const footer = document.getElementById('staging-footer');
-      if (footer) footer.style.display = stagingPrompts.length > 0 ? 'flex' : 'none';
+      // Update staging header visibility
+      updateStagingFooter();
     }
 
     /**
@@ -486,11 +485,16 @@
     }
 
     /**
-     * Update staging footer count
+     * Update staging header visibility and count
+     * Only shows when 2+ prompts are staged
      */
     function updateStagingFooter() {
+      const header = document.getElementById('staging-header');
       const countEl = document.getElementById('staging-count');
       if (countEl) countEl.textContent = stagingPrompts.length;
+      if (header) {
+        header.style.display = stagingPrompts.length >= 2 ? 'flex' : 'none';
+      }
     }
 
     /**
@@ -501,8 +505,8 @@
       selectedStagingId = null;
       hideEditor();
 
-      const footer = document.getElementById('staging-footer');
-      if (footer) footer.style.display = 'none';
+      const header = document.getElementById('staging-header');
+      if (header) header.style.display = 'none';
 
       // Restore list
       await loadPrompts(savedListState.query, savedListState.tags);
@@ -607,11 +611,25 @@
         }
       }
 
-      // Validate all
+      // Validate current prompt with inline errors
+      const errors = promptEditor.validate();
+      if (Object.keys(errors).length > 0) {
+        // Trigger the save button to show inline errors
+        document.getElementById('btn-save').click();
+        return;
+      }
+
+      // Validate all staged prompts
       const promptsToSave = stagingPrompts.map(s => s.data);
-      for (const data of promptsToSave) {
+      for (let i = 0; i < promptsToSave.length; i++) {
+        const data = promptsToSave[i];
         if (!data.slug || !data.name || !data.description || !data.content) {
-          showToast('All prompts must have slug, name, description, and content', { type: 'error' });
+          // Find the staging prompt with issues and switch to it
+          const staging = stagingPrompts[i];
+          if (staging.tempId !== selectedStagingId) {
+            selectStagingPrompt(staging.tempId);
+            showToast('This prompt has missing required fields', { type: 'error' });
+          }
           return;
         }
       }
