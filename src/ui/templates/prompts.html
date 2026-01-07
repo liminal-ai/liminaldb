@@ -290,6 +290,14 @@
      * Enter insert mode - add a new prompt to staging
      */
     function enterInsertMode() {
+      // Capture current form data before creating new entry
+      if (selectedStagingId) {
+        const current = stagingPrompts.find(s => s.tempId === selectedStagingId);
+        if (current) {
+          current.data = promptEditor.getFormData();
+        }
+      }
+
       // If first insert, save current list state
       if (stagingPrompts.length === 0) {
         const listEl = document.getElementById('prompt-list');
