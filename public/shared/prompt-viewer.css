@@ -279,16 +279,15 @@
 
 /* Editable line wrapper */
 .editable-line {
-  display: block;
-  min-height: 1.6em;
-  padding: 0.1em 0.25em;
-  margin: 0 -0.25em;
+  display: inline;
   border-radius: 2px;
   transition: background-color 0.15s ease;
 }
 
 .prompt-viewer.line-edit-mode .editable-line {
   cursor: pointer;
+  padding: 0 0.15em;
+  margin: 0 -0.15em;
 }
 
 .prompt-viewer.line-edit-mode .editable-line:hover {
@@ -296,9 +295,10 @@
 }
 
 .editable-line.editing {
+  display: block;
   background: var(--bg-elevated);
   padding: 0;
-  margin: 0 -0.25em;
+  margin: 0;
 }
 
 /* Inline edit input */
@@ -323,11 +323,9 @@
   border-color: var(--accent);
 }
 
-/* Empty line placeholder */
-.editable-line:empty::before,
+/* Empty line placeholder - subtle indicator */
 .prompt-viewer.line-edit-mode .editable-line:not(.editing):empty::before {
-  content: '(empty line)';
+  content: '·';
   color: var(--text-muted);
-  font-style: italic;
-  opacity: 0.5;
+  opacity: 0.3;
 }
