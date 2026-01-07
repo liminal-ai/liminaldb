@@ -12,3 +12,7 @@ function escapeHtml(str) {
 	div.textContent = str;
 	return div.innerHTML;
 }
+
+if (typeof window !== "undefined") {
+	window.escapeHtml = escapeHtml;
+}

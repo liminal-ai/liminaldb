@@ -270,6 +270,23 @@ export async function injectPromptViewer(dom: JSDOM): Promise<void> {
 }
 
 /**
+ * Assert an element exists and return it with proper typing.
+ * Use this instead of optional chaining in test assertions.
+ * @param element - The element that might be null
+ * @param message - Optional error message
+ * @returns The element (throws if null)
+ */
+export function assertElement<T extends Element>(
+	element: T | null | undefined,
+	message = "Expected element to exist",
+): T {
+	if (!element) {
+		throw new Error(message);
+	}
+	return element;
+}
+
+/**
  * Create a minimal DOM for testing prompt-viewer in isolation.
  * @returns A JSDOM instance with utils and prompt-viewer loaded
  */

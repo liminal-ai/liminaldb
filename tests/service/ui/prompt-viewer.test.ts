@@ -10,6 +10,7 @@ import {
 	setupClipboard,
 	click,
 	waitForAsync,
+	assertElement,
 } from "./setup";
 import type { JSDOM } from "jsdom";
 
@@ -49,49 +50,75 @@ describe("Prompts Module - Prompt Viewer", () => {
 		});
 
 		it("rendered button is active by default", async () => {
-			const renderedBtn = dom.window.document.querySelector(
-				'[data-view="rendered"]',
+			const renderedBtn = assertElement(
+				dom.window.document.querySelector('[data-view="rendered"]'),
+				"Expected rendered button to exist",
 			);
-			expect(renderedBtn?.classList.contains("active")).toBe(true);
+			expect(renderedBtn.classList.contains("active")).toBe(true);
 		});
 
 		it("clicking semantic activates it and deactivates rendered", async () => {
-			const semanticBtn = dom.window.document.querySelector(
-				'[data-view="semantic"]',
+			const semanticBtn = assertElement(
+				dom.window.document.querySelector('[data-view="semantic"]'),
+				"Expected semantic button to exist",
 			);
-			const renderedBtn = dom.window.document.querySelector(
-				'[data-view="rendered"]',
+			const renderedBtn = assertElement(
+				dom.window.document.querySelector('[data-view="rendered"]'),
+				"Expected rendered button to exist",
 			);
 
-			if (semanticBtn) {
-				click(semanticBtn);
-				await waitForAsync(50);
-			}
+			click(semanticBtn);
+			await waitForAsync(50);
 
-			expect(semanticBtn?.classList.contains("active")).toBe(true);
-			expect(renderedBtn?.classList.contains("active")).toBe(false);
+			expect(semanticBtn.classList.contains("active")).toBe(true);
+			expect(renderedBtn.classList.contains("active")).toBe(false);
 		});
 
 		it("clicking plain activates it", async () => {
-			const plainBtn = dom.window.document.querySelector('[data-view="plain"]');
+			const plainBtn = assertElement(
+				dom.window.document.querySelector('[data-view="plain"]'),
+				"Expected plain button to exist",
+			);
 
-			if (plainBtn) {
-				click(plainBtn);
-				await waitForAsync(50);
-			}
+			click(plainBtn);
+			await waitForAsync(50);
 
-			expect(plainBtn?.classList.contains("active")).toBe(true);
+			expect(plainBtn.classList.contains("active")).toBe(true);
+		});
+
+		it("plain view renders raw text without semantic spans", async () => {
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const firstItem = assertElement(
+				dom.window.document.querySelector(".prompt-item"),
+				"Expected prompt item to exist",
+			);
+			click(firstItem);
+			await waitForAsync(100);
+
+			const plainBtn = assertElement(
+				dom.window.document.querySelector('[data-view="plain"]'),
+				"Expected plain button to exist",
+			);
+			click(plainBtn);
+			await waitForAsync(50);
+
+			const contentEl = assertElement(
+				dom.window.document.getElementById("promptContent"),
+				"Expected promptContent element to exist",
+			);
+			expect(contentEl.innerHTML).not.toContain("<span");
 		});
 
 		it("stores view mode in localStorage", async () => {
-			const semanticBtn = dom.window.document.querySelector(
-				'[data-view="semantic"]',
+			const semanticBtn = assertElement(
+				dom.window.document.querySelector('[data-view="semantic"]'),
+				"Expected semantic button to exist",
 			);
 
-			if (semanticBtn) {
-				click(semanticBtn);
-				await waitForAsync(50);
-			}
+			click(semanticBtn);
+			await waitForAsync(50);
 
 			expect(dom.window.localStorage.getItem("promptViewMode")).toBe(
 				"semantic",
@@ -106,21 +133,22 @@ describe("Prompts Module - Prompt Viewer", () => {
 		});
 
 		it("copies raw content to clipboard when clicked", async () => {
-			// Load prompts and select one
 			dom.window.loadPrompts();
 			await waitForAsync(100);
 
-			const firstItem = dom.window.document.querySelector(".prompt-item");
-			if (firstItem) {
-				click(firstItem);
-				await waitForAsync(100);
-			}
+			const firstItem = assertElement(
+				dom.window.document.querySelector(".prompt-item"),
+				"Expected prompt item to exist",
+			);
+			click(firstItem);
+			await waitForAsync(100);
 
-			const copyBtn = dom.window.document.getElementById("copy-btn");
-			if (copyBtn) {
-				click(copyBtn);
-				await waitForAsync(50);
-			}
+			const copyBtn = assertElement(
+				dom.window.document.getElementById("copy-btn"),
+				"Expected copy button to exist",
+			);
+			click(copyBtn);
+			await waitForAsync(50);
 
 			const clipboard = dom.window.navigator.clipboard as unknown as {
 				writeText: { mock: { calls: string[][] } };
@@ -139,28 +167,36 @@ describe("Prompts Module - Prompt Viewer", () => {
 			dom.window.loadPrompts();
 			await waitForAsync(100);
 
-			const firstItem = dom.window.document.querySelector(".prompt-item");
-			if (firstItem) {
-				click(firstItem);
-				await waitForAsync(100);
-			}
+			const firstItem = assertElement(
+				dom.window.document.querySelector(".prompt-item"),
+				"Expected prompt item to exist",
+			);
+			click(firstItem);
+			await waitForAsync(100);
 
-			const contentEl = dom.window.document.getElementById("promptContent");
-			expect(contentEl?.innerHTML.length).toBeGreaterThan(0);
+			const contentEl = assertElement(
+				dom.window.document.getElementById("promptContent"),
+				"Expected promptContent element to exist",
+			);
+			expect(contentEl.innerHTML.length).toBeGreaterThan(0);
 		});
 
 		it("updates stats when prompt selected", async () => {
 			dom.window.loadPrompts();
 			await waitForAsync(100);
 
-			const firstItem = dom.window.document.querySelector(".prompt-item");
-			if (firstItem) {
-				click(firstItem);
-				await waitForAsync(100);
-			}
+			const firstItem = assertElement(
+				dom.window.document.querySelector(".prompt-item"),
+				"Expected prompt item to exist",
+			);
+			click(firstItem);
+			await waitForAsync(100);
 
-			const charsEl = dom.window.document.getElementById("statChars");
-			expect(charsEl?.textContent).not.toBe("0");
+			const charsEl = assertElement(
+				dom.window.document.getElementById("statChars"),
+				"Expected statChars element to exist",
+			);
+			expect(charsEl.textContent).not.toBe("0");
 		});
 	});
 
@@ -169,13 +205,14 @@ describe("Prompts Module - Prompt Viewer", () => {
 			dom.window.loadPrompts();
 			await waitForAsync(100);
 
-			const firstItem = dom.window.document.querySelector(".prompt-item");
-			if (firstItem) {
-				click(firstItem);
-				await waitForAsync(50);
-			}
+			const firstItem = assertElement(
+				dom.window.document.querySelector(".prompt-item"),
+				"Expected prompt item to exist",
+			);
+			click(firstItem);
+			await waitForAsync(50);
 
-			expect(firstItem?.classList.contains("selected")).toBe(true);
+			expect(firstItem.classList.contains("selected")).toBe(true);
 		});
 
 		it("removes selected class from previous selection", async () => {
@@ -183,19 +220,18 @@ describe("Prompts Module - Prompt Viewer", () => {
 			await waitForAsync(100);
 
 			const items = dom.window.document.querySelectorAll(".prompt-item");
-			const first = items[0];
-			const second = items[1];
-			if (first && second) {
-				click(first);
-				await waitForAsync(50);
-				click(second);
-				await waitForAsync(50);
+			expect(items.length).toBeGreaterThanOrEqual(2);
 
-				expect(first.classList.contains("selected")).toBe(false);
-				expect(second.classList.contains("selected")).toBe(true);
-			} else {
-				throw new Error("Expected at least 2 prompt items");
-			}
+			const first = assertElement(items[0], "Expected first item to exist");
+			const second = assertElement(items[1], "Expected second item to exist");
+
+			click(first);
+			await waitForAsync(50);
+			click(second);
+			await waitForAsync(50);
+
+			expect(first.classList.contains("selected")).toBe(false);
+			expect(second.classList.contains("selected")).toBe(true);
 		});
 	});
 });

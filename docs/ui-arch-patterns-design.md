@@ -104,7 +104,7 @@ broadcastToPortlet(message) // Send state/commands to iframe
 
 | Feature | Implementation |
 |---------|----------------|
-| Search | Text input, sends `shell:search` to portlet |
+| Search | Text input, sends `shell:filter` to portlet |
 | Tag filter | Dropdown picker, selected tags as dismissable pills |
 | Branding | **LIMINAL**DB (bold/regular weight) |
 | User | Email display from auth context |
@@ -191,7 +191,7 @@ The portlet owns the mode transition. Components are mounted/unmounted as needed
 | Portlet | Route | Purpose | Status |
 |---------|-------|---------|--------|
 | `prompts.html` | `/_m/prompts` | List, view, edit prompts | Active - view implemented, edit in Phase 6 |
-| `prompt-editor.html` | `/_m/prompt-editor` | Create prompt (standalone) | Deprecated - will be replaced by edit mode in prompts.html |
+| `prompt-editor.html` | `/_m/prompt-editor` | Create prompt (standalone) | Legacy - used by `/prompts/new` until Phase 6 consolidation |
 
 ---
 
@@ -199,7 +199,7 @@ The portlet owns the mode transition. Components are mounted/unmounted as needed
 
 ### Definition
 
-A component is a reusable JavaScript class/module that handles a specific UI concern within a portlet. Components:
+A component is a reusable JavaScript module that handles a specific UI concern within a portlet. Components:
 - Receive data, render output
 - Manage their own micro-state (e.g., view mode preference)
 - Do NOT communicate directly with shell
@@ -208,29 +208,10 @@ A component is a reusable JavaScript class/module that handles a specific UI con
 ### Pattern: prompt-viewer.js
 
 ```javascript
-// Component structure
-class PromptViewer {
-  constructor(containerEl) {
-    this.container = containerEl;
-    this.viewMode = localStorage.getItem('promptViewMode') || 'rendered';
-  }
-
-  display(content) {
-    // Parse content, render based on viewMode
-    this.container.innerHTML = this.render(content);
-    this.bindEvents();
-  }
-
-  setViewMode(mode) {
-    this.viewMode = mode;
-    localStorage.setItem('promptViewMode', mode);
-    this.refresh();
-  }
-}
-
-// Portlet mounts component
-const viewer = new PromptViewer(document.getElementById('promptContent'));
-viewer.display(selectedPrompt.content);
+// Component structure (functional module)
+const { html, stats } = renderPrompt(content, viewMode);
+contentEl.innerHTML = html;
+statsEl.textContent = stats.vars;
 ```
 
 ### prompt-viewer Features
@@ -288,8 +269,7 @@ class SemanticParser {
 | Message | Purpose | Payload |
 |---------|---------|---------|
 | `shell:state` | Restore/set portlet state | `{ slug?, mode? }` |
-| `shell:search` | Search query changed | `{ query }` |
-| `shell:filter` | Tag filter changed | `{ tags: string[] }` |
+| `shell:filter` | Search + tag filter changed | `{ query, tags: string[] }` |
 
 ### Example Flow
 
@@ -344,7 +324,7 @@ window.addEventListener('message', (e) => {
 /prompts                    → Shell + prompts portlet, nothing selected
 /prompts/:slug              → Shell + prompts portlet, prompt selected (view)
 /prompts/:slug/edit         → Shell + prompts portlet, prompt selected (edit)
-/prompts/new                → Shell + prompts portlet, new prompt form
+/prompts/new                → Shell + prompt-editor portlet (legacy, Phase 6 consolidates)
 ```
 
 ### Route Registration
@@ -352,7 +332,7 @@ window.addEventListener('message', (e) => {
 ```typescript
 // App routes (serve shell, shell loads portlet)
 app.get('/prompts', serveShell('prompts'));
-app.get('/prompts/new', serveShell('prompts'));
+app.get('/prompts/new', serveShell('prompt-editor')); // Legacy until Phase 6 consolidation
 app.get('/prompts/:slug', serveShell('prompts'));
 app.get('/prompts/:slug/edit', serveShell('prompts'));
 
@@ -387,7 +367,9 @@ selectPrompt(currentSlug, { trackHistory: false });
 ```
 /public/shared/themes/
 ├── base.css          # Structural styles (layout, components)
-└── tokyo-night.css   # Color tokens only
+├── tokyo-night.css   # Default theme tokens
+├── teal.css          # Alternative theme tokens (not wired)
+└── modern-dark.css   # Alternative theme tokens (not wired)
 
 /public/shared/
 └── prompt-viewer.css # Component-specific styles
@@ -431,8 +413,8 @@ Layout classes that use theme tokens:
 
 1. Create new token file: `themes/solarized.css`
 2. Define same CSS custom properties with different values
-3. Serve via query param: `/prompts?theme=solarized`
-4. Shell loads appropriate theme CSS
+3. Serve via query param: `/prompts?theme=solarized` (not yet implemented)
+4. Shell loads appropriate theme CSS (planned)
 
 ---
 
@@ -544,11 +526,11 @@ The UI fetches data from REST endpoints. Full API documentation is in the route 
 
 | Endpoint | Method | Purpose | Response |
 |----------|--------|---------|----------|
-| `/api/prompts` | GET | List user's prompts | `{ prompts: Prompt[] }` |
-| `/api/prompts` | POST | Create prompt | `{ prompt: Prompt }` |
-| `/api/prompts/tags` | GET | List unique tags | `{ tags: string[] }` |
-| `/api/prompts/:slug` | GET | Get single prompt | `{ prompt: Prompt }` |
-| `/api/prompts/:slug` | DELETE | Delete prompt | `{ success: boolean }` |
+| `/api/prompts` | GET | List user's prompts | `Prompt[]` |
+| `/api/prompts` | POST | Create prompt | `{ ids: string[] }` |
+| `/api/prompts/tags` | GET | List unique tags | `string[]` |
+| `/api/prompts/:slug` | GET | Get single prompt | `Prompt` |
+| `/api/prompts/:slug` | DELETE | Delete prompt | `{ deleted: boolean }` |
 | `/api/prompts/:slug` | PUT | Update prompt | `{ prompt: Prompt }` (planned - Phase 6) |
 
 ### Prompt Shape
@@ -699,9 +681,9 @@ app.get('/_m/prompts', serveModule);
 | `/prompts` | App | Yes | Shell + prompts portlet | Active |
 | `/prompts/:slug` | App | Yes | Shell + prompts portlet (selected) | Active |
 | `/prompts/:slug/edit` | App | Yes | Shell + prompts portlet (edit mode) | Route exists, mode planned Phase 6 |
-| `/prompts/new` | App | Yes | Shell + prompts portlet (new mode) | Route exists, mode planned Phase 6 |
+| `/prompts/new` | App | Yes | Shell + prompt-editor portlet (legacy) | Active until Phase 6 consolidation |
 | `/_m/prompts` | Module | No | Prompts portlet HTML | Active |
-| `/_m/prompt-editor` | Module | No | Editor portlet HTML | Deprecated - Phase 6 removes |
+| `/_m/prompt-editor` | Module | No | Editor portlet HTML | Legacy - used by `/prompts/new` until Phase 6 consolidation |
 | `/api/prompts` | API | Yes | List/create prompts | Active |
 | `/api/prompts/tags` | API | Yes | List unique tags | Active |
 | `/api/prompts/:slug` | API | Yes | Get/delete prompt | Active |
@@ -713,7 +695,7 @@ app.get('/_m/prompts', serveModule);
 |------|------|---------|--------|
 | `src/ui/templates/shell.html` | Shell | Outer chrome, history management | Active |
 | `src/ui/templates/prompts.html` | Portlet | Prompt list and viewer | Active |
-| `src/ui/templates/prompt-editor.html` | Portlet | Create form (standalone) | Deprecated - Phase 6 removes |
+| `src/ui/templates/prompt-editor.html` | Portlet | Create form (standalone) | Legacy - used by `/prompts/new` until Phase 6 consolidation |
 | `public/shared/themes/base.css` | Styles | Structural CSS | Active |
 | `public/shared/themes/tokyo-night.css` | Theme | Color tokens | Active |
 | `public/shared/prompt-viewer.css` | Styles | Viewer component styles | Active |
@@ -747,6 +729,18 @@ app.get('/_m/prompts', serveModule);
 
 ---
 
+## 16. Widgets & Demos (Experimental)
+
+The following standalone demo UIs live under `public/widgets/` and are not part of the main shell/portlet system:
+
+- `prompt-picker.html`
+- `prompt-picker-pip.html`
+- `prompt-card.html`
+- `prompt-batch-viewer.html`
+- `chatgpt-mock.html`
+
+---
+
 ## Appendix: File Locations
 
 ```
@@ -766,7 +760,9 @@ public/
 ├── shared/
 │   ├── themes/
 │   │   ├── base.css        # Structural styles
-│   │   └── tokyo-night.css # Theme tokens
+│   │   ├── tokyo-night.css # Default theme tokens
+│   │   ├── teal.css        # Alternative theme tokens (not wired)
+│   │   └── modern-dark.css # Alternative theme tokens (not wired)
 │   └── prompt-viewer.css   # Component styles
 tests/
 ├── service/ui/             # UI tests (jsdom)

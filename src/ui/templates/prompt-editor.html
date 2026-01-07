@@ -23,7 +23,7 @@
 
     <div class="form-group">
       <label for="description">Description</label>
-      <textarea id="description" name="description" rows="2"></textarea>
+      <textarea id="description" name="description" rows="2" required></textarea>
       <span id="description-error" class="error-message"></span>
     </div>
 
@@ -113,7 +113,9 @@
       setFieldError("name", nameMessage);
 
       let descriptionMessage = "";
-      if (descriptionValue.length > LIMITS.description) {
+      if (!descriptionValue) {
+        descriptionMessage = "Description is required";
+      } else if (descriptionValue.length > LIMITS.description) {
         descriptionMessage = "Description must be 2,000 characters or less";
       }
       setFieldError("description", descriptionMessage);

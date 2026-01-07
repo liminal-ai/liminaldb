@@ -81,7 +81,7 @@ class SemanticParser {
 
 	isValidTagStart() {
 		const rest = this.input.slice(this.pos + 1);
-		return /^[a-zA-Z_\/]/.test(rest);
+		return /^[a-zA-Z_/]/.test(rest);
 	}
 
 	isAtLineStart() {
@@ -241,7 +241,7 @@ class SemanticParser {
 		}
 		const hasClose = this.input[this.pos] === marker;
 		if (hasClose) this.pos++;
-		return `<span class="md-italic-marker">${marker}</span><span class="md-italic-text">${text}</span>${hasClose ? '<span class="md-italic-marker">' + marker + "</span>" : ""}`;
+		return `<span class="md-italic-marker">${marker}</span><span class="md-italic-text">${text}</span>${hasClose ? `<span class="md-italic-marker">${marker}</span>` : ""}`;
 	}
 
 	parseInlineCode() {
@@ -253,7 +253,7 @@ class SemanticParser {
 		}
 		const hasClose = this.input[this.pos] === "`";
 		if (hasClose) this.pos++;
-		return `<span class="md-code-marker">\`</span><span class="md-code-text">${escapeHtml(text)}</span>${hasClose ? '<span class="md-code-marker">\`</span>' : ""}`;
+		return `<span class="md-code-marker">\`</span><span class="md-code-text">${escapeHtml(text)}</span>${hasClose ? '<span class="md-code-marker">`</span>' : ""}`;
 	}
 
 	lookingAt(str) {
@@ -275,13 +275,13 @@ function renderMarkdown(input) {
 	const tags = (input.match(/<[a-zA-Z_][a-zA-Z0-9_-]*/g) || []).length;
 	const vars = (input.match(/\{\{[^}]+\}\}/g) || []).length;
 
-	let preserved = [];
+	const preserved = [];
 	let protectedInput = input;
 
 	// Protect variables
 	protectedInput = protectedInput.replace(
 		/\{\{([^}]+)\}\}/g,
-		(match, varName) => {
+		(_match, varName) => {
 			const idx = preserved.length;
 			preserved.push(
 				`<span class="rendered-var">${escapeHtml(varName.trim())}</span>`,
@@ -293,7 +293,7 @@ function renderMarkdown(input) {
 	// Protect XML tags
 	protectedInput = protectedInput.replace(
 		/<(\/?[a-zA-Z_][a-zA-Z0-9_-]*)([^>]*)>/g,
-		(match, tagName, attrs) => {
+		(_match, tagName, attrs) => {
 			const idx = preserved.length;
 			const isClosing = tagName.startsWith("/");
 			const name = isClosing ? tagName.slice(1) : tagName;
@@ -324,6 +324,11 @@ function renderMarkdown(input) {
 function renderPrompt(input, view = "semantic") {
 	if (view === "rendered") {
 		return renderMarkdown(input);
+	} else if (view === "plain") {
+		const tags = (input.match(/<\/?[a-zA-Z_][a-zA-Z0-9_-]*[^>]*>/g) || [])
+			.length;
+		const vars = (input.match(/\{\{[^}]+\}\}/g) || []).length;
+		return { html: escapeHtml(input), stats: { tags, vars } };
 	} else {
 		const parser = new SemanticParser(input);
 		return parser.parse();
