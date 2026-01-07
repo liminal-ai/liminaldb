@@ -581,6 +581,11 @@
       const toggle = document.getElementById('line-edit-toggle');
       if (!toggle) return;
 
+      // Don't enable line edit in rendered view
+      if (currentView === 'rendered' && lineEditEnabled) {
+        lineEditEnabled = false;
+      }
+
       toggle.classList.toggle('active', lineEditEnabled);
       const viewer = document.getElementById('promptViewer');
       if (viewer) {
@@ -592,6 +597,12 @@
      * Toggle line edit mode
      */
     function toggleLineEdit() {
+      // Line edit only works in plain/semantic views
+      if (currentView === 'rendered') {
+        alert('Line Edit works best in Plain or Semantic view. Switch views to use Line Edit.');
+        return;
+      }
+
       lineEditEnabled = !lineEditEnabled;
 
       try {
@@ -903,7 +914,17 @@
         } catch (e) {
           // localStorage unavailable (private browsing, etc.)
         }
+
+        // Auto-disable line edit in rendered view
+        if (currentView === 'rendered' && lineEditEnabled) {
+          lineEditEnabled = false;
+          const toggle = document.getElementById('line-edit-toggle');
+          if (toggle) toggle.classList.remove('active');
+          viewer.classList.remove('line-edit-mode');
+        }
+
         viewer.className = `prompt-viewer view-${currentView}`;
+        if (lineEditEnabled) viewer.classList.add('line-edit-mode');
         if (rawPrompt) displayPromptContent(rawPrompt);
       });
     });
