@@ -326,6 +326,7 @@
 
       renderStagingList();
       showEditor(newPrompt.data);
+      isDirty = false; // Reset after showing new empty form
       updateStagingFooter();
       notifyShellStateChange(true);
     }
