@@ -375,15 +375,11 @@ function wrapLinesForEdit(rawInput, _renderedHtml, view) {
 			})
 			.join("\n");
 	} else {
-		// Rendered view: render each line, filter empty, no newline joins
-		// Empty lines are hidden via CSS, non-empty lines flow naturally
+		// Rendered view: trickier - we need to map rendered output back to lines
+		// For now, fall back to plain text lines with click-to-edit
+		// The line will show rendered preview but edit the raw source
 		return lines
 			.map((line, idx) => {
-				const trimmed = line.trim();
-				if (!trimmed) {
-					// Empty line - render as empty span (hidden by CSS)
-					return `<span class="editable-line" data-line="${idx}"></span>`;
-				}
 				// Render single line for preview
 				const singleLineResult = renderMarkdown(line);
 				// Strip outer <p> tags that markdown-it adds
@@ -392,7 +388,7 @@ function wrapLinesForEdit(rawInput, _renderedHtml, view) {
 					.replace(/<\/p>\n?$/, "");
 				return `<span class="editable-line" data-line="${idx}">${html}</span>`;
 			})
-			.join(""); // No newlines - let markdown handle spacing
+			.join("\n");
 	}
 }
 

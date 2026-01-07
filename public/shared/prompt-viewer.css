@@ -67,6 +67,11 @@
   color: var(--text-primary);
 }
 
+.prompt-viewer-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .prompt-viewer-content {
   padding: 1rem;
   min-height: 200px;
@@ -323,12 +328,9 @@
   border-color: var(--accent);
 }
 
-/* Empty line placeholder - subtle indicator (plain/semantic only) */
-.prompt-viewer.line-edit-mode.view-plain .editable-line:not(.editing):empty::before,
-.prompt-viewer.line-edit-mode.view-semantic .editable-line:not(.editing):empty::before {
+/* Empty line placeholder - subtle indicator */
+.prompt-viewer.line-edit-mode .editable-line:not(.editing):empty::before {
   content: '·';
   color: var(--text-muted);
   opacity: 0.3;
 }
-
-/* Line edit disabled in rendered view - no special styling needed */

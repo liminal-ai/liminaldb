@@ -581,11 +581,6 @@
       const toggle = document.getElementById('line-edit-toggle');
       if (!toggle) return;
 
-      // Don't enable line edit in rendered view
-      if (currentView === 'rendered' && lineEditEnabled) {
-        lineEditEnabled = false;
-      }
-
       toggle.classList.toggle('active', lineEditEnabled);
       const viewer = document.getElementById('promptViewer');
       if (viewer) {
@@ -594,14 +589,11 @@
     }
 
     /**
-     * Toggle line edit mode
+     * Toggle line edit mode (disabled in rendered view)
      */
     function toggleLineEdit() {
-      // Line edit only works in plain/semantic views
-      if (currentView === 'rendered') {
-        alert('Line Edit works best in Plain or Semantic view. Switch views to use Line Edit.');
-        return;
-      }
+      // Line edit not available in rendered view
+      if (currentView === 'rendered') return;
 
       lineEditEnabled = !lineEditEnabled;
 
@@ -620,6 +612,35 @@
       // Re-render content with new mode
       if (rawPrompt) {
         displayPromptContent(rawPrompt);
+      }
+    }
+
+    /**
+     * Update line edit toggle availability based on view mode
+     */
+    function updateLineEditAvailability() {
+      const toggle = document.getElementById('line-edit-toggle');
+      if (!toggle) return;
+
+      if (currentView === 'rendered') {
+        // Disable line edit in rendered view
+        toggle.disabled = true;
+        toggle.classList.remove('active');
+        toggle.title = 'Line edit not available in Rendered view';
+
+        const viewer = document.getElementById('promptViewer');
+        if (viewer) viewer.classList.remove('line-edit-mode');
+      } else {
+        // Enable line edit in plain/semantic views
+        toggle.disabled = false;
+        toggle.title = 'Enable line-by-line editing';
+
+        // Restore saved state
+        if (lineEditEnabled) {
+          toggle.classList.add('active');
+          const viewer = document.getElementById('promptViewer');
+          if (viewer) viewer.classList.add('line-edit-mode');
+        }
       }
     }
 
@@ -914,17 +935,8 @@
         } catch (e) {
           // localStorage unavailable (private browsing, etc.)
         }
-
-        // Auto-disable line edit in rendered view
-        if (currentView === 'rendered' && lineEditEnabled) {
-          lineEditEnabled = false;
-          const toggle = document.getElementById('line-edit-toggle');
-          if (toggle) toggle.classList.remove('active');
-          viewer.classList.remove('line-edit-mode');
-        }
-
         viewer.className = `prompt-viewer view-${currentView}`;
-        if (lineEditEnabled) viewer.classList.add('line-edit-mode');
+        updateLineEditAvailability();
         if (rawPrompt) displayPromptContent(rawPrompt);
       });
     });
@@ -977,6 +989,7 @@
     // Initialize view mode and line edit
     initViewMode();
     initLineEditMode();
+    updateLineEditAvailability();
 
     // Initial load - deferred to allow test mocking
     // In production, call loadPrompts() after DOMContentLoaded
