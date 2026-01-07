@@ -72,6 +72,20 @@
     </div>
   </footer>
 
+  <!-- Confirmation Modal -->
+  <div id="confirm-modal" class="confirm-modal" style="display: none;">
+    <div class="confirm-modal-content">
+      <p id="confirm-message" class="confirm-message"></p>
+      <div class="confirm-modal-actions">
+        <button type="button" class="btn btn-secondary btn-sm" id="confirm-cancel">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" id="confirm-ok">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
   <script src="/js/utils.js"></script>
   <script src="/js/prompt-viewer.js"></script>
   <script src="/js/prompt-editor.js"></script>
@@ -96,6 +110,93 @@
     let selectedStagingId = null;
     let savedListState = { query: '', tags: [], scrollTop: 0 }; // Preserved during insert mode
     let isDirty = false;
+
+    // ============================================
+    // CONFIRMATION MODAL
+    // ============================================
+
+    let confirmResolve = null;
+
+    /**
+     * Show a confirmation modal and return a promise.
+     * @param {string} message - The confirmation message to display
+     * @returns {Promise<boolean>} - Resolves to true if confirmed, false if cancelled
+     */
+    function showConfirm(message) {
+      return new Promise((resolve) => {
+        confirmResolve = resolve;
+        const modal = document.getElementById('confirm-modal');
+        const messageEl = document.getElementById('confirm-message');
+        messageEl.textContent = message;
+        modal.style.display = 'flex';
+
+        // Focus OK button for keyboard accessibility
+        document.getElementById('confirm-ok').focus();
+      });
+    }
+
+    function hideConfirm(result) {
+      const modal = document.getElementById('confirm-modal');
+      modal.style.display = 'none';
+      if (confirmResolve) {
+        confirmResolve(result);
+        confirmResolve = null;
+      }
+    }
+
+    // Make showConfirm available to other scripts
+    window.showConfirm = showConfirm;
+
+    // ============================================
+    // TOAST NOTIFICATIONS
+    // ============================================
+
+    /**
+     * Show a toast notification.
+     * @param {string} message - The message to display
+     * @param {Object} options - Options: type ('error'|'success'|'info'), duration (ms)
+     */
+    function showToast(message, options = {}) {
+      const { type = 'info', duration = 4000 } = options;
+      const container = document.getElementById('toast-container');
+
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.innerHTML = `
+        <span class="toast-message">${escapeHtml(message)}</span>
+        <button class="toast-close" aria-label="Dismiss">&times;</button>
+      `;
+
+      const closeBtn = toast.querySelector('.toast-close');
+      const dismiss = () => {
+        toast.classList.add('toast-out');
+        setTimeout(() => toast.remove(), 200);
+      };
+
+      closeBtn.addEventListener('click', dismiss);
+      container.appendChild(toast);
+
+      if (duration > 0) {
+        setTimeout(dismiss, duration);
+      }
+    }
+
+    // Make showToast available to other scripts
+    window.showToast = showToast;
+
+    // Set up confirm modal event listeners
+    document.getElementById('confirm-cancel').addEventListener('click', () => hideConfirm(false));
+    document.getElementById('confirm-ok').addEventListener('click', () => hideConfirm(true));
+    document.getElementById('confirm-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'confirm-modal') hideConfirm(false);
+    });
+    document.addEventListener('keydown', (e) => {
+      const modal = document.getElementById('confirm-modal');
+      if (modal.style.display === 'flex') {
+        if (e.key === 'Escape') hideConfirm(false);
+        if (e.key === 'Enter') hideConfirm(true);
+      }
+    });
 
     // ============================================
     // SHELL COMMUNICATION
@@ -329,10 +430,10 @@
     /**
      * Select a staging prompt
      */
-    function selectStagingPrompt(tempId) {
+    async function selectStagingPrompt(tempId) {
       // Check dirty state first
       if (isDirty && selectedStagingId !== tempId) {
-        if (!confirm('Discard unsaved changes?')) return;
+        if (!await showConfirm('Discard unsaved changes?')) return;
       }
 
       // Save current editor state back to staging
@@ -355,9 +456,9 @@
     /**
      * Remove a prompt from staging
      */
-    function removeStagingPrompt(tempId) {
+    async function removeStagingPrompt(tempId) {
       if (isDirty && tempId === selectedStagingId) {
-        if (!confirm('Discard unsaved changes?')) return;
+        if (!await showConfirm('Discard unsaved changes?')) return;
       }
 
       stagingPrompts = stagingPrompts.filter(s => s.tempId !== tempId);
@@ -421,7 +522,7 @@
 
           if (!response.ok) {
             const err = await response.json();
-            alert(err.error || 'Failed to save');
+            showToast(err.error || 'Failed to save', { type: 'error' });
             return;
           }
 
@@ -440,7 +541,7 @@
 
           if (!response.ok) {
             const err = await response.json();
-            alert(err.error || 'Failed to save');
+            showToast(err.error || 'Failed to save', { type: 'error' });
             return;
           }
 
@@ -462,7 +563,7 @@
         }
       } catch (err) {
         console.error('Save failed:', err);
-        alert('Failed to save prompt');
+        showToast('Failed to save prompt', { type: 'error' });
       }
     }
 
@@ -502,7 +603,7 @@
       const promptsToSave = stagingPrompts.map(s => s.data);
       for (const data of promptsToSave) {
         if (!data.slug || !data.name || !data.description || !data.content) {
-          alert('All prompts must have slug, name, description, and content');
+          showToast('All prompts must have slug, name, description, and content', { type: 'error' });
           return;
         }
       }
@@ -516,7 +617,7 @@
 
         if (!response.ok) {
           const err = await response.json();
-          alert(err.error || 'Failed to save');
+          showToast(err.error || 'Failed to save', { type: 'error' });
           return;
         }
 
@@ -528,17 +629,17 @@
         }
       } catch (err) {
         console.error('Save all failed:', err);
-        alert('Failed to save prompts');
+        showToast('Failed to save prompts', { type: 'error' });
       }
     }
 
     /**
      * Discard all staging prompts
      */
-    function discardAll() {
+    async function discardAll() {
       if (stagingPrompts.length === 0) return;
 
-      if (!confirm(`Discard all ${stagingPrompts.length} unsaved prompt(s)?`)) return;
+      if (!await showConfirm(`Discard all ${stagingPrompts.length} unsaved prompt(s)?`)) return;
 
       exitInsertMode();
     }
@@ -780,7 +881,7 @@
         if (!response.ok) {
           const err = await response.json();
           console.error('Line edit save failed:', err);
-          alert('Failed to save: ' + (err.error || 'Unknown error'));
+          showToast('Failed to save: ' + (err.error || 'Unknown error'), { type: 'error' });
           editingLineIndex = null;
           displayPromptContent(rawPrompt); // Revert to old content
           return;
@@ -795,7 +896,7 @@
         displayPromptContent(newContent);
       } catch (err) {
         console.error('Line edit save failed:', err);
-        alert('Failed to save changes');
+        showToast('Failed to save changes', { type: 'error' });
         editingLineIndex = null;
         displayPromptContent(rawPrompt);
       }

@@ -352,7 +352,7 @@ const promptEditor = (function () {
 	function handleSave() {
 		const error = validate();
 		if (error) {
-			alert(error);
+			window.showToast(error, { type: "error" });
 			return;
 		}
 
@@ -363,9 +363,9 @@ const promptEditor = (function () {
 	/**
 	 * Handle discard button click
 	 */
-	function handleDiscard() {
+	async function handleDiscard() {
 		if (isDirty) {
-			if (!confirm("Discard unsaved changes?")) {
+			if (!(await window.showConfirm("Discard unsaved changes?"))) {
 				return;
 			}
 		}
