@@ -26,9 +26,16 @@
     <div id="empty-state" class="empty-state">
       Select a prompt to view
     </div>
+
+    <!-- Editor container (for new/edit modes) -->
+    <div id="prompt-edit" class="prompt-edit" style="display: none;"></div>
+
     <article id="prompt-view" class="prompt-view" style="display: none;">
       <header class="prompt-header">
-        <h1 id="prompt-slug" class="prompt-slug"></h1>
+        <div class="prompt-header-top">
+          <h1 id="prompt-slug" class="prompt-slug"></h1>
+          <button id="edit-btn" class="btn-secondary btn-sm">Edit</button>
+        </div>
         <p id="prompt-description" class="prompt-description"></p>
       </header>
 
@@ -40,6 +47,8 @@
             <button class="prompt-viewer-btn active" data-view="rendered">Rendered</button>
             <button class="prompt-viewer-btn" data-view="semantic">Semantic</button>
             <button class="prompt-viewer-btn" data-view="plain">Plain</button>
+            <span class="prompt-viewer-separator">|</span>
+            <button class="prompt-viewer-btn" id="line-edit-toggle" title="Enable line-by-line editing">Line Edit</button>
           </div>
         </div>
         <div class="prompt-viewer-content" id="promptContent"></div>
@@ -52,20 +61,41 @@
     </article>
   </main>
 
+  <!-- Staging footer (visible in insert mode) -->
+  <footer id="staging-footer" class="staging-footer" style="display: none;">
+    <span class="staging-info">
+      <span id="staging-count">0</span> prompt(s) to save
+    </span>
+    <div class="staging-actions">
+      <button id="discard-all-btn" class="btn-secondary btn-sm">Discard All</button>
+      <button id="save-all-btn" class="btn-primary btn-sm">Save All</button>
+    </div>
+  </footer>
+
   <script src="/js/utils.js"></script>
   <script src="/js/prompt-viewer.js"></script>
+  <script src="/js/prompt-editor.js"></script>
   <script>
     // State
     let prompts = [];
     let selectedSlug = null;
     let currentMode = 'empty'; // 'empty' | 'view' | 'edit' | 'new'
     let currentView = 'rendered';
+    let lineEditEnabled = false;
     try {
       currentView = localStorage.getItem('promptViewMode') || 'rendered';
+      lineEditEnabled = localStorage.getItem('lineEditEnabled') === 'true';
     } catch (e) {
       // localStorage unavailable (private browsing, etc.)
     }
     let rawPrompt = '';
+    let editingLineIndex = null; // Currently editing line index
+
+    // Staging state (insert mode)
+    let stagingPrompts = []; // Array of { tempId, data: { slug, name, description, content, tags } }
+    let selectedStagingId = null;
+    let savedListState = { query: '', tags: [], scrollTop: 0 }; // Preserved during insert mode
+    let isDirty = false;
 
     // ============================================
     // SHELL COMMUNICATION
@@ -144,6 +174,375 @@
       }
     }
 
+    // ============================================
+    // INSERT MODE (Staging)
+    // ============================================
+
+    /**
+     * Generate a temporary ID for staging prompts
+     */
+    function generateTempId() {
+      return 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    /**
+     * Enter insert mode - add a new prompt to staging
+     */
+    function enterInsertMode() {
+      // If first insert, save current list state
+      if (stagingPrompts.length === 0) {
+        const listEl = document.getElementById('prompt-list');
+        savedListState = {
+          query: '', // Will be populated by shell filter state if needed
+          tags: [],
+          scrollTop: listEl ? listEl.scrollTop : 0
+        };
+      }
+
+      // Create new staging prompt
+      const newPrompt = {
+        tempId: generateTempId(),
+        data: {
+          slug: '',
+          name: 'New Prompt',
+          description: '',
+          content: '',
+          tags: []
+        }
+      };
+
+      stagingPrompts.push(newPrompt);
+      selectedStagingId = newPrompt.tempId;
+      currentMode = 'new';
+
+      renderStagingList();
+      showEditor(newPrompt.data);
+      updateStagingFooter();
+      notifyShellStateChange(true);
+    }
+
+    /**
+     * Enter edit mode for an existing prompt
+     */
+    function enterEditMode() {
+      if (!selectedSlug) return;
+
+      const prompt = prompts.find(p => p.slug === selectedSlug);
+      if (!prompt) return;
+
+      currentMode = 'edit';
+      showEditor(prompt);
+      notifyShellStateChange(true);
+    }
+
+    /**
+     * Show the editor with given data
+     */
+    function showEditor(data) {
+      const emptyState = document.getElementById('empty-state');
+      const promptView = document.getElementById('prompt-view');
+      const promptEdit = document.getElementById('prompt-edit');
+
+      if (emptyState) emptyState.style.display = 'none';
+      if (promptView) promptView.style.display = 'none';
+      if (promptEdit) promptEdit.style.display = 'block';
+
+      promptEditor.init(promptEdit, {
+        data,
+        onSave: handleSave,
+        onDiscard: handleDiscard,
+        onDirtyChange: (dirty) => {
+          isDirty = dirty;
+          notifyShellDirtyState(dirty);
+        }
+      });
+    }
+
+    /**
+     * Hide the editor and show appropriate view
+     */
+    function hideEditor() {
+      const promptEdit = document.getElementById('prompt-edit');
+      if (promptEdit) promptEdit.style.display = 'none';
+
+      promptEditor.destroy();
+      isDirty = false;
+      notifyShellDirtyState(false);
+    }
+
+    /**
+     * Notify shell of dirty state for confirmation prompts
+     */
+    function notifyShellDirtyState(dirty) {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          type: 'portlet:dirty',
+          dirty
+        }, window.location.origin);
+      }
+    }
+
+    /**
+     * Render the staging list in the sidebar
+     */
+    function renderStagingList() {
+      const listEl = document.getElementById('prompt-list');
+      if (!listEl) return;
+
+      listEl.innerHTML = '';
+
+      stagingPrompts.forEach((staging) => {
+        const item = document.createElement('div');
+        item.className = 'prompt-item staging';
+        item.dataset.tempId = staging.tempId;
+
+        if (staging.tempId === selectedStagingId) {
+          item.classList.add('selected');
+        }
+
+        const name = staging.data.name || 'New Prompt';
+        const slug = staging.data.slug || '(no slug)';
+
+        item.innerHTML = `
+          <div class="prompt-name">${escapeHtml(name)}</div>
+          <div class="prompt-slug">${escapeHtml(slug)}</div>
+          <div class="item-status">unsaved</div>
+          <button class="btn-icon remove-staging" title="Remove">×</button>
+        `;
+
+        item.addEventListener('click', (e) => {
+          if (e.target.classList.contains('remove-staging')) {
+            removeStagingPrompt(staging.tempId);
+          } else {
+            selectStagingPrompt(staging.tempId);
+          }
+        });
+
+        listEl.appendChild(item);
+      });
+
+      // Show staging footer
+      const footer = document.getElementById('staging-footer');
+      if (footer) footer.style.display = stagingPrompts.length > 0 ? 'flex' : 'none';
+    }
+
+    /**
+     * Select a staging prompt
+     */
+    function selectStagingPrompt(tempId) {
+      // Check dirty state first
+      if (isDirty && selectedStagingId !== tempId) {
+        if (!confirm('Discard unsaved changes?')) return;
+      }
+
+      // Save current editor state back to staging
+      if (selectedStagingId) {
+        const current = stagingPrompts.find(s => s.tempId === selectedStagingId);
+        if (current) {
+          current.data = promptEditor.getFormData();
+        }
+      }
+
+      selectedStagingId = tempId;
+      const staging = stagingPrompts.find(s => s.tempId === tempId);
+      if (staging) {
+        showEditor(staging.data);
+      }
+
+      renderStagingList();
+    }
+
+    /**
+     * Remove a prompt from staging
+     */
+    function removeStagingPrompt(tempId) {
+      if (isDirty && tempId === selectedStagingId) {
+        if (!confirm('Discard unsaved changes?')) return;
+      }
+
+      stagingPrompts = stagingPrompts.filter(s => s.tempId !== tempId);
+
+      if (stagingPrompts.length === 0) {
+        exitInsertMode();
+      } else if (selectedStagingId === tempId) {
+        // Select the first remaining
+        selectedStagingId = stagingPrompts[0].tempId;
+        showEditor(stagingPrompts[0].data);
+        renderStagingList();
+      } else {
+        renderStagingList();
+      }
+
+      updateStagingFooter();
+    }
+
+    /**
+     * Update staging footer count
+     */
+    function updateStagingFooter() {
+      const countEl = document.getElementById('staging-count');
+      if (countEl) countEl.textContent = stagingPrompts.length;
+    }
+
+    /**
+     * Exit insert mode and restore list
+     */
+    async function exitInsertMode() {
+      stagingPrompts = [];
+      selectedStagingId = null;
+      hideEditor();
+
+      const footer = document.getElementById('staging-footer');
+      if (footer) footer.style.display = 'none';
+
+      // Restore list
+      await loadPrompts(savedListState.query, savedListState.tags);
+
+      // Restore scroll position
+      const listEl = document.getElementById('prompt-list');
+      if (listEl) listEl.scrollTop = savedListState.scrollTop;
+
+      currentMode = 'empty';
+      clearSelection({ trackHistory: true });
+    }
+
+    /**
+     * Handle save from editor
+     */
+    async function handleSave(data) {
+      try {
+        if (currentMode === 'edit') {
+          // Update existing prompt
+          const response = await fetch(`/api/prompts/${selectedSlug}`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+
+          if (!response.ok) {
+            const err = await response.json();
+            alert(err.error || 'Failed to save');
+            return;
+          }
+
+          hideEditor();
+          await loadPrompts();
+
+          // If slug changed, select new slug
+          selectPrompt(data.slug, { trackHistory: true });
+        } else if (currentMode === 'new') {
+          // Create new prompt
+          const response = await fetch('/api/prompts', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ prompts: [data] })
+          });
+
+          if (!response.ok) {
+            const err = await response.json();
+            alert(err.error || 'Failed to save');
+            return;
+          }
+
+          // Remove from staging
+          stagingPrompts = stagingPrompts.filter(s => s.tempId !== selectedStagingId);
+
+          if (stagingPrompts.length === 0) {
+            await exitInsertMode();
+            // Select the newly created prompt
+            await loadPrompts();
+            selectPrompt(data.slug, { trackHistory: true });
+          } else {
+            // More to save - select next
+            selectedStagingId = stagingPrompts[0].tempId;
+            showEditor(stagingPrompts[0].data);
+            renderStagingList();
+            updateStagingFooter();
+          }
+        }
+      } catch (err) {
+        console.error('Save failed:', err);
+        alert('Failed to save prompt');
+      }
+    }
+
+    /**
+     * Handle discard from editor
+     */
+    function handleDiscard() {
+      if (currentMode === 'edit') {
+        hideEditor();
+        currentMode = 'view';
+        // Re-show the view
+        const emptyState = document.getElementById('empty-state');
+        const promptView = document.getElementById('prompt-view');
+        if (emptyState) emptyState.style.display = 'none';
+        if (promptView) promptView.style.display = 'block';
+        notifyShellStateChange(true);
+      } else if (currentMode === 'new') {
+        removeStagingPrompt(selectedStagingId);
+      }
+    }
+
+    /**
+     * Save all staging prompts
+     */
+    async function saveAll() {
+      if (stagingPrompts.length === 0) return;
+
+      // Update current editor data
+      if (selectedStagingId) {
+        const current = stagingPrompts.find(s => s.tempId === selectedStagingId);
+        if (current) {
+          current.data = promptEditor.getFormData();
+        }
+      }
+
+      // Validate all
+      const promptsToSave = stagingPrompts.map(s => s.data);
+      for (const data of promptsToSave) {
+        if (!data.slug || !data.name || !data.description || !data.content) {
+          alert('All prompts must have slug, name, description, and content');
+          return;
+        }
+      }
+
+      try {
+        const response = await fetch('/api/prompts', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ prompts: promptsToSave })
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          alert(err.error || 'Failed to save');
+          return;
+        }
+
+        await exitInsertMode();
+        // Select first created prompt
+        await loadPrompts();
+        if (promptsToSave.length > 0) {
+          selectPrompt(promptsToSave[0].slug, { trackHistory: true });
+        }
+      } catch (err) {
+        console.error('Save all failed:', err);
+        alert('Failed to save prompts');
+      }
+    }
+
+    /**
+     * Discard all staging prompts
+     */
+    function discardAll() {
+      if (stagingPrompts.length === 0) return;
+
+      if (!confirm(`Discard all ${stagingPrompts.length} unsaved prompt(s)?`)) return;
+
+      exitInsertMode();
+    }
+
     // Initialize view mode from localStorage
     function initViewMode() {
       const viewer = document.getElementById('promptViewer');
@@ -158,12 +557,216 @@
       rawPrompt = content;
       const contentEl = document.getElementById('promptContent');
 
-      const { html, stats } = renderPrompt(content, currentView);
+      const { html, stats } = renderPrompt(content, currentView, { lineEdit: lineEditEnabled });
       contentEl.innerHTML = html || '<span style="color: var(--text-muted)">No content</span>';
 
       document.getElementById('statTags').textContent = stats.tags;
       document.getElementById('statVars').textContent = stats.vars;
       document.getElementById('statChars').textContent = content.length;
+
+      // Set up line edit click handlers if enabled
+      if (lineEditEnabled) {
+        setupLineEditHandlers();
+      }
+    }
+
+    // ============================================
+    // LINE EDIT MODE
+    // ============================================
+
+    /**
+     * Initialize line edit toggle state
+     */
+    function initLineEditMode() {
+      const toggle = document.getElementById('line-edit-toggle');
+      if (!toggle) return;
+
+      toggle.classList.toggle('active', lineEditEnabled);
+      const viewer = document.getElementById('promptViewer');
+      if (viewer) {
+        viewer.classList.toggle('line-edit-mode', lineEditEnabled);
+      }
+    }
+
+    /**
+     * Toggle line edit mode
+     */
+    function toggleLineEdit() {
+      lineEditEnabled = !lineEditEnabled;
+
+      try {
+        localStorage.setItem('lineEditEnabled', lineEditEnabled.toString());
+      } catch (e) {
+        // localStorage unavailable
+      }
+
+      const toggle = document.getElementById('line-edit-toggle');
+      if (toggle) toggle.classList.toggle('active', lineEditEnabled);
+
+      const viewer = document.getElementById('promptViewer');
+      if (viewer) viewer.classList.toggle('line-edit-mode', lineEditEnabled);
+
+      // Re-render content with new mode
+      if (rawPrompt) {
+        displayPromptContent(rawPrompt);
+      }
+    }
+
+    /**
+     * Set up click handlers for editable lines
+     */
+    function setupLineEditHandlers() {
+      const contentEl = document.getElementById('promptContent');
+      if (!contentEl) return;
+
+      contentEl.querySelectorAll('.editable-line').forEach(lineEl => {
+        lineEl.addEventListener('click', (e) => {
+          // Don't trigger if clicking on an existing input
+          if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+          const lineIndex = parseInt(lineEl.dataset.line, 10);
+          startLineEdit(lineIndex, lineEl);
+        });
+      });
+    }
+
+    /**
+     * Start editing a specific line
+     */
+    function startLineEdit(lineIndex, lineEl) {
+      // If already editing another line, save it first
+      if (editingLineIndex !== null && editingLineIndex !== lineIndex) {
+        saveCurrentLineEdit();
+      }
+
+      editingLineIndex = lineIndex;
+      const lines = rawPrompt.split('\n');
+      const lineContent = lines[lineIndex] || '';
+
+      // Create inline input
+      const input = document.createElement('textarea');
+      input.className = 'line-edit-input';
+      input.value = lineContent;
+      input.rows = 1;
+
+      // Auto-resize based on content
+      input.style.width = '100%';
+      input.style.minWidth = Math.max(lineEl.offsetWidth, 300) + 'px';
+
+      // Replace line content with input
+      lineEl.innerHTML = '';
+      lineEl.appendChild(input);
+      lineEl.classList.add('editing');
+
+      // Focus and select all
+      input.focus();
+      input.select();
+
+      // Auto-resize height
+      const autoResize = () => {
+        input.style.height = 'auto';
+        input.style.height = input.scrollHeight + 'px';
+      };
+      input.addEventListener('input', autoResize);
+      autoResize();
+
+      // Save on blur
+      input.addEventListener('blur', () => {
+        saveLineEdit(lineIndex, input.value);
+      });
+
+      // Save on Enter (Shift+Enter for newline would need multiline support)
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          input.blur(); // Triggers save via blur handler
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          editingLineIndex = null;
+          displayPromptContent(rawPrompt); // Re-render without saving
+        }
+      });
+    }
+
+    /**
+     * Save the currently editing line
+     */
+    function saveCurrentLineEdit() {
+      const contentEl = document.getElementById('promptContent');
+      if (!contentEl || editingLineIndex === null) return;
+
+      const editingEl = contentEl.querySelector('.editable-line.editing');
+      if (!editingEl) return;
+
+      const input = editingEl.querySelector('.line-edit-input');
+      if (input) {
+        saveLineEdit(editingLineIndex, input.value);
+      }
+    }
+
+    /**
+     * Save a line edit and update the prompt
+     */
+    async function saveLineEdit(lineIndex, newValue) {
+      const lines = rawPrompt.split('\n');
+      const oldValue = lines[lineIndex] || '';
+
+      // No change, just re-render
+      if (newValue === oldValue) {
+        editingLineIndex = null;
+        displayPromptContent(rawPrompt);
+        return;
+      }
+
+      // Update local content
+      lines[lineIndex] = newValue;
+      const newContent = lines.join('\n');
+
+      // Get current prompt data
+      const prompt = prompts.find(p => p.slug === selectedSlug);
+      if (!prompt) {
+        editingLineIndex = null;
+        displayPromptContent(rawPrompt);
+        return;
+      }
+
+      // Save to API
+      try {
+        const response = await fetch(`/api/prompts/${selectedSlug}`, {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            slug: prompt.slug,
+            name: prompt.name,
+            description: prompt.description,
+            content: newContent,
+            tags: prompt.tags || []
+          })
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          console.error('Line edit save failed:', err);
+          alert('Failed to save: ' + (err.error || 'Unknown error'));
+          editingLineIndex = null;
+          displayPromptContent(rawPrompt); // Revert to old content
+          return;
+        }
+
+        // Update local state
+        prompt.content = newContent;
+        rawPrompt = newContent;
+        editingLineIndex = null;
+
+        // Re-render with updated content
+        displayPromptContent(newContent);
+      } catch (err) {
+        console.error('Line edit save failed:', err);
+        alert('Failed to save changes');
+        editingLineIndex = null;
+        displayPromptContent(rawPrompt);
+      }
     }
 
     // Load prompts on init
@@ -330,16 +933,29 @@
       }
     });
 
-    // New prompt navigation
+    // New prompt - enter insert mode
     document.getElementById('new-prompt-btn').addEventListener('click', () => {
-      window.parent.postMessage({ type: 'module:navigate', path: '/prompts/new' }, window.location.origin);
+      enterInsertMode();
     });
+
+    // Edit button
+    document.getElementById('edit-btn').addEventListener('click', () => {
+      enterEditMode();
+    });
+
+    // Line edit toggle
+    document.getElementById('line-edit-toggle').addEventListener('click', toggleLineEdit);
+
+    // Staging footer buttons
+    document.getElementById('save-all-btn').addEventListener('click', saveAll);
+    document.getElementById('discard-all-btn').addEventListener('click', discardAll);
 
     // Copy button
     document.getElementById('copy-btn').addEventListener('click', copyContent);
 
-    // Initialize view mode
+    // Initialize view mode and line edit
     initViewMode();
+    initLineEditMode();
 
     // Initial load - deferred to allow test mocking
     // In production, call loadPrompts() after DOMContentLoaded

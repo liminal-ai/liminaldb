@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, vi } from "vitest";
+import { describe, test, expect, beforeEach } from "vitest";
 import {
 	loadTemplate,
 	mockPrompts,
@@ -212,20 +212,29 @@ describe("Prompts Module", () => {
 	});
 
 	describe("TC-3.1: New Prompt navigates to editor", () => {
-		test("clicking New Prompt sends navigate message", async () => {
-			const postMessageSpy = vi.fn();
-			dom.window.parent.postMessage = postMessageSpy;
-
+		test("clicking New Prompt enters insert mode", async () => {
 			const newBtn = dom.window.document.getElementById("new-prompt-btn");
 			if (!newBtn) {
 				throw new Error("New prompt button not found");
 			}
 			click(newBtn);
 
-			expect(postMessageSpy).toHaveBeenCalledWith(
-				{ type: "module:navigate", path: "/prompts/new" },
-				"http://localhost:5001",
-			);
+			// Editor should be visible
+			const promptEdit = dom.window.document.getElementById("prompt-edit");
+			expect(promptEdit?.style.display).toBe("block");
+
+			// Empty state should be hidden
+			const emptyState = dom.window.document.getElementById("empty-state");
+			expect(emptyState?.style.display).toBe("none");
+
+			// Staging footer should be visible
+			const stagingFooter =
+				dom.window.document.getElementById("staging-footer");
+			expect(stagingFooter?.style.display).toBe("flex");
+
+			// Staging count should show 1
+			const stagingCount = dom.window.document.getElementById("staging-count");
+			expect(stagingCount?.textContent).toBe("1");
 		});
 	});
 });

@@ -323,6 +323,114 @@ export async function listByUser(
 }
 
 /**
+ * Update prompt by slug for user.
+ * Handles tag changes (removes old, adds new).
+ * Allows slug rename if new slug doesn't conflict.
+ * Returns true if updated, false if not found.
+ */
+export async function updateBySlug(
+	ctx: MutationCtx,
+	userId: string,
+	slug: string,
+	updates: PromptInput,
+): Promise<boolean> {
+	// Find existing prompt
+	const prompt = await ctx.db
+		.query("prompts")
+		.withIndex("by_user_slug", (q) => q.eq("userId", userId).eq("slug", slug))
+		.unique();
+
+	if (!prompt) {
+		return false;
+	}
+
+	// Validate updates
+	validatePromptInput(updates);
+
+	// If slug is changing, check new slug doesn't conflict
+	if (updates.slug !== slug) {
+		const exists = await slugExists(ctx, userId, updates.slug);
+		if (exists) {
+			throw new Error(`Slug "${updates.slug}" already exists for this user`);
+		}
+	}
+
+	// Handle tag changes
+	// Get current junctions
+	const currentJunctions = await ctx.db
+		.query("promptTags")
+		.withIndex("by_prompt", (q) => q.eq("promptId", prompt._id))
+		.collect();
+
+	// Build map of current tagId -> junction record
+	const currentTagIds = new Set<string>();
+	const junctionByTagId = new Map<string, Id<"promptTags">>();
+	for (const junction of currentJunctions) {
+		currentTagIds.add(junction.tagId);
+		junctionByTagId.set(junction.tagId, junction._id);
+	}
+
+	// Get or create tag IDs for new tags
+	const newTagIds = new Set<string>();
+	const tagIdsToAdd: Id<"tags">[] = [];
+
+	for (const tagName of updates.tags) {
+		const tagId = await findOrCreateTag(ctx, userId, tagName);
+		newTagIds.add(tagId);
+		if (!currentTagIds.has(tagId)) {
+			tagIdsToAdd.push(tagId);
+		}
+	}
+
+	// Find tags to remove (in current but not in new)
+	const tagIdsToRemove: Id<"tags">[] = [];
+	for (const tagId of currentTagIds) {
+		if (!newTagIds.has(tagId)) {
+			tagIdsToRemove.push(tagId as Id<"tags">);
+		}
+	}
+
+	// Remove old junctions
+	for (const tagId of tagIdsToRemove) {
+		const junctionId = junctionByTagId.get(tagId);
+		if (junctionId) {
+			await ctx.db.delete(junctionId);
+		}
+	}
+
+	// Add new junctions
+	for (const tagId of tagIdsToAdd) {
+		await ctx.db.insert("promptTags", {
+			promptId: prompt._id,
+			tagId,
+		});
+	}
+
+	// Clean up orphaned tags
+	for (const tagId of tagIdsToRemove) {
+		const remainingRefs = await ctx.db
+			.query("promptTags")
+			.withIndex("by_tag", (q) => q.eq("tagId", tagId))
+			.first();
+
+		if (!remainingRefs) {
+			await ctx.db.delete(tagId);
+		}
+	}
+
+	// Update prompt fields (tagNames synced by trigger)
+	await ctx.db.patch(prompt._id, {
+		slug: updates.slug,
+		name: updates.name,
+		description: updates.description,
+		content: updates.content,
+		parameters: updates.parameters,
+	});
+
+	return true;
+}
+
+/**
  * Delete prompt by slug for user.
  * Cleans up junction records and orphaned tags (tags no longer referenced by any prompt).
  * Note: tagNames trigger fires on junction deletes but is a no-op since prompt is deleted.

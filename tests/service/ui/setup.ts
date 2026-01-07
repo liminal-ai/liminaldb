@@ -53,9 +53,10 @@ export async function loadTemplate(templateName: string): Promise<JSDOM> {
 	// Inject shared utilities before scripts run
 	await injectSharedUtils(dom);
 
-	// Inject prompt-viewer.js for templates that need it
+	// Inject prompt-viewer.js and prompt-editor.js for templates that need them
 	if (templateName === "prompts.html") {
 		await injectPromptViewer(dom);
+		await injectPromptEditor(dom);
 	}
 
 	// Now execute the inline scripts
@@ -267,6 +268,16 @@ export async function injectPromptViewer(dom: JSDOM): Promise<void> {
 	const viewerPath = resolve(__dirname, "../../../public/js/prompt-viewer.js");
 	const viewerContent = await readFile(viewerPath, "utf8");
 	dom.window.eval(viewerContent);
+}
+
+/**
+ * Load prompt-editor.js into jsdom for testing.
+ * @param dom - The JSDOM instance
+ */
+export async function injectPromptEditor(dom: JSDOM): Promise<void> {
+	const editorPath = resolve(__dirname, "../../../public/js/prompt-editor.js");
+	const editorContent = await readFile(editorPath, "utf8");
+	dom.window.eval(editorContent);
 }
 
 /**

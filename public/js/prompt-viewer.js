@@ -319,19 +319,76 @@ function renderMarkdown(input) {
  * Main render function - call this to render prompt content
  * @param {string} input - raw prompt text
  * @param {string} view - 'semantic' | 'plain' | 'rendered'
+ * @param {Object} options - optional settings
+ * @param {boolean} options.lineEdit - wrap lines for inline editing
  * @returns {{ html: string, stats: { tags: number, vars: number } }}
  */
-function renderPrompt(input, view = "semantic") {
+function renderPrompt(input, view = "semantic", options = {}) {
+	const { lineEdit = false } = options;
+
+	let result;
 	if (view === "rendered") {
-		return renderMarkdown(input);
+		result = renderMarkdown(input);
 	} else if (view === "plain") {
 		const tags = (input.match(/<\/?[a-zA-Z_][a-zA-Z0-9_-]*[^>]*>/g) || [])
 			.length;
 		const vars = (input.match(/\{\{[^}]+\}\}/g) || []).length;
-		return { html: escapeHtml(input), stats: { tags, vars } };
+		result = { html: escapeHtml(input), stats: { tags, vars } };
 	} else {
 		const parser = new SemanticParser(input);
-		return parser.parse();
+		result = parser.parse();
+	}
+
+	// Wrap lines for line edit mode
+	if (lineEdit) {
+		result.html = wrapLinesForEdit(input, result.html, view);
+	}
+
+	return result;
+}
+
+/**
+ * Wrap each source line in a clickable span for line editing
+ * @param {string} rawInput - original raw text
+ * @param {string} renderedHtml - already rendered HTML
+ * @param {string} view - current view mode
+ * @returns {string} HTML with line wrappers
+ */
+function wrapLinesForEdit(rawInput, _renderedHtml, view) {
+	const lines = rawInput.split("\n");
+
+	if (view === "plain") {
+		// Plain view: simple 1:1 line mapping
+		return lines
+			.map(
+				(line, idx) =>
+					`<span class="editable-line" data-line="${idx}">${escapeHtml(line)}</span>`,
+			)
+			.join("\n");
+	} else if (view === "semantic") {
+		// Semantic view: parse each line separately to maintain line boundaries
+		return lines
+			.map((line, idx) => {
+				const parser = new SemanticParser(line);
+				const { html } = parser.parse();
+				return `<span class="editable-line" data-line="${idx}">${html}</span>`;
+			})
+			.join("\n");
+	} else {
+		// Rendered view: trickier - we need to map rendered output back to lines
+		// For now, fall back to plain text lines with click-to-edit
+		// The line will show rendered preview but edit the raw source
+		return lines
+			.map((line, idx) => {
+				// Render single line for preview
+				const singleLineResult = renderMarkdown(line);
+				// Strip outer <p> tags that markdown-it adds
+				const html = singleLineResult.html
+					.replace(/^<p>/, "")
+					.replace(/<\/p>\n?$/, "");
+				return `<span class="editable-line" data-line="${idx}">${html}</span>`;
+			})
+			.join("\n");
 	}
 }
 
