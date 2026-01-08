@@ -339,7 +339,7 @@ editor.destroy();               // Cleanup
 | Inline validation | Red border + error message per field |
 | Dirty tracking | `isDirty` flag, notifies via `onDirtyChange` callback |
 | Editor toolbar | Appears on text selection in content field |
-| Keyboard shortcuts | Cmd+T (tag wrap), Cmd+Shift+V (variable wrap) |
+| Keyboard shortcuts | Cmd+Shift+T (tag wrap), Cmd+Shift+V (variable wrap) |
 
 **Editor Toolbar:**
 

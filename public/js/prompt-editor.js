@@ -161,13 +161,13 @@ const promptEditor = (() => {
 			}, 200);
 		});
 
-		// Toolbar buttons
+		// Toolbar buttons - use mousedown to fire before blur hides toolbar
 		containerEl
 			.querySelector("#btn-wrap-tag")
-			.addEventListener("click", showTagModal);
+			.addEventListener("mousedown", showTagModal);
 		containerEl
 			.querySelector("#btn-insert-var")
-			.addEventListener("click", insertVariable);
+			.addEventListener("mousedown", insertVariable);
 
 		// Tag modal
 		containerEl
@@ -189,8 +189,8 @@ const promptEditor = (() => {
 
 		// Keyboard shortcuts on textarea
 		contentTextarea.addEventListener("keydown", (e) => {
-			// Cmd+T or Ctrl+T - wrap in tag
-			if ((e.metaKey || e.ctrlKey) && e.key === "t") {
+			// Cmd+Shift+T or Ctrl+Shift+T - wrap in tag (avoid Cmd+T browser new tab)
+			if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "t") {
 				e.preventDefault();
 				if (hasSelection()) {
 					showTagModal();

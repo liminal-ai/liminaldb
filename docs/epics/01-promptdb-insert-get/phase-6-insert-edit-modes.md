@@ -46,7 +46,7 @@ Phase 6 adds create and edit capabilities to the prompts portlet, completing the
 - Appears when text selected in content textarea
 - `[</>]` wraps selection in XML tag (prompts for tag name via modal)
 - `[{{}}]` wraps selection in variable braces
-- Keyboard shortcuts: Cmd+T (tag), Cmd+Shift+V (variable)
+- Keyboard shortcuts: Cmd+Shift+T (tag), Cmd+Shift+V (variable)
 
 #### 6. Custom Dialogs
 - `showConfirm(message)` - async modal replacing native `confirm()`

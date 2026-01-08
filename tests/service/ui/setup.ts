@@ -211,11 +211,18 @@ export async function waitForElement(
 export function click(element: Element): void {
 	const view = element.ownerDocument.defaultView;
 	if (!view) throw new Error("No defaultView on document");
-	const event = new view.MouseEvent("click", {
+	// Dispatch mousedown first (some handlers use mousedown instead of click)
+	const mousedownEvent = new view.MouseEvent("mousedown", {
 		bubbles: true,
 		cancelable: true,
 	});
-	element.dispatchEvent(event);
+	element.dispatchEvent(mousedownEvent);
+	// Then dispatch click
+	const clickEvent = new view.MouseEvent("click", {
+		bubbles: true,
+		cancelable: true,
+	});
+	element.dispatchEvent(clickEvent);
 }
 
 /**
