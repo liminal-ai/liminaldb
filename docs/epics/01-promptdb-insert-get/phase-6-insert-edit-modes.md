@@ -1,7 +1,7 @@
 # Phase 6: Insert/Edit Modes
 
 > **Epic:** O1 - Core Prompt Management
-> **Status:** 6a Complete, 6b In Progress
+> **Status:** 6a Complete, 6b Planned
 > **Branch:** `new-edit`
 
 ---
@@ -103,8 +103,10 @@ aa8ad6a fix: Reset isDirty when adding new staging prompt
 3317e7c feat: Replace native dialogs with themed modal and toast system
 2822c4e fix: Improve staging item layout in sidebar
 b482939 fix: Disable line edit mode in Rendered view
+2be6ff9 fix: Disable line edit in rendered view
 35d3390 fix: Reduce line edit mode whitespace
 82d4dae feat: Phase 6a - New/edit modes, batch insert, and line edit
+816977c test: harden UI tests with assertElement helper
 ```
 
 ---
@@ -219,7 +221,9 @@ Location: `tests/service/ui/prompts-module.test.ts`
 - [ ] OK discards changes and navigates
 
 #### TC-6.5: Modal and Toast
-Location: `tests/service/ui/prompts-module.test.ts`
+Location: `tests/service/ui/modal-toast.test.ts` (new file)
+
+Follow component test pattern from `prompt-viewer.test.ts`.
 
 - [ ] `showConfirm()` displays modal with message and Cancel/OK buttons
 - [ ] Modal OK resolves promise with true, Cancel with false
@@ -238,7 +242,9 @@ Follow pattern from existing view mode tests.
 - [ ] Escape cancels edit without saving
 
 #### TC-6.7: Editor Toolbar
-Location: `tests/service/ui/prompt-editor.test.ts`
+Location: `tests/service/ui/prompt-editor.test.ts` (new file)
+
+Follow component test pattern from `prompt-viewer.test.ts`.
 
 - [ ] Toolbar appears when text selected in content textarea
 - [ ] Tag wrap button inserts `<tag>selection</tag>` around selected text
@@ -280,8 +286,9 @@ Location: `tests/service/ui/prompt-editor.test.ts`
 
 ## References
 
-- [UI Architecture Doc](/docs/ui-arch-patterns-design.md)
-- [CLAUDE.md](/CLAUDE.md)
+- [UI Architecture Doc](../../ui-arch-patterns-design.md)
+- [CLAUDE.md](../../../CLAUDE.md)
 - Existing test patterns: `tests/service/ui/prompts-module.test.ts`, `tests/service/ui/prompt-viewer.test.ts`
+- bd issue: `promptdb-fjg` (copy button feedback)
 - Branch: `new-edit`
 - Base: `main`
