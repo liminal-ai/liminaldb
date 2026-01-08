@@ -234,4 +234,141 @@ describe("Prompts Module - Prompt Viewer", () => {
 			expect(second.classList.contains("selected")).toBe(true);
 		});
 	});
+
+	/**
+	 * TC-6.6: Line Edit Mode
+	 */
+	describe("TC-6.6: Line Edit Mode", () => {
+		it("line edit toggle is disabled in rendered view by default", async () => {
+			// Rendered is the default view
+			const toggle = dom.window.document.getElementById("line-edit-toggle");
+			expect(toggle).not.toBeNull();
+			// Rendered view should have line edit disabled
+			expect((toggle as HTMLButtonElement)?.disabled).toBe(true);
+		});
+
+		it("line edit toggle is enabled when switching to plain view", async () => {
+			const plainBtn = assertElement(
+				dom.window.document.querySelector('[data-view="plain"]'),
+				"Expected plain button to exist",
+			);
+			click(plainBtn);
+			await waitForAsync(50);
+
+			const toggle = dom.window.document.getElementById(
+				"line-edit-toggle",
+			) as HTMLButtonElement;
+			expect(toggle.disabled).toBe(false);
+		});
+
+		it("line edit toggle is enabled when switching to semantic view", async () => {
+			const semanticBtn = assertElement(
+				dom.window.document.querySelector('[data-view="semantic"]'),
+				"Expected semantic button to exist",
+			);
+			click(semanticBtn);
+			await waitForAsync(50);
+
+			const toggle = dom.window.document.getElementById(
+				"line-edit-toggle",
+			) as HTMLButtonElement;
+			expect(toggle.disabled).toBe(false);
+		});
+
+		it("clicking line edit toggle activates line edit mode", async () => {
+			// Switch to plain view first (line edit disabled in rendered)
+			const plainBtn = assertElement(
+				dom.window.document.querySelector('[data-view="plain"]'),
+				"Expected plain button to exist",
+			);
+			click(plainBtn);
+			await waitForAsync(50);
+
+			// Click line edit toggle
+			const toggle = dom.window.document.getElementById(
+				"line-edit-toggle",
+			) as HTMLButtonElement;
+			click(toggle);
+			await waitForAsync(50);
+
+			// Toggle should be active
+			expect(toggle.classList.contains("active")).toBe(true);
+
+			// Viewer should have line-edit-mode class
+			const viewer = dom.window.document.getElementById("promptViewer");
+			expect(viewer?.classList.contains("line-edit-mode")).toBe(true);
+		});
+
+		it("line edit mode shows editable lines when content is displayed", async () => {
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			// Select a prompt
+			const firstItem = assertElement(
+				dom.window.document.querySelector(".prompt-item"),
+				"Expected prompt item to exist",
+			);
+			click(firstItem);
+			await waitForAsync(100);
+
+			// Switch to plain view
+			const plainBtn = assertElement(
+				dom.window.document.querySelector('[data-view="plain"]'),
+				"Expected plain button to exist",
+			);
+			click(plainBtn);
+			await waitForAsync(50);
+
+			// Enable line edit
+			const toggle = dom.window.document.getElementById(
+				"line-edit-toggle",
+			) as HTMLButtonElement;
+			click(toggle);
+			await waitForAsync(50);
+
+			// Content should have editable-line spans
+			const contentEl = dom.window.document.getElementById("promptContent");
+			const editableLines = contentEl?.querySelectorAll(".editable-line");
+			expect(editableLines?.length).toBeGreaterThan(0);
+		});
+
+		it("clicking editable line creates input for editing", async () => {
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			// Select a prompt
+			const firstItem = assertElement(
+				dom.window.document.querySelector(".prompt-item"),
+				"Expected prompt item to exist",
+			);
+			click(firstItem);
+			await waitForAsync(100);
+
+			// Switch to plain view
+			const plainBtn = assertElement(
+				dom.window.document.querySelector('[data-view="plain"]'),
+				"Expected plain button to exist",
+			);
+			click(plainBtn);
+			await waitForAsync(50);
+
+			// Enable line edit
+			const toggle = dom.window.document.getElementById(
+				"line-edit-toggle",
+			) as HTMLButtonElement;
+			click(toggle);
+			await waitForAsync(50);
+
+			// Click first editable line
+			const contentEl = dom.window.document.getElementById("promptContent");
+			const firstLine = contentEl?.querySelector(".editable-line");
+			if (!firstLine) throw new Error("No editable line found");
+			click(firstLine);
+			await waitForAsync(50);
+
+			// Should have input/textarea
+			const input = contentEl?.querySelector(".line-edit-input");
+			expect(input).not.toBeNull();
+		});
+	});
 });
