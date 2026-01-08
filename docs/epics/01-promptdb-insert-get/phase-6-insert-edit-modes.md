@@ -1,7 +1,7 @@
 # Phase 6: Insert/Edit Modes
 
 > **Epic:** O1 - Core Prompt Management
-> **Status:** 6a Complete, 6b Planned
+> **Status:** 6a Complete, 6b Complete
 > **Branch:** `new-edit`
 
 ---
