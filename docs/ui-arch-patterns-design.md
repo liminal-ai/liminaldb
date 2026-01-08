@@ -9,7 +9,7 @@
 | Term | Definition | Example |
 |------|------------|---------|
 | **Shell** | The outer chrome that hosts portlets. Owns header, navigation, history management. Single HTML page. | `shell.html` |
-| **Portlet** | A self-contained iframe page that provides a complete UI surface. Owns its DOM, internal state, and components. | `prompts.html`, `prompt-editor.html` |
+| **Portlet** | A self-contained iframe page that provides a complete UI surface. Owns its DOM, internal state, and components. | `prompts.html` |
 | **Component** | A reusable JavaScript widget mounted inside a portlet. Handles specific rendering/interaction concerns. | `prompt-viewer.js` |
 | **Module Route** | Server route that serves portlet HTML directly (no shell). Used for iframe `src`. | `/_m/prompts` |
 | **App Route** | Server route that serves shell with a portlet embedded. Used for direct navigation. | `/prompts`, `/prompts/:slug` |
@@ -37,7 +37,7 @@ Shell (shell.html)
 │  │   ┌─────────────┬───────────────────────────────────────┐ │  │
 │  │   │ [+ New]     │  COMPONENT (prompt-viewer.js)         │ │  │
 │  │   │             │  ┌─────────────────────────────────┐  │ │  │
-│  │   │ Prompt A    │  │ [Copy]  [Rend][Sem][Plain]      │  │ │  │
+│  │   │ Prompt A    │  │ [Edit] [Copy] [Rend][Sem][Plain]│  │ │  │
 │  │   │ Prompt B ◀  │  │                                 │  │ │  │
 │  │   │ Prompt C    │  │  Rendered prompt content...     │  │ │  │
 │  │   │             │  │                                 │  │ │  │
@@ -45,6 +45,11 @@ Shell (shell.html)
 │  │   │             │  │ tags: 2  vars: 4  chars: 450    │  │ │  │
 │  │   │             │  └─────────────────────────────────┘  │ │  │
 │  │   └─────────────┴───────────────────────────────────────┘ │  │
+│  │                                                           │  │
+│  │   Mode: view | edit | new (insert)                        │  │
+│  │   - view: prompt-viewer.js displayed                      │  │
+│  │   - edit: prompt-editor.js with existing data             │  │
+│  │   - new:  prompt-editor.js with empty form (batch staging)│  │
 │  │                                                           │  │
 │  └───────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
@@ -230,7 +235,24 @@ A component is a reusable JavaScript module that handles a specific UI concern w
 - Do NOT communicate directly with shell
 - Can be swapped by portlet based on mode
 
-### Pattern: prompt-viewer.js
+### Component Patterns
+
+Two patterns are in use:
+
+| Pattern | Example | When to Use |
+|---------|---------|-------------|
+| **Functional** | `prompt-viewer.js` | Stateless rendering, simple lifecycle |
+| **Class-based** | `prompt-editor.js` | Complex state, callbacks, destroy cleanup |
+
+The class-based pattern provides a consistent interface:
+```javascript
+const component = new Component(container, options);
+component.setData(data);    // Update state
+component.getData();        // Read state
+component.destroy();        // Cleanup
+```
+
+### Pattern: prompt-viewer.js (Functional)
 
 ```javascript
 // Component structure (functional module)
@@ -244,9 +266,29 @@ statsEl.textContent = stats.vars;
 | Feature | Implementation |
 |---------|----------------|
 | View modes | Rendered (markdown), Semantic (syntax highlighted), Plain (raw) |
+| Line edit | Click-to-edit individual lines (Semantic/Plain views only) |
 | Copy button | Copies raw content to clipboard |
 | Stats footer | Tag count, variable count, character count |
 | Persistence | View mode saved to localStorage |
+
+**Line Edit Mode:**
+
+Toggle button in viewer header enables inline editing of individual lines:
+
+```javascript
+// Toggle enables clickable lines
+[Line Edit: OFF] → [Line Edit: ON]
+
+// Click any line to edit
+Line content here  →  [input: Line content here]
+
+// Blur saves, Escape cancels
+```
+
+**Restrictions:**
+- Disabled in Rendered view (markdown boundaries are ambiguous)
+- Only available in Semantic and Plain views
+- Save-on-blur triggers `onContentChange` callback to portlet
 
 ### localStorage Keys
 
@@ -486,6 +528,21 @@ Layout classes that use theme tokens:
 .btn-primary { background: var(--accent-gold); }
 ```
 
+### UI Feedback Styles (base.css)
+
+Phase 6a added styles for user feedback patterns:
+
+| Class | Purpose |
+|-------|---------|
+| `.confirm-modal`, `.confirm-overlay` | Confirmation dialog overlay and content |
+| `.toast-container`, `.toast` | Notification container (top-center) and items |
+| `.toast.success`, `.toast.error`, `.toast.info` | Toast type variants |
+| `.field-error` | Red border on invalid form inputs |
+| `.error-message` | Error text below form fields |
+| `.staging-header` | Batch insert controls (Save All / Discard All) |
+| `.staging-item` | Sidebar item for staged prompts |
+| `.editor-toolbar` | Floating toolbar for text selection actions |
+
 ### Adding Themes
 
 1. Create new token file: `themes/solarized.css`
@@ -589,6 +646,8 @@ if (confirmed) {
 **Use for:** Discard unsaved changes, delete operations, irreversible actions.
 
 **Note:** Replaced native `confirm()` which blocked browser automation and looked ugly.
+
+**Location:** Currently defined in `prompts.html`. Planned extraction to `public/js/components/` for reuse by other portlets (see Phase 6b tech debt).
 
 #### Inline Validation
 
@@ -748,13 +807,26 @@ async function loadTemplate(name: string) {
 
 | Area | Tested | Notes |
 |------|--------|-------|
-| API routes | Yes | GET/POST/DELETE prompts, tags endpoint |
+| API routes | Yes | GET/POST/PUT/DELETE prompts, tags endpoint |
 | Tag filtering | Yes | Query param parsing, response filtering |
 | Deep-link routes | Yes | /prompts/:slug serves shell |
 | Module routes | Yes | /_m/prompts returns HTML |
 | View mode toggle | Yes | Button clicks, localStorage persistence |
 | Copy button | Yes | Clipboard API mock |
 | Prompt selection | Yes | DOM class changes |
+| prompt-editor component | Yes | Form rendering, validation, dirty state |
+
+### Phase 6b Test Additions (Planned)
+
+See `docs/epics/01-promptdb-insert-get/phase-6-insert-edit-modes.md` for full test case list:
+
+| Area | Test File | Coverage |
+|------|-----------|----------|
+| Insert mode | `prompts-module.test.ts` | Enter, staging, save, discard |
+| Edit mode | `prompts-module.test.ts` | Enter, save, cancel |
+| Modal/Toast | `modal-toast.test.ts` (new) | showConfirm, showToast behavior |
+| Line edit | `prompt-viewer.test.ts` | Toggle, edit, save, cancel |
+| Editor toolbar | `prompt-editor.test.ts` (new) | Tag wrap, variable wrap |
 
 ### Not Yet Tested (E2E scope)
 
@@ -842,13 +914,14 @@ app.get('/_m/prompts', serveModule);
 - [x] Deep linking / URL state strategy → Shell owns history, portlets notify
 - [x] Module authentication → Modules public, API protected
 - [x] Component vs portlet distinction → Portlet = iframe page, component = JS widget
+- [x] Error/feedback patterns → Toast, modal, inline validation (see Section 10)
+- [x] Native dialog replacement → `showConfirm()` and `showToast()` replace `confirm()`/`alert()`
 
 ### Active
 
 - [ ] Resize protocol between shell and portlet (dynamic height)
 - [ ] Focus management across iframe boundary
 - [ ] Component loading states and skeleton screens
-- [ ] Error boundary patterns (API failures, component crashes)
 - [ ] Offline/PWA considerations
 
 ### Future Phases
