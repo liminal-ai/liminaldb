@@ -1,6 +1,6 @@
 # UI Architecture, Patterns & Design
 
-> Source of truth for LiminalDB's UI architecture. Last updated: Phase 5b.
+> Source of truth for LiminalDB's UI architecture. Last updated: Phase 6a.
 
 ---
 
@@ -178,20 +178,45 @@ Portlets can swap between modes without page reload:
 ```
 mode: 'empty' → "Select a prompt to view"
 mode: 'view'  → prompt-viewer component displayed
-mode: 'edit'  → prompt-editor component displayed (planned - Phase 6)
-mode: 'new'   → prompt-editor component, empty form (planned - Phase 6)
+mode: 'edit'  → prompt-editor component displayed, pre-populated with existing data
+mode: 'new'   → prompt-editor component, empty form (insert mode)
 ```
 
 The portlet owns the mode transition. Components are mounted/unmounted as needed.
 
-> **Note:** Edit and new modes are planned for Phase 6. Currently only 'empty' and 'view' are implemented.
+### Staging State (Insert Mode)
+
+When creating multiple prompts (batch insert), the portlet maintains an in-memory staging array:
+
+```javascript
+let stagingPrompts = [];  // Array of { tempId, data }
+
+// Each staging entry
+{
+  tempId: 'temp-1704657600000',  // Unique ID for this session
+  data: {
+    slug: 'my-prompt',
+    name: 'My Prompt',
+    description: '...',
+    content: '...',
+    tags: ['tag1', 'tag2']
+  }
+}
+```
+
+**Key behaviors:**
+- Clicking "+ New" creates a new staging entry
+- Form data is captured to staging array before switching entries
+- "Save All" posts all staged prompts in batch
+- "Discard All" clears staging and exits insert mode
+- Staging is in-memory only — refresh loses unsaved work (Redis persistence planned)
 
 ### Current Portlets
 
 | Portlet | Route | Purpose | Status |
 |---------|-------|---------|--------|
-| `prompts.html` | `/_m/prompts` | List, view, edit prompts | Active - view implemented, edit in Phase 6 |
-| `prompt-editor.html` | `/_m/prompt-editor` | Create prompt (standalone) | Legacy - used by `/prompts/new` until Phase 6 consolidation |
+| `prompts.html` | `/_m/prompts` | List, view, edit, create prompts | Active - all modes implemented |
+| `prompt-editor.html` | `/_m/prompt-editor` | Create prompt (standalone) | Legacy - superseded by prompts.html insert mode |
 
 ---
 
@@ -246,11 +271,62 @@ class SemanticParser {
 }
 ```
 
+### prompt-editor.js
+
+Form component for creating and editing prompts.
+
+**Interface:**
+```javascript
+const editor = new PromptEditor(containerEl, {
+  onSave: (data) => { /* Handle save */ },
+  onDiscard: () => { /* Handle discard */ },
+  onDirtyChange: (isDirty) => { /* Track unsaved changes */ }
+});
+
+editor.setData(promptData);     // Pre-populate for edit mode
+editor.getFormData();           // Get current form values
+editor.validate();              // Returns error string or null
+editor.destroy();               // Cleanup
+```
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Form fields | slug, name, description, content, tags |
+| Inline validation | Red border + error message per field |
+| Dirty tracking | `isDirty` flag, notifies via `onDirtyChange` callback |
+| Editor toolbar | Appears on text selection in content field |
+| Keyboard shortcuts | Cmd+T (tag wrap), Cmd+Shift+V (variable wrap) |
+
+**Editor Toolbar:**
+
+When text is selected in the content textarea, a floating toolbar appears:
+
+| Button | Action | Result |
+|--------|--------|--------|
+| `</>` | Tag wrap | Prompts for tag name, wraps as `<tag>selection</tag>` |
+| `{{}}` | Variable wrap | Wraps as `{{selection}}` |
+
+**Dirty State Pattern:**
+
+The editor tracks whether the user has made unsaved changes:
+
+```javascript
+// Portlet receives dirty state changes
+onDirtyChange: (isDirty) => {
+  // Notify shell for navigation warnings
+  parent.postMessage({
+    type: 'dirty:change',
+    dirty: isDirty
+  }, window.location.origin);
+}
+```
+
 ### Future Components
 
 | Component | Purpose | Used By |
 |-----------|---------|---------|
-| `prompt-editor.js` | Form for create/edit | prompts portlet |
 | `prompt-diff.js` | Side-by-side comparison | prompts portlet (batch edit) |
 
 ---
@@ -263,6 +339,7 @@ class SemanticParser {
 |---------|---------|---------|
 | `portlet:ready` | Portlet loaded, ready for state | `{}` |
 | `history:push` | Navigation event, add to history | `{ state, trackHistory? }` |
+| `dirty:change` | Unsaved changes state changed | `{ dirty: boolean }` |
 
 ### Shell → Portlet
 
@@ -324,7 +401,7 @@ window.addEventListener('message', (e) => {
 /prompts                    → Shell + prompts portlet, nothing selected
 /prompts/:slug              → Shell + prompts portlet, prompt selected (view)
 /prompts/:slug/edit         → Shell + prompts portlet, prompt selected (edit)
-/prompts/new                → Shell + prompt-editor portlet (legacy, Phase 6 consolidates)
+/prompts/new                → Shell + prompts portlet, insert mode
 ```
 
 ### Route Registration
@@ -332,13 +409,13 @@ window.addEventListener('message', (e) => {
 ```typescript
 // App routes (serve shell, shell loads portlet)
 app.get('/prompts', serveShell('prompts'));
-app.get('/prompts/new', serveShell('prompt-editor')); // Legacy until Phase 6 consolidation
+app.get('/prompts/new', serveShell('prompts'));      // Insert mode
 app.get('/prompts/:slug', serveShell('prompts'));
 app.get('/prompts/:slug/edit', serveShell('prompts'));
 
 // Module routes (serve portlet HTML directly)
 app.get('/_m/prompts', serveModule('prompts'));
-app.get('/_m/prompt-editor', serveModule('prompt-editor'));
+app.get('/_m/prompt-editor', serveModule('prompt-editor'));  // Legacy
 ```
 
 ### Deep Linking
@@ -470,51 +547,105 @@ Module routes (`/_m/*`) do NOT require authentication. This is intentional:
 
 ---
 
-## 10. Error Handling
+## 10. Error Handling & User Feedback
 
-> **Status:** Error handling patterns are evolving. This section documents current state and planned improvements.
+### Feedback Patterns
 
-### Current Patterns
+Three patterns for user feedback, each with distinct use cases:
 
-**API Errors (Portlet → User):**
+#### Toast Notifications
+
+Auto-dismissing messages for transient feedback:
+
 ```javascript
-// Portlet fetches data
-const response = await fetch('/api/prompts');
-if (!response.ok) {
-  // Currently: silent failure or console.error
-  // TODO: Display user-friendly error in content area
+// Usage
+showToast('Prompt saved successfully', { type: 'success' });
+showToast('Failed to save prompt', { type: 'error' });
+showToast('Copied to clipboard', { type: 'info' });
+
+// Options
+{
+  type: 'success' | 'error' | 'info',  // Styling
+  duration: 4000                        // Auto-dismiss (ms)
 }
 ```
 
-**Component Errors:**
+**Use for:** API success/failure, clipboard operations, non-blocking info.
+
+#### Confirmation Modal
+
+Async modal for destructive actions:
+
 ```javascript
-// markdown-it CDN failure
+// Usage
+const confirmed = await showConfirm('Discard all 3 unsaved prompts?');
+if (confirmed) {
+  // User clicked OK
+} else {
+  // User clicked Cancel
+}
+```
+
+**Use for:** Discard unsaved changes, delete operations, irreversible actions.
+
+**Note:** Replaced native `confirm()` which blocked browser automation and looked ugly.
+
+#### Inline Validation
+
+Field-specific errors for form validation:
+
+```javascript
+// Show error on field
+showFieldError('slug', 'Slug is required');
+
+// Clear all errors
+clearFieldErrors();
+```
+
+**CSS classes:**
+- `.field-error` - Red border on input
+- `.error-message` - Error text below field
+
+**Use for:** Required fields, format validation, duplicate slug errors.
+
+### Pattern Selection Guide
+
+| Situation | Pattern | Why |
+|-----------|---------|-----|
+| Save succeeded | Toast (success) | Transient, non-blocking |
+| Save failed (API error) | Toast (error) | User needs to know, but can retry |
+| Field missing/invalid | Inline validation | User needs to see which field |
+| About to lose work | Confirmation modal | Requires explicit decision |
+| About to delete | Confirmation modal | Irreversible action |
+
+### API Error Handling
+
+```javascript
+const response = await fetch('/api/prompts', { method: 'POST', body });
+if (!response.ok) {
+  const error = await response.json();
+  showToast(error.message || 'Failed to save prompt', { type: 'error' });
+  return;
+}
+showToast('Prompt saved', { type: 'success' });
+```
+
+### Component Errors
+
+```javascript
+// CDN failure - graceful degradation
 if (typeof markdownit === 'undefined') {
   console.warn('markdown-it not available, falling back to plain text');
-  // Graceful degradation to plain text rendering
 }
 ```
 
-### Planned Improvements (Phase 6b+)
+### Future Improvements
 
 | Area | Current | Planned |
 |------|---------|---------|
-| API fetch failure | Silent/console | Error message in content area |
 | Network offline | No handling | Offline indicator in header |
 | Invalid URL/slug | 404 page | "Prompt not found" in content area |
-| postMessage malformed | Ignored | Log warning, continue |
 | Component crash | Breaks UI | Error boundary, show fallback |
-
-### Error Display Convention
-
-When implemented, errors will display in the content area (not alerts/modals):
-```html
-<div class="error-state">
-  <span class="error-icon">⚠</span>
-  <p class="error-message">Unable to load prompts. Please try again.</p>
-  <button class="btn-secondary" onclick="retry()">Retry</button>
-</div>
-```
 
 ---
 
@@ -531,7 +662,7 @@ The UI fetches data from REST endpoints. Full API documentation is in the route 
 | `/api/prompts/tags` | GET | List unique tags | `string[]` |
 | `/api/prompts/:slug` | GET | Get single prompt | `Prompt` |
 | `/api/prompts/:slug` | DELETE | Delete prompt | `{ deleted: boolean }` |
-| `/api/prompts/:slug` | PUT | Update prompt | `{ prompt: Prompt }` (planned - Phase 6) |
+| `/api/prompts/:slug` | PUT | Update prompt | `{ prompt: Prompt }` |
 
 ### Prompt Shape
 
@@ -680,26 +811,26 @@ app.get('/_m/prompts', serveModule);
 |-------|------|------|---------|--------|
 | `/prompts` | App | Yes | Shell + prompts portlet | Active |
 | `/prompts/:slug` | App | Yes | Shell + prompts portlet (selected) | Active |
-| `/prompts/:slug/edit` | App | Yes | Shell + prompts portlet (edit mode) | Route exists, mode planned Phase 6 |
-| `/prompts/new` | App | Yes | Shell + prompt-editor portlet (legacy) | Active until Phase 6 consolidation |
+| `/prompts/:slug/edit` | App | Yes | Shell + prompts portlet (edit mode) | Active |
+| `/prompts/new` | App | Yes | Shell + prompts portlet (insert mode) | Active (legacy route still works) |
 | `/_m/prompts` | Module | No | Prompts portlet HTML | Active |
-| `/_m/prompt-editor` | Module | No | Editor portlet HTML | Legacy - used by `/prompts/new` until Phase 6 consolidation |
+| `/_m/prompt-editor` | Module | No | Editor portlet HTML | Legacy - superseded by prompts.html |
 | `/api/prompts` | API | Yes | List/create prompts | Active |
 | `/api/prompts/tags` | API | Yes | List unique tags | Active |
-| `/api/prompts/:slug` | API | Yes | Get/delete prompt | Active |
-| `/api/prompts/:slug` | API | Yes | Update prompt (PUT) | Planned - Phase 6 |
+| `/api/prompts/:slug` | API | Yes | Get/delete/update prompt | Active |
 
 ### Files
 
 | File | Type | Purpose | Status |
 |------|------|---------|--------|
 | `src/ui/templates/shell.html` | Shell | Outer chrome, history management | Active |
-| `src/ui/templates/prompts.html` | Portlet | Prompt list and viewer | Active |
-| `src/ui/templates/prompt-editor.html` | Portlet | Create form (standalone) | Legacy - used by `/prompts/new` until Phase 6 consolidation |
-| `public/shared/themes/base.css` | Styles | Structural CSS | Active |
+| `src/ui/templates/prompts.html` | Portlet | Prompt list, viewer, editor, insert mode | Active |
+| `src/ui/templates/prompt-editor.html` | Portlet | Create form (standalone) | Legacy - superseded by prompts.html |
+| `public/shared/themes/base.css` | Styles | Structural CSS, modal, toast | Active |
 | `public/shared/themes/tokyo-night.css` | Theme | Color tokens | Active |
 | `public/shared/prompt-viewer.css` | Styles | Viewer component styles | Active |
-| `public/js/prompt-viewer.js` | Component | 3-mode prompt renderer | Active |
+| `public/js/prompt-viewer.js` | Component | 3-mode prompt renderer, line edit | Active |
+| `public/js/prompt-editor.js` | Component | Create/edit form with validation | Active |
 | `public/js/utils.js` | Utility | Shared helpers (escapeHtml) | Active |
 
 ---
@@ -756,6 +887,7 @@ src/
 public/
 ├── js/
 │   ├── prompt-viewer.js    # Viewer component
+│   ├── prompt-editor.js    # Editor component
 │   └── utils.js            # Shared utilities
 ├── shared/
 │   ├── themes/
@@ -773,4 +905,4 @@ docs/
 
 ---
 
-*Version 1.0 - Phase 5b Complete*
+*Version 1.1 - Phase 6a Complete*
