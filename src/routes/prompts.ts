@@ -4,6 +4,8 @@ import { authMiddleware } from "../middleware/auth";
 import {
 	CreatePromptsRequestSchema,
 	type CreatePromptsRequest,
+	PromptInputSchema,
+	type PromptInput,
 	SLUG_REGEX,
 	LIMITS,
 } from "../schemas/prompts";
@@ -55,6 +57,11 @@ export function registerPromptRoutes(fastify: FastifyInstance): void {
 		"/api/prompts/:slug",
 		{ preHandler: authMiddleware },
 		getPromptHandler,
+	);
+	fastify.put(
+		"/api/prompts/:slug",
+		{ preHandler: authMiddleware },
+		updatePromptHandler,
 	);
 	fastify.delete(
 		"/api/prompts/:slug",
@@ -234,6 +241,66 @@ async function getPromptHandler(
 	} catch (error) {
 		request.log.error({ err: error, slug, userId }, "Failed to get prompt");
 		return reply.code(500).send({ error: "Failed to get prompt" });
+	}
+}
+
+/**
+ * PUT /api/prompts/:slug
+ * Update a prompt by slug
+ */
+async function updatePromptHandler(
+	request: FastifyRequest,
+	reply: FastifyReply,
+): Promise<void> {
+	// Get user ID from authenticated session
+	const userId = request.user?.id;
+	if (!userId) {
+		return reply.code(401).send({ error: "Not authenticated" });
+	}
+
+	const { slug } = request.params as { slug: string };
+
+	// Validate slug parameter
+	const slugError = validateSlugParam(slug);
+	if (slugError) {
+		return reply.code(400).send({ error: slugError });
+	}
+
+	// Validate request body with Zod
+	let validated: PromptInput;
+	try {
+		validated = PromptInputSchema.parse(request.body);
+	} catch (error) {
+		if (error instanceof ZodError) {
+			const issues = error.issues ?? [];
+			const firstIssue = issues[0];
+			const errorMessage = firstIssue?.message ?? "Validation failed";
+			return reply.code(400).send({ error: errorMessage });
+		}
+		throw error;
+	}
+
+	try {
+		// Call Convex mutation
+		const updated = await convex.mutation(api.prompts.updatePromptBySlug, {
+			apiKey: config.convexApiKey,
+			userId,
+			slug,
+			updates: validated,
+		});
+
+		if (!updated) {
+			return reply.code(404).send({ error: "Prompt not found" });
+		}
+
+		return reply.code(200).send({ updated });
+	} catch (error) {
+		// Check for duplicate slug error on rename
+		if (error instanceof Error && error.message.includes("already exists")) {
+			return reply.code(409).send({ error: "Slug already exists" });
+		}
+		request.log.error({ err: error, slug, userId }, "Failed to update prompt");
+		return reply.code(500).send({ error: "Failed to update prompt" });
 	}
 }
 

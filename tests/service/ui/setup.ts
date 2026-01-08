@@ -53,9 +53,12 @@ export async function loadTemplate(templateName: string): Promise<JSDOM> {
 	// Inject shared utilities before scripts run
 	await injectSharedUtils(dom);
 
-	// Inject prompt-viewer.js for templates that need it
+	// Inject component and module scripts for templates that need them
 	if (templateName === "prompts.html") {
+		await injectModal(dom);
+		await injectToast(dom);
 		await injectPromptViewer(dom);
+		await injectPromptEditor(dom);
 	}
 
 	// Now execute the inline scripts
@@ -208,11 +211,18 @@ export async function waitForElement(
 export function click(element: Element): void {
 	const view = element.ownerDocument.defaultView;
 	if (!view) throw new Error("No defaultView on document");
-	const event = new view.MouseEvent("click", {
+	// Dispatch mousedown first (some handlers use mousedown instead of click)
+	const mousedownEvent = new view.MouseEvent("mousedown", {
 		bubbles: true,
 		cancelable: true,
 	});
-	element.dispatchEvent(event);
+	element.dispatchEvent(mousedownEvent);
+	// Then dispatch click
+	const clickEvent = new view.MouseEvent("click", {
+		bubbles: true,
+		cancelable: true,
+	});
+	element.dispatchEvent(clickEvent);
 }
 
 /**
@@ -260,6 +270,32 @@ export function postMessage(dom: JSDOM, data: unknown): void {
 }
 
 /**
+ * Load modal.js component into jsdom for testing.
+ * @param dom - The JSDOM instance
+ */
+export async function injectModal(dom: JSDOM): Promise<void> {
+	const modalPath = resolve(
+		__dirname,
+		"../../../public/js/components/modal.js",
+	);
+	const modalContent = await readFile(modalPath, "utf8");
+	dom.window.eval(modalContent);
+}
+
+/**
+ * Load toast.js component into jsdom for testing.
+ * @param dom - The JSDOM instance
+ */
+export async function injectToast(dom: JSDOM): Promise<void> {
+	const toastPath = resolve(
+		__dirname,
+		"../../../public/js/components/toast.js",
+	);
+	const toastContent = await readFile(toastPath, "utf8");
+	dom.window.eval(toastContent);
+}
+
+/**
  * Load prompt-viewer.js into jsdom for testing.
  * @param dom - The JSDOM instance
  */
@@ -267,6 +303,33 @@ export async function injectPromptViewer(dom: JSDOM): Promise<void> {
 	const viewerPath = resolve(__dirname, "../../../public/js/prompt-viewer.js");
 	const viewerContent = await readFile(viewerPath, "utf8");
 	dom.window.eval(viewerContent);
+}
+
+/**
+ * Load prompt-editor.js into jsdom for testing.
+ * @param dom - The JSDOM instance
+ */
+export async function injectPromptEditor(dom: JSDOM): Promise<void> {
+	const editorPath = resolve(__dirname, "../../../public/js/prompt-editor.js");
+	const editorContent = await readFile(editorPath, "utf8");
+	dom.window.eval(editorContent);
+}
+
+/**
+ * Assert an element exists and return it with proper typing.
+ * Use this instead of optional chaining in test assertions.
+ * @param element - The element that might be null
+ * @param message - Optional error message
+ * @returns The element (throws if null)
+ */
+export function assertElement<T extends Element>(
+	element: T | null | undefined,
+	message = "Expected element to exist",
+): T {
+	if (!element) {
+		throw new Error(message);
+	}
+	return element;
 }
 
 /**

@@ -67,6 +67,11 @@
   color: var(--text-primary);
 }
 
+.prompt-viewer-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .prompt-viewer-content {
   padding: 1rem;
   min-height: 200px;
@@ -260,4 +265,72 @@
 .prompt-viewer.view-rendered .rendered-var {
   color: var(--accent);
   font-family: 'IBM Plex Mono', monospace;
+}
+
+/* ============================================
+   LINE EDIT MODE
+   ============================================ */
+
+.prompt-viewer-separator {
+  color: var(--border-subtle);
+  margin: 0 0.2rem;
+  user-select: none;
+}
+
+/* Line edit toggle styling */
+.prompt-viewer.line-edit-mode .prompt-viewer-content {
+  cursor: text;
+}
+
+/* Editable line wrapper */
+.editable-line {
+  display: inline;
+  border-radius: 2px;
+  transition: background-color 0.15s ease;
+}
+
+.prompt-viewer.line-edit-mode .editable-line {
+  cursor: pointer;
+  padding: 0 0.15em;
+  margin: 0 -0.15em;
+}
+
+.prompt-viewer.line-edit-mode .editable-line:hover {
+  background: var(--bg-elevated);
+}
+
+.editable-line.editing {
+  display: block;
+  background: var(--bg-elevated);
+  padding: 0;
+  margin: 0;
+}
+
+/* Inline edit input */
+.line-edit-input {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: inherit;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--bg-deep);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  padding: 0.2em 0.4em;
+  width: 100%;
+  min-width: 300px;
+  resize: none;
+  overflow: hidden;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-dim, rgba(255, 167, 89, 0.2));
+}
+
+.line-edit-input:focus {
+  border-color: var(--accent);
+}
+
+/* Empty line placeholder - subtle indicator */
+.prompt-viewer.line-edit-mode .editable-line:not(.editing):empty::before {
+  content: '·';
+  color: var(--text-muted);
+  opacity: 0.3;
 }

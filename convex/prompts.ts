@@ -110,6 +110,34 @@ export const listPrompts = query({
 	},
 });
 
+export const updatePromptBySlug = mutation({
+	args: {
+		apiKey: v.string(),
+		userId: v.string(),
+		slug: v.string(),
+		updates: v.object({
+			slug: v.string(),
+			name: v.string(),
+			description: v.string(),
+			content: v.string(),
+			tags: v.array(v.string()),
+			parameters: v.optional(parameterSchema),
+		}),
+	},
+	returns: v.boolean(),
+	handler: async (ctx, { apiKey, userId, slug, updates }) => {
+		const config = await getApiKeyConfig(ctx);
+		if (!validateApiKey(apiKey, config)) {
+			console.error("API key validation failed", {
+				operation: "updatePromptBySlug",
+				timestamp: Date.now(),
+			});
+			throw new Error("Invalid API key");
+		}
+		return Prompts.updateBySlug(ctx, userId, slug, updates);
+	},
+});
+
 export const deletePromptBySlug = mutation({
 	args: {
 		apiKey: v.string(),

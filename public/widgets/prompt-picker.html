@@ -236,10 +236,10 @@
     function selectPrompt(prompt) {
       if (mode === 'run') {
         // In real widget: call run_prompt MCP tool
-        alert(`RUN: ${prompt.slug}\n\nWould call run_prompt("${prompt.slug}") and inject into chat`);
+        console.log(`RUN: ${prompt.slug} - Would call run_prompt("${prompt.slug}") and inject into chat`);
       } else {
         // In real widget: open editor
-        alert(`EDIT: ${prompt.slug}\n\nWould open fullscreen editor`);
+        console.log(`EDIT: ${prompt.slug} - Would open fullscreen editor`);
       }
     }
   </script>

@@ -81,6 +81,12 @@ describe("Prompt Editor", () => {
 				"Valid Name",
 			);
 			input(
+				dom.window.document.getElementById(
+					"description",
+				) as HTMLTextAreaElement,
+				"Valid description",
+			);
+			input(
 				dom.window.document.getElementById("content") as HTMLTextAreaElement,
 				"Content",
 			);
@@ -147,6 +153,35 @@ describe("Prompt Editor", () => {
 		});
 	});
 
+	describe("Description required", () => {
+		test("empty description shows required error", async () => {
+			// Fill required fields except description
+			input(
+				dom.window.document.getElementById("slug") as HTMLInputElement,
+				"valid-slug",
+			);
+			input(
+				dom.window.document.getElementById("name") as HTMLInputElement,
+				"Valid Name",
+			);
+			input(
+				dom.window.document.getElementById("content") as HTMLTextAreaElement,
+				"Content",
+			);
+
+			// Submit
+			const form = dom.window.document.getElementById("prompt-form");
+			form?.dispatchEvent(
+				new dom.window.Event("submit", { bubbles: true, cancelable: true }),
+			);
+
+			await waitForAsync(50);
+
+			const errorEl = dom.window.document.getElementById("description-error");
+			expect(errorEl?.textContent).toContain("required");
+		});
+	});
+
 	describe("Duplicate slug error (TC-3.5 - UI portion)", () => {
 		test("409 response shows duplicate error", async () => {
 			dom.window.fetch = mockFetch({
@@ -165,6 +200,12 @@ describe("Prompt Editor", () => {
 			input(
 				dom.window.document.getElementById("name") as HTMLInputElement,
 				"Name",
+			);
+			input(
+				dom.window.document.getElementById(
+					"description",
+				) as HTMLTextAreaElement,
+				"Valid description",
 			);
 			input(
 				dom.window.document.getElementById("content") as HTMLTextAreaElement,
