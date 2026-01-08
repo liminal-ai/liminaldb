@@ -53,8 +53,10 @@ export async function loadTemplate(templateName: string): Promise<JSDOM> {
 	// Inject shared utilities before scripts run
 	await injectSharedUtils(dom);
 
-	// Inject prompt-viewer.js and prompt-editor.js for templates that need them
+	// Inject component and module scripts for templates that need them
 	if (templateName === "prompts.html") {
+		await injectModal(dom);
+		await injectToast(dom);
 		await injectPromptViewer(dom);
 		await injectPromptEditor(dom);
 	}
@@ -258,6 +260,32 @@ export function postMessage(dom: JSDOM, data: unknown): void {
 		origin: "http://localhost:5001",
 	});
 	dom.window.dispatchEvent(event);
+}
+
+/**
+ * Load modal.js component into jsdom for testing.
+ * @param dom - The JSDOM instance
+ */
+export async function injectModal(dom: JSDOM): Promise<void> {
+	const modalPath = resolve(
+		__dirname,
+		"../../../public/js/components/modal.js",
+	);
+	const modalContent = await readFile(modalPath, "utf8");
+	dom.window.eval(modalContent);
+}
+
+/**
+ * Load toast.js component into jsdom for testing.
+ * @param dom - The JSDOM instance
+ */
+export async function injectToast(dom: JSDOM): Promise<void> {
+	const toastPath = resolve(
+		__dirname,
+		"../../../public/js/components/toast.js",
+	);
+	const toastContent = await readFile(toastPath, "utf8");
+	dom.window.eval(toastContent);
 }
 
 /**
