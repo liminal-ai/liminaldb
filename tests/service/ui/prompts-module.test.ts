@@ -629,4 +629,158 @@ describe("Prompts Module", () => {
 			expect(promptEdit?.style.display).toBe("none");
 		});
 	});
+
+	/**
+	 * TC-6.7: Editor Toolbar
+	 *
+	 * Tests for the toolbar that appears on text selection in the content textarea.
+	 */
+	describe("TC-6.7: Editor Toolbar", () => {
+		beforeEach(async () => {
+			// Enter insert mode for each test
+			const newBtn = dom.window.document.getElementById("new-prompt-btn");
+			if (!newBtn) throw new Error("New prompt button not found");
+			click(newBtn);
+			await waitForAsync(50);
+		});
+
+		test("toolbar is hidden by default", async () => {
+			const toolbar = dom.window.document.getElementById("editor-toolbar");
+			expect(toolbar?.style.visibility).toBe("hidden");
+		});
+
+		test("toolbar becomes visible on text selection in content", async () => {
+			const contentTextarea = dom.window.document.getElementById(
+				"editor-content",
+			) as HTMLTextAreaElement;
+
+			// Add content
+			contentTextarea.value = "Test content for selection";
+
+			// Simulate selection
+			contentTextarea.setSelectionRange(0, 4); // Select "Test"
+			contentTextarea.dispatchEvent(new dom.window.Event("select"));
+			await waitForAsync(50);
+
+			const toolbar = dom.window.document.getElementById("editor-toolbar");
+			expect(toolbar?.style.visibility).toBe("visible");
+		});
+
+		test("toolbar hides when selection is cleared", async () => {
+			const contentTextarea = dom.window.document.getElementById(
+				"editor-content",
+			) as HTMLTextAreaElement;
+
+			// Add content and select
+			contentTextarea.value = "Test content for selection";
+			contentTextarea.setSelectionRange(0, 4);
+			contentTextarea.dispatchEvent(new dom.window.Event("select"));
+			await waitForAsync(50);
+
+			// Clear selection
+			contentTextarea.setSelectionRange(0, 0);
+			contentTextarea.dispatchEvent(new dom.window.Event("select"));
+			await waitForAsync(50);
+
+			const toolbar = dom.window.document.getElementById("editor-toolbar");
+			expect(toolbar?.style.visibility).toBe("hidden");
+		});
+
+		test("wrap tag button shows tag modal", async () => {
+			const contentTextarea = dom.window.document.getElementById(
+				"editor-content",
+			) as HTMLTextAreaElement;
+
+			// Add content and select
+			contentTextarea.value = "Test content for selection";
+			contentTextarea.setSelectionRange(0, 4);
+			contentTextarea.dispatchEvent(new dom.window.Event("select"));
+			await waitForAsync(50);
+
+			// Click wrap tag button
+			const wrapTagBtn = dom.window.document.getElementById("btn-wrap-tag");
+			if (!wrapTagBtn) throw new Error("Wrap tag button not found");
+			click(wrapTagBtn);
+			await waitForAsync(50);
+
+			// Tag modal should be visible
+			const tagModal = dom.window.document.getElementById("tag-modal");
+			expect(tagModal?.style.display).toBe("flex");
+		});
+
+		test("confirming tag modal wraps selection with tag", async () => {
+			const contentTextarea = dom.window.document.getElementById(
+				"editor-content",
+			) as HTMLTextAreaElement;
+
+			// Add content and select
+			contentTextarea.value = "Test content for selection";
+			contentTextarea.setSelectionRange(0, 4); // Select "Test"
+			contentTextarea.dispatchEvent(new dom.window.Event("select"));
+			await waitForAsync(50);
+
+			// Open tag modal
+			const wrapTagBtn = dom.window.document.getElementById("btn-wrap-tag");
+			if (!wrapTagBtn) throw new Error("Wrap tag button not found");
+			click(wrapTagBtn);
+			await waitForAsync(50);
+
+			// Enter tag name
+			const tagInput = dom.window.document.getElementById(
+				"tag-name-input",
+			) as HTMLInputElement;
+			tagInput.value = "example";
+
+			// Click wrap button
+			const wrapBtn = dom.window.document.getElementById("tag-modal-wrap");
+			if (!wrapBtn) throw new Error("Tag modal wrap button not found");
+			click(wrapBtn);
+			await waitForAsync(50);
+
+			// Content should have wrapped text
+			expect(contentTextarea.value).toBe(
+				"<example>Test</example> content for selection",
+			);
+		});
+
+		test("insert variable button wraps selection with braces", async () => {
+			const contentTextarea = dom.window.document.getElementById(
+				"editor-content",
+			) as HTMLTextAreaElement;
+
+			// Add content and select
+			contentTextarea.value = "Hello name placeholder";
+			contentTextarea.setSelectionRange(6, 10); // Select "name"
+			contentTextarea.dispatchEvent(new dom.window.Event("select"));
+			await waitForAsync(50);
+
+			// Click insert variable button
+			const insertVarBtn = dom.window.document.getElementById("btn-insert-var");
+			if (!insertVarBtn) throw new Error("Insert variable button not found");
+			click(insertVarBtn);
+			await waitForAsync(50);
+
+			// Content should have wrapped text
+			expect(contentTextarea.value).toBe("Hello {{name}} placeholder");
+		});
+
+		test("insert variable with no selection inserts empty placeholder", async () => {
+			const contentTextarea = dom.window.document.getElementById(
+				"editor-content",
+			) as HTMLTextAreaElement;
+
+			// Add content without selection
+			contentTextarea.value = "Hello world";
+			contentTextarea.setSelectionRange(6, 6); // Cursor after "Hello "
+
+			// Click insert variable button
+			const insertVarBtn = dom.window.document.getElementById("btn-insert-var");
+			if (!insertVarBtn) throw new Error("Insert variable button not found");
+			click(insertVarBtn);
+			await waitForAsync(50);
+
+			// Content should have empty placeholder
+			expect(contentTextarea.value).toBe("Hello {{}}world");
+		});
+	});
 });
