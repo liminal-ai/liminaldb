@@ -6,17 +6,12 @@
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
-import type { McpDependencies } from "../../../src/api/mcp";
 import { createTestJwt } from "../../fixtures";
-
-// Track tool calls and return mock responses
-let lastToolCall: { name: string; args: unknown } | null = null;
-let mockToolResponse: unknown = null;
 
 // Mock Convex client
 const mockConvex = vi.hoisted(() => ({
-	mutation: vi.fn(() => Promise.resolve([])),
-	query: vi.fn(() => Promise.resolve(null)),
+	mutation: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+	query: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
 }));
 
 vi.mock("../../../src/lib/convex", () => ({ convex: mockConvex }));
@@ -44,57 +39,68 @@ import { registerMcpRoutes } from "../../../src/api/mcp";
 process.env.COOKIE_SECRET ??= "test_cookie_secret";
 process.env.CONVEX_URL ??= "http://localhost:9999";
 
-function createMockDeps(): McpDependencies {
-	return {
-		transport: {
-			handleRequest: vi.fn(
-				async (
-					request: Request,
-					_options?: { authInfo?: unknown },
-				): Promise<Response> => {
-					// Parse the JSON-RPC request to get tool name and args
-					const body = (await request.clone().json()) as {
-						params?: { name?: string; arguments?: unknown };
-						id?: number;
-					};
-					lastToolCall = {
-						name: body.params?.name ?? "",
-						args: body.params?.arguments,
-					};
+async function createApp() {
+	const app = Fastify({ logger: false });
+	app.register(cookie, { secret: process.env.COOKIE_SECRET });
+	registerMcpRoutes(app);
+	await app.ready();
+	return app;
+}
 
-					// Return mock response
-					return new Response(
-						JSON.stringify({
-							jsonrpc: "2.0",
-							result: {
-								content: [
-									{ type: "text", text: JSON.stringify(mockToolResponse) },
-								],
-							},
-							id: body.id,
-						}),
-						{ status: 200, headers: { "content-type": "application/json" } },
-					);
-				},
-			),
+async function callTool(
+	app: Awaited<ReturnType<typeof createApp>>,
+	name: string,
+	args: Record<string, unknown>,
+	token?: string,
+) {
+	return app.inject({
+		method: "POST",
+		url: "/mcp",
+		headers: {
+			...(token ? { authorization: `Bearer ${token}` } : {}),
+			"content-type": "application/json",
+			accept: "application/json, text/event-stream",
 		},
-		mcpServer: {
-			connect: vi.fn(async () => {}),
-		} as unknown as McpDependencies["mcpServer"],
-	};
+		payload: {
+			jsonrpc: "2.0",
+			method: "tools/call",
+			params: { name, arguments: args },
+			id: 1,
+		},
+	});
+}
+
+function readToolResult(response: Awaited<ReturnType<typeof callTool>>) {
+	const contentType = response.headers["content-type"] ?? "";
+	const rawBody = response.body ?? "";
+	const body = contentType.includes("text/event-stream")
+		? (() => {
+				const dataLines = rawBody
+					.split("\n")
+					.filter((line) => line.startsWith("data: "));
+				if (dataLines.length === 0) {
+					return null;
+				}
+				const jsonText = dataLines
+					.map((line) => line.replace(/^data:\s?/, ""))
+					.join("\n");
+				return JSON.parse(jsonText) as {
+					result?: { content?: Array<{ text?: string }> };
+				};
+			})()
+		: (JSON.parse(rawBody) as {
+				result?: { content?: Array<{ text?: string }> };
+			});
+	const text = body?.result?.content?.[0]?.text;
+	return text ? JSON.parse(text) : null;
 }
 
 describe("MCP Tools - save_prompts", () => {
-	let app: ReturnType<typeof Fastify>;
+	let app: Awaited<ReturnType<typeof createApp>>;
 
 	beforeEach(async () => {
-		lastToolCall = null;
-		mockToolResponse = null;
 		mockConvex.mutation.mockClear();
-		app = Fastify({ logger: false });
-		app.register(cookie, { secret: process.env.COOKIE_SECRET });
-		registerMcpRoutes(app, createMockDeps());
-		await app.ready();
+		app = await createApp();
 	});
 
 	afterEach(async () => {
@@ -102,113 +108,83 @@ describe("MCP Tools - save_prompts", () => {
 	});
 
 	test("requires authentication", async () => {
-		const response = await app.inject({
-			method: "POST",
-			url: "/mcp",
-			payload: {
-				jsonrpc: "2.0",
-				method: "tools/call",
-				params: {
-					name: "save_prompts",
-					arguments: { prompts: [] },
-				},
-				id: 1,
-			},
-		});
-
+		const response = await callTool(app, "save_prompts", { prompts: [] });
 		expect(response.statusCode).toBe(401);
 	});
 
-	test("calls tool with correct arguments", async () => {
-		mockToolResponse = { ids: ["id_1"] };
+	test("calls Convex with correct arguments", async () => {
+		mockConvex.mutation.mockResolvedValue(["id_1"]);
 
-		const response = await app.inject({
-			method: "POST",
-			url: "/mcp",
-			headers: {
-				authorization: `Bearer ${createTestJwt({ sub: "user_123" })}`,
-				"content-type": "application/json",
-			},
-			payload: {
-				jsonrpc: "2.0",
-				method: "tools/call",
-				params: {
-					name: "save_prompts",
-					arguments: {
-						prompts: [
-							{
-								slug: "test-prompt",
-								name: "Test",
-								description: "A test prompt",
-								content: "Content here",
-								tags: ["test"],
-							},
-						],
+		const response = await callTool(
+			app,
+			"save_prompts",
+			{
+				prompts: [
+					{
+						slug: "test-prompt",
+						name: "Test",
+						description: "A test prompt",
+						content: "Content here",
+						tags: ["test"],
 					},
-				},
-				id: 1,
+				],
 			},
-		});
+			createTestJwt({ sub: "user_123" }),
+		);
 
 		expect(response.statusCode).toBe(200);
-		expect(lastToolCall?.name).toBe("save_prompts");
-		expect(lastToolCall?.args).toHaveProperty("prompts");
+		expect(mockConvex.mutation).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({
+				userId: "user_123",
+				prompts: expect.any(Array),
+			}),
+		);
+
+		const result = readToolResult(response) as { ids?: string[] } | null;
+		expect(result?.ids).toEqual(["id_1"]);
 	});
 
 	test("handles batch with multiple prompts", async () => {
-		mockToolResponse = { ids: ["id_1", "id_2"] };
+		mockConvex.mutation.mockResolvedValue(["id_1", "id_2"]);
 
-		await app.inject({
-			method: "POST",
-			url: "/mcp",
-			headers: {
-				authorization: `Bearer ${createTestJwt()}`,
-				"content-type": "application/json",
-			},
-			payload: {
-				jsonrpc: "2.0",
-				method: "tools/call",
-				params: {
-					name: "save_prompts",
-					arguments: {
-						prompts: [
-							{
-								slug: "prompt-a",
-								name: "A",
-								description: "...",
-								content: "...",
-								tags: [],
-							},
-							{
-								slug: "prompt-b",
-								name: "B",
-								description: "...",
-								content: "...",
-								tags: [],
-							},
-						],
+		await callTool(
+			app,
+			"save_prompts",
+			{
+				prompts: [
+					{
+						slug: "prompt-a",
+						name: "A",
+						description: "...",
+						content: "...",
+						tags: [],
 					},
-				},
-				id: 1,
+					{
+						slug: "prompt-b",
+						name: "B",
+						description: "...",
+						content: "...",
+						tags: [],
+					},
+				],
 			},
-		});
+			createTestJwt(),
+		);
 
-		const args = lastToolCall?.args as { prompts: unknown[] };
+		const args = mockConvex.mutation.mock.calls[0]?.[1] as {
+			prompts?: unknown[];
+		};
 		expect(args.prompts).toHaveLength(2);
 	});
 });
 
 describe("MCP Tools - get_prompt", () => {
-	let app: ReturnType<typeof Fastify>;
+	let app: Awaited<ReturnType<typeof createApp>>;
 
 	beforeEach(async () => {
-		lastToolCall = null;
-		mockToolResponse = null;
 		mockConvex.query.mockClear();
-		app = Fastify({ logger: false });
-		app.register(cookie, { secret: process.env.COOKIE_SECRET });
-		registerMcpRoutes(app, createMockDeps());
-		await app.ready();
+		app = await createApp();
 	});
 
 	afterEach(async () => {
@@ -216,60 +192,43 @@ describe("MCP Tools - get_prompt", () => {
 	});
 
 	test("requires authentication", async () => {
-		const response = await app.inject({
-			method: "POST",
-			url: "/mcp",
-			payload: {
-				jsonrpc: "2.0",
-				method: "tools/call",
-				params: { name: "get_prompt", arguments: { slug: "test" } },
-				id: 1,
-			},
-		});
-
+		const response = await callTool(app, "get_prompt", { slug: "test" });
 		expect(response.statusCode).toBe(401);
 	});
 
-	test("passes slug to tool handler", async () => {
-		mockToolResponse = {
+	test("passes slug to Convex query", async () => {
+		mockConvex.query.mockResolvedValue({
 			slug: "test-slug",
 			name: "Test",
 			description: "...",
 			content: "...",
 			tags: [],
-		};
-
-		await app.inject({
-			method: "POST",
-			url: "/mcp",
-			headers: {
-				authorization: `Bearer ${createTestJwt()}`,
-				"content-type": "application/json",
-			},
-			payload: {
-				jsonrpc: "2.0",
-				method: "tools/call",
-				params: { name: "get_prompt", arguments: { slug: "test-slug" } },
-				id: 1,
-			},
 		});
 
-		expect(lastToolCall?.name).toBe("get_prompt");
-		expect(lastToolCall?.args).toEqual({ slug: "test-slug" });
+		const response = await callTool(
+			app,
+			"get_prompt",
+			{ slug: "test-slug" },
+			createTestJwt({ sub: "user_123" }),
+		);
+
+		expect(response.statusCode).toBe(200);
+		expect(mockConvex.query).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({ userId: "user_123", slug: "test-slug" }),
+		);
+
+		const result = readToolResult(response) as { slug?: string } | null;
+		expect(result?.slug).toBe("test-slug");
 	});
 });
 
 describe("MCP Tools - delete_prompt", () => {
-	let app: ReturnType<typeof Fastify>;
+	let app: Awaited<ReturnType<typeof createApp>>;
 
 	beforeEach(async () => {
-		lastToolCall = null;
-		mockToolResponse = null;
 		mockConvex.mutation.mockClear();
-		app = Fastify({ logger: false });
-		app.register(cookie, { secret: process.env.COOKIE_SECRET });
-		registerMcpRoutes(app, createMockDeps());
-		await app.ready();
+		app = await createApp();
 	});
 
 	afterEach(async () => {
@@ -277,39 +236,27 @@ describe("MCP Tools - delete_prompt", () => {
 	});
 
 	test("requires authentication", async () => {
-		const response = await app.inject({
-			method: "POST",
-			url: "/mcp",
-			payload: {
-				jsonrpc: "2.0",
-				method: "tools/call",
-				params: { name: "delete_prompt", arguments: { slug: "test" } },
-				id: 1,
-			},
-		});
-
+		const response = await callTool(app, "delete_prompt", { slug: "test" });
 		expect(response.statusCode).toBe(401);
 	});
 
-	test("passes slug to tool handler", async () => {
-		mockToolResponse = { deleted: true };
+	test("passes slug to Convex mutation", async () => {
+		mockConvex.mutation.mockResolvedValue(true);
 
-		await app.inject({
-			method: "POST",
-			url: "/mcp",
-			headers: {
-				authorization: `Bearer ${createTestJwt()}`,
-				"content-type": "application/json",
-			},
-			payload: {
-				jsonrpc: "2.0",
-				method: "tools/call",
-				params: { name: "delete_prompt", arguments: { slug: "to-delete" } },
-				id: 1,
-			},
-		});
+		const response = await callTool(
+			app,
+			"delete_prompt",
+			{ slug: "to-delete" },
+			createTestJwt({ sub: "user_123" }),
+		);
 
-		expect(lastToolCall?.name).toBe("delete_prompt");
-		expect(lastToolCall?.args).toEqual({ slug: "to-delete" });
+		expect(response.statusCode).toBe(200);
+		expect(mockConvex.mutation).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({ userId: "user_123", slug: "to-delete" }),
+		);
+
+		const result = readToolResult(response) as { deleted?: boolean } | null;
+		expect(result?.deleted).toBe(true);
 	});
 });

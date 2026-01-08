@@ -1,4 +1,6 @@
-import { describe, expect, test, vi } from "vitest";
+import Fastify from "fastify";
+import cookie from "@fastify/cookie";
+import { describe, expect, test, beforeEach, afterEach, vi } from "vitest";
 
 const mockValidateJwt = vi.hoisted(() =>
 	vi.fn(async (token: string) => {
@@ -21,92 +23,141 @@ import {
 } from "../../../src/lib/auth";
 import { authMiddleware } from "../../../src/middleware/auth";
 import {
-	asFastifyReply,
-	asFastifyRequest,
 	createExpiredJwt,
 	createMalformedJwt,
-	createMockReply,
-	createMockRequest,
 	createTestJwt,
 } from "../../fixtures";
 
+async function createTokenApp() {
+	const app = Fastify({ logger: false });
+	app.register(cookie, { secret: "test_cookie_secret" });
+	app.get("/token", async (request) => extractToken(request));
+	await app.ready();
+	return app;
+}
+
+async function createAuthApp() {
+	const app = Fastify({ logger: false });
+	app.register(cookie, { secret: "test_cookie_secret" });
+	app.get("/api/secure", { preHandler: authMiddleware }, async (request) => ({
+		user: request.user ?? null,
+		accessToken: request.accessToken ?? null,
+	}));
+	await app.ready();
+	return app;
+}
+
 describe("Auth Middleware", () => {
 	describe("Token Extraction", () => {
-		test("extracts Bearer token from Authorization header", () => {
-			const request = createMockRequest({
-				authorization: "Bearer test.jwt.token",
-			});
+		let app: Awaited<ReturnType<typeof createTokenApp>>;
 
-			const result = extractToken(asFastifyRequest(request));
-
-			expect(result.token).toBe("test.jwt.token");
-			expect(result.source).toBe(TokenSource.BEARER);
+		beforeEach(async () => {
+			app = await createTokenApp();
 		});
 
-		test("extracts token from cookie when no Authorization header", () => {
-			const request = createMockRequest({
-				cookies: { accessToken: "cookie.jwt.token" },
-			});
-
-			const result = extractToken(asFastifyRequest(request));
-
-			expect(result.token).toBe("cookie.jwt.token");
-			expect(result.source).toBe(TokenSource.COOKIE);
+		afterEach(async () => {
+			await app.close();
 		});
 
-		test("prefers bearer header over cookie", () => {
-			const request = createMockRequest({
-				authorization: "Bearer header.jwt.token",
-				cookies: { accessToken: "cookie.jwt.token" },
+		test("extracts Bearer token from Authorization header", async () => {
+			const response = await app.inject({
+				method: "GET",
+				url: "/token",
+				headers: { authorization: "Bearer test.jwt.token" },
 			});
 
-			const result = extractToken(asFastifyRequest(request));
-
-			expect(result.token).toBe("header.jwt.token");
-			expect(result.source).toBe(TokenSource.BEARER);
-		});
-
-		test("returns null token when none present", () => {
-			const request = createMockRequest();
-			const result = extractToken(asFastifyRequest(request));
-			expect(result.token).toBeNull();
-			expect(result.source).toBeNull();
-		});
-
-		test("rejects empty Bearer token", () => {
-			const request = createMockRequest({
-				authorization: "Bearer ",
+			expect(response.statusCode).toBe(200);
+			expect(response.json()).toEqual({
+				token: "test.jwt.token",
+				source: TokenSource.BEARER,
 			});
-			const result = extractToken(asFastifyRequest(request));
-			expect(result.token).toBeNull();
-			expect(result.source).toBeNull();
 		});
 
-		test("rejects malformed Bearer token", () => {
-			const request = createMockRequest({
-				authorization: "Bear abc",
+		test("extracts token from cookie when no Authorization header", async () => {
+			const signed = app.signCookie("cookie.jwt.token");
+			const response = await app.inject({
+				method: "GET",
+				url: "/token",
+				headers: { cookie: `accessToken=${signed}` },
 			});
-			const result = extractToken(asFastifyRequest(request));
-			expect(result.token).toBeNull();
-			expect(result.source).toBeNull();
+
+			expect(response.statusCode).toBe(200);
+			expect(response.json()).toEqual({
+				token: "cookie.jwt.token",
+				source: TokenSource.COOKIE,
+			});
 		});
 
-		test("rejects wrong auth scheme", () => {
-			const request = createMockRequest({
-				authorization: "Basic abc123",
+		test("prefers bearer header over cookie", async () => {
+			const signed = app.signCookie("cookie.jwt.token");
+			const response = await app.inject({
+				method: "GET",
+				url: "/token",
+				headers: {
+					authorization: "Bearer header.jwt.token",
+					cookie: `accessToken=${signed}`,
+				},
 			});
-			const result = extractToken(asFastifyRequest(request));
-			expect(result.token).toBeNull();
-			expect(result.source).toBeNull();
+
+			expect(response.statusCode).toBe(200);
+			expect(response.json()).toEqual({
+				token: "header.jwt.token",
+				source: TokenSource.BEARER,
+			});
 		});
 
-		test("rejects bearer with no space", () => {
-			const request = createMockRequest({
-				authorization: "Bearerabc123",
+		test("returns null token when none present", async () => {
+			const response = await app.inject({
+				method: "GET",
+				url: "/token",
 			});
-			const result = extractToken(asFastifyRequest(request));
-			expect(result.token).toBeNull();
-			expect(result.source).toBeNull();
+
+			expect(response.statusCode).toBe(200);
+			expect(response.json()).toEqual({ token: null, source: null });
+		});
+
+		test("rejects empty Bearer token", async () => {
+			const response = await app.inject({
+				method: "GET",
+				url: "/token",
+				headers: { authorization: "Bearer " },
+			});
+
+			expect(response.statusCode).toBe(200);
+			expect(response.json()).toEqual({ token: null, source: null });
+		});
+
+		test("rejects malformed Bearer token", async () => {
+			const response = await app.inject({
+				method: "GET",
+				url: "/token",
+				headers: { authorization: "Bear abc" },
+			});
+
+			expect(response.statusCode).toBe(200);
+			expect(response.json()).toEqual({ token: null, source: null });
+		});
+
+		test("rejects wrong auth scheme", async () => {
+			const response = await app.inject({
+				method: "GET",
+				url: "/token",
+				headers: { authorization: "Basic abc123" },
+			});
+
+			expect(response.statusCode).toBe(200);
+			expect(response.json()).toEqual({ token: null, source: null });
+		});
+
+		test("rejects bearer with no space", async () => {
+			const response = await app.inject({
+				method: "GET",
+				url: "/token",
+				headers: { authorization: "Bearerabc123" },
+			});
+
+			expect(response.statusCode).toBe(200);
+			expect(response.json()).toEqual({ token: null, source: null });
 		});
 	});
 
@@ -155,48 +206,60 @@ describe("Auth Middleware", () => {
 	});
 
 	describe("Middleware Integration", () => {
+		let app: Awaited<ReturnType<typeof createAuthApp>>;
+
+		beforeEach(async () => {
+			app = await createAuthApp();
+		});
+
+		afterEach(async () => {
+			await app.close();
+		});
+
 		test("attaches user and access token to request", async () => {
 			const token = createTestJwt();
-			const request = createMockRequest({
-				authorization: `Bearer ${token}`,
+			const response = await app.inject({
+				method: "GET",
+				url: "/api/secure",
+				headers: { authorization: `Bearer ${token}` },
 			});
-			const reply = createMockReply();
 
-			await authMiddleware(asFastifyRequest(request), asFastifyReply(reply));
-
-			expect(request.user?.id).toBe("user_test123");
-			expect(request.user?.email).toBe("test@example.com");
-			expect(request.user?.sessionId).toBe("session_test123");
-			expect(request.accessToken).toBe(token);
-			expect(reply.getStatus()).toBeNull();
+			expect(response.statusCode).toBe(200);
+			const body = response.json() as {
+				user?: { id?: string; email?: string; sessionId?: string };
+				accessToken?: string;
+			};
+			expect(body.user?.id).toBe("user_test123");
+			expect(body.user?.email).toBe("test@example.com");
+			expect(body.user?.sessionId).toBe("session_test123");
+			expect(body.accessToken).toBe(token);
 		});
 
 		test("returns 401 when token missing", async () => {
-			const request = createMockRequest();
-			const reply = createMockReply();
+			const response = await app.inject({
+				method: "GET",
+				url: "/api/secure",
+			});
 
-			await authMiddleware(asFastifyRequest(request), asFastifyReply(reply));
-
-			expect(reply.getStatus()).toBe(401);
-			expect(reply.getBody()).toEqual({ error: "Not authenticated" });
+			expect(response.statusCode).toBe(401);
+			expect(response.json()).toEqual({ error: "Not authenticated" });
 		});
 
 		test("returns 401 when token invalid", async () => {
 			const token = createMalformedJwt("not-three-parts");
-			const request = createMockRequest({
-				authorization: `Bearer ${token}`,
-			});
-			const reply = createMockReply();
-
 			mockValidateJwt.mockImplementationOnce(async () => ({
 				valid: false,
 				error: "Invalid token",
 			}));
 
-			await authMiddleware(asFastifyRequest(request), asFastifyReply(reply));
+			const response = await app.inject({
+				method: "GET",
+				url: "/api/secure",
+				headers: { authorization: `Bearer ${token}` },
+			});
 
-			expect(reply.getStatus()).toBe(401);
-			expect(reply.getBody()).toEqual({ error: "Invalid token" });
+			expect(response.statusCode).toBe(401);
+			expect(response.json()).toEqual({ error: "Invalid token" });
 		});
 	});
 });
