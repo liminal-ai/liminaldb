@@ -12,9 +12,7 @@
 
 // Assumes utils.js is loaded (escapeHtml)
 
-const promptEditor = (function () {
-	"use strict";
-
+const promptEditor = (() => {
 	// State
 	let containerEl = null;
 	let contentTextarea = null;
