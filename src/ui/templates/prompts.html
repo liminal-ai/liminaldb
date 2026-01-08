@@ -152,7 +152,7 @@
      * Restore portlet state from shell (e.g., on back/forward navigation).
      * @param {Object} state - State object from shell
      */
-    function restoreState(state) {
+    async function restoreState(state) {
       if (!state) return;
 
       if (state.slug && state.mode === 'view') {
@@ -164,10 +164,24 @@
           selectedSlug = state.slug;
           currentMode = 'view';
         }
+      } else if (state.slug && state.mode === 'edit') {
+        // Edit mode - select prompt then enter edit mode
+        if (prompts.length > 0) {
+          selectPrompt(state.slug, { trackHistory: false });
+          enterEditMode();
+        } else {
+          // Prompts not loaded yet - store for after load
+          selectedSlug = state.slug;
+          currentMode = 'edit';
+        }
+      } else if (state.mode === 'new') {
+        // Insert mode - enter if not already in it
+        if (currentMode !== 'new') {
+          enterInsertMode();
+        }
       } else if (state.mode === 'empty' || !state.slug) {
         clearSelection({ trackHistory: false });
       }
-      // 'edit' and 'new' modes will be handled when those features are added
     }
 
     /**
@@ -390,7 +404,7 @@
       stagingPrompts = stagingPrompts.filter(s => s.tempId !== tempId);
 
       if (stagingPrompts.length === 0) {
-        exitInsertMode();
+        await exitInsertMode();
       } else if (selectedStagingId === tempId) {
         // Select the first remaining
         selectedStagingId = stagingPrompts[0].tempId;
@@ -534,7 +548,8 @@
       const errors = promptEditor.validate();
       if (Object.keys(errors).length > 0) {
         // Trigger the save button to show inline errors
-        document.getElementById('btn-save').click();
+        const saveBtn = document.getElementById('btn-save');
+        if (saveBtn) saveBtn.click();
         return;
       }
 
@@ -546,7 +561,7 @@
           // Find the staging prompt with issues and switch to it
           const staging = stagingPrompts[i];
           if (staging.tempId !== selectedStagingId) {
-            selectStagingPrompt(staging.tempId);
+            await selectStagingPrompt(staging.tempId);
             showToast('This prompt has missing required fields', { type: 'error' });
           }
           return;
@@ -586,7 +601,7 @@
 
       if (!await showConfirm(`Discard all ${stagingPrompts.length} unsaved prompt(s)?`)) return;
 
-      exitInsertMode();
+      await exitInsertMode();
     }
 
     // Initialize view mode from localStorage
@@ -603,15 +618,17 @@
       rawPrompt = content;
       const contentEl = document.getElementById('promptContent');
 
-      const { html, stats } = renderPrompt(content, currentView, { lineEdit: lineEditEnabled });
+      // Only enable line edit in semantic/plain views, not rendered
+      const effectiveLineEdit = lineEditEnabled && currentView !== 'rendered';
+      const { html, stats } = renderPrompt(content, currentView, { lineEdit: effectiveLineEdit });
       contentEl.innerHTML = html || '<span style="color: var(--text-muted)">No content</span>';
 
       document.getElementById('statTags').textContent = stats.tags;
       document.getElementById('statVars').textContent = stats.vars;
       document.getElementById('statChars').textContent = content.length;
 
-      // Set up line edit click handlers if enabled
-      if (lineEditEnabled) {
+      // Set up line edit click handlers if enabled and not in rendered view
+      if (effectiveLineEdit) {
         setupLineEditHandlers();
       }
     }

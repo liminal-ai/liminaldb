@@ -47,6 +47,7 @@
     let allTags = [];
     let selectedTags = [];
     let debounceTimer;
+    let portletDirty = false;
 
     // ============================================
     // HISTORY / ROUTER
@@ -126,8 +127,19 @@
 
     /**
      * Handle browser back/forward navigation.
+     * If portlet has unsaved changes, confirm before navigating.
      */
-    window.addEventListener('popstate', (e) => {
+    window.addEventListener('popstate', async (e) => {
+      if (portletDirty) {
+        // Confirm navigation with unsaved changes
+        const confirmed = window.confirm('You have unsaved changes. Discard and navigate away?');
+        if (!confirmed) {
+          // Push current state back to history to cancel the navigation
+          history.pushState(history.state, '', window.location.pathname);
+          return;
+        }
+        portletDirty = false;
+      }
       const state = e.state || parseUrlState();
       sendStateToPortlet(state);
     });
@@ -289,6 +301,11 @@
           // Portlet loaded and ready - send initial state
           const initialState = parseUrlState();
           sendStateToPortlet(initialState);
+          break;
+
+        case 'portlet:dirty':
+          // Track dirty state from portlet
+          portletDirty = payload.dirty === true;
           break;
       }
     });

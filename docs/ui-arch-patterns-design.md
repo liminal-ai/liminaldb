@@ -359,7 +359,7 @@ The editor tracks whether the user has made unsaved changes:
 onDirtyChange: (isDirty) => {
   // Notify shell for navigation warnings
   parent.postMessage({
-    type: 'dirty:change',
+    type: 'portlet:dirty',
     dirty: isDirty
   }, window.location.origin);
 }
@@ -381,7 +381,7 @@ onDirtyChange: (isDirty) => {
 |---------|---------|---------|
 | `portlet:ready` | Portlet loaded, ready for state | `{}` |
 | `history:push` | Navigation event, add to history | `{ state, trackHistory? }` |
-| `dirty:change` | Unsaved changes state changed | `{ dirty: boolean }` |
+| `portlet:dirty` | Unsaved changes state changed | `{ dirty: boolean }` |
 
 ### Shell → Portlet
 
