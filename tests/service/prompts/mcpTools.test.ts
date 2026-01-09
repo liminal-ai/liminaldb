@@ -338,6 +338,11 @@ describe("MCP Tools - search_prompts", () => {
 		await app.close();
 	});
 
+	test("requires authentication", async () => {
+		const response = await callTool(app, "search_prompts", { query: "test" });
+		expect(response.statusCode).toBe(401);
+	});
+
 	test("TC-43: returns matching prompts for query", async () => {
 		mockConvex.query.mockResolvedValue([{ slug: "sql" }]);
 
@@ -400,6 +405,11 @@ describe("MCP Tools - list_tags", () => {
 		await app.close();
 	});
 
+	test("requires authentication", async () => {
+		const response = await callTool(app, "list_tags", {});
+		expect(response.statusCode).toBe(401);
+	});
+
 	test("TC-45: returns unique tags", async () => {
 		mockConvex.query.mockResolvedValue(["a", "b"]);
 
@@ -428,12 +438,36 @@ describe("MCP Tools - update_prompt", () => {
 	let app: Awaited<ReturnType<typeof createApp>>;
 
 	beforeEach(async () => {
+		mockConvex.query.mockClear();
 		mockConvex.mutation.mockClear();
 		app = await createApp();
 	});
 
 	afterEach(async () => {
 		await app.close();
+	});
+
+	test("requires authentication", async () => {
+		const response = await callTool(app, "update_prompt", {
+			slug: "test-prompt",
+			name: "Updated",
+		});
+		expect(response.statusCode).toBe(401);
+	});
+
+	test("returns an error when updating only flags on a missing prompt", async () => {
+		mockConvex.mutation.mockResolvedValue(false);
+
+		const response = await callTool(
+			app,
+			"update_prompt",
+			{ slug: "missing", pinned: true },
+			createTestJwt({ sub: "user_123" }),
+		);
+
+		expect(response.statusCode).toBe(200);
+		expect(response.body).toContain("Prompt not found");
+		expect(response.body).toContain("isError");
 	});
 
 	test("TC-46: updates prompt by slug", async () => {
@@ -480,6 +514,7 @@ describe("MCP Tools - errors", () => {
 	let app: Awaited<ReturnType<typeof createApp>>;
 
 	beforeEach(async () => {
+		mockConvex.query.mockClear();
 		mockConvex.mutation.mockClear();
 		app = await createApp();
 	});
@@ -514,6 +549,13 @@ describe("MCP Tools - track_prompt_use", () => {
 
 	afterEach(async () => {
 		await app.close();
+	});
+
+	test("requires authentication", async () => {
+		const response = await callTool(app, "track_prompt_use", {
+			slug: "test-prompt",
+		});
+		expect(response.statusCode).toBe(401);
 	});
 
 	test("TC-19 / TC-48: increments usage count", async () => {

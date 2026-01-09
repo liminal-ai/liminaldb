@@ -829,13 +829,24 @@ export function createMcpServer(): McpServer {
 
 				// Handle flag updates separately
 				if (pinned !== undefined || favorited !== undefined) {
-					await convex.mutation(api.prompts.updatePromptFlags, {
+					const updated = await convex.mutation(api.prompts.updatePromptFlags, {
 						apiKey: config.convexApiKey,
 						userId,
 						slug,
 						pinned,
 						favorited,
 					});
+					if (updated !== true) {
+						return {
+							content: [
+								{
+									type: "text" as const,
+									text: "Prompt not found",
+								},
+							],
+							isError: true,
+						};
+					}
 				}
 
 				return {
