@@ -573,5 +573,90 @@ export function createMcpServer(): McpServer {
 		},
 	);
 
+	// list_prompts - Returns ranked prompts with optional limit
+	server.registerTool(
+		"list_prompts",
+		{
+			title: "List Prompts",
+			description:
+				"List prompts sorted by ranking (usage, recency, pinned, favorited)",
+			inputSchema: {
+				limit: z.number().optional().describe("Maximum number of prompts to return"),
+			},
+		},
+		async (_args, _extra) => {
+			throw new Error("NotImplementedError: list_prompts not implemented");
+		},
+	);
+
+	// search_prompts - Search with query and optional tags
+	server.registerTool(
+		"search_prompts",
+		{
+			title: "Search Prompts",
+			description: "Search prompts by query string with optional tag filter",
+			inputSchema: {
+				query: z
+					.string()
+					.describe("Search query to match against prompt content"),
+				tags: z.array(z.string()).optional().describe("Filter by tags (ANY-of)"),
+				limit: z.number().optional().describe("Maximum number of results"),
+			},
+		},
+		async (_args, _extra) => {
+			throw new Error("NotImplementedError: search_prompts not implemented");
+		},
+	);
+
+	// list_tags - Returns user's unique tags
+	server.registerTool(
+		"list_tags",
+		{
+			title: "List Tags",
+			description: "List all unique tags used by this user's prompts",
+		},
+		// NOTE: when no inputSchema is defined, the handler signature is (extra) not (args, extra)
+		async (_extra) => {
+			throw new Error("NotImplementedError: list_tags not implemented");
+		},
+	);
+
+	// update_prompt - Modify existing prompt by slug
+	server.registerTool(
+		"update_prompt",
+		{
+			title: "Update Prompt",
+			description: "Update an existing prompt by slug",
+			inputSchema: {
+				slug: SlugSchema.describe("The prompt slug to update"),
+				name: z.string().optional().describe("New name"),
+				description: z.string().optional().describe("New description"),
+				content: z.string().optional().describe("New content"),
+				tags: z.array(z.string()).optional().describe("New tags"),
+				pinned: z.boolean().optional().describe("Pin/unpin the prompt"),
+				favorited: z.boolean().optional().describe("Favorite/unfavorite the prompt"),
+			},
+		},
+		async (_args, _extra) => {
+			throw new Error("NotImplementedError: update_prompt not implemented");
+		},
+	);
+
+	// track_prompt_use - Increment usage count
+	server.registerTool(
+		"track_prompt_use",
+		{
+			title: "Track Prompt Use",
+			description:
+				"Track that a prompt was used (increments usage count and updates last-used timestamp)",
+			inputSchema: {
+				slug: SlugSchema.describe("The prompt slug that was used"),
+			},
+		},
+		async (_args, _extra) => {
+			throw new Error("NotImplementedError: track_prompt_use not implemented");
+		},
+	);
+
 	return server;
 }

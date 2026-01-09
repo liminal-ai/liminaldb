@@ -70,6 +70,18 @@ async function callTool(
 	});
 }
 
+/**
+ * Red-phase diagnostic: assert the MCP server resolved and executed the tool handler.
+ * This is intentionally tied to stub behavior and should be removed/updated in Green.
+ */
+function expectStubToolError(
+	response: Awaited<ReturnType<typeof callTool>>,
+	expectedMessage: string,
+) {
+	expect(response.statusCode).toBe(200);
+	expect(response.body).toContain(expectedMessage);
+}
+
 function readToolResult(response: Awaited<ReturnType<typeof callTool>>) {
 	const contentType = response.headers["content-type"] ?? "";
 	const rawBody = response.body ?? "";
@@ -258,5 +270,235 @@ describe("MCP Tools - delete_prompt", () => {
 
 		const result = readToolResult(response) as { deleted?: boolean } | null;
 		expect(result?.deleted).toBe(true);
+	});
+});
+
+describe("MCP Tools - list_prompts", () => {
+	let app: Awaited<ReturnType<typeof createApp>>;
+
+	beforeEach(async () => {
+		mockConvex.query.mockClear();
+		app = await createApp();
+	});
+
+	afterEach(async () => {
+		await app.close();
+	});
+
+	test("requires authentication", async () => {
+		const response = await callTool(app, "list_prompts", {});
+		expect(response.statusCode).toBe(401);
+	});
+
+	test("TC-41: returns ranked prompts", async () => {
+		// In red phase, this should fail until list_prompts is implemented.
+		// The green phase should set this to a ranked prompt list.
+		mockConvex.query.mockResolvedValue([{ slug: "a" }]);
+
+		const response = await callTool(
+			app,
+			"list_prompts",
+			{},
+			createTestJwt({ sub: "user_123" }),
+		);
+
+		expectStubToolError(
+			response,
+			"NotImplementedError: list_prompts not implemented",
+		);
+		// Green should call Convex listPromptsRanked with { apiKey, userId, limit? }.
+		expect(mockConvex.query).toHaveBeenCalled();
+	});
+
+	test("TC-42: respects limit parameter", async () => {
+		mockConvex.query.mockResolvedValue([]);
+
+		const response = await callTool(
+			app,
+			"list_prompts",
+			{ limit: 5 },
+			createTestJwt({ sub: "user_123" }),
+		);
+
+		expectStubToolError(
+			response,
+			"NotImplementedError: list_prompts not implemented",
+		);
+		expect(mockConvex.query).toHaveBeenCalled();
+	});
+});
+
+describe("MCP Tools - search_prompts", () => {
+	let app: Awaited<ReturnType<typeof createApp>>;
+
+	beforeEach(async () => {
+		mockConvex.query.mockClear();
+		app = await createApp();
+	});
+
+	afterEach(async () => {
+		await app.close();
+	});
+
+	test("TC-43: returns matching prompts for query", async () => {
+		mockConvex.query.mockResolvedValue([{ slug: "sql" }]);
+
+		const response = await callTool(
+			app,
+			"search_prompts",
+			{ query: "sql" },
+			createTestJwt({ sub: "user_123" }),
+		);
+
+		expectStubToolError(
+			response,
+			"NotImplementedError: search_prompts not implemented",
+		);
+		expect(mockConvex.query).toHaveBeenCalled();
+	});
+
+	test("TC-44: filters by tags", async () => {
+		mockConvex.query.mockResolvedValue([]);
+
+		const response = await callTool(
+			app,
+			"search_prompts",
+			{ query: "test", tags: ["sql", "database"] },
+			createTestJwt({ sub: "user_123" }),
+		);
+
+		expectStubToolError(
+			response,
+			"NotImplementedError: search_prompts not implemented",
+		);
+		expect(mockConvex.query).toHaveBeenCalled();
+	});
+});
+
+describe("MCP Tools - list_tags", () => {
+	let app: Awaited<ReturnType<typeof createApp>>;
+
+	beforeEach(async () => {
+		mockConvex.query.mockClear();
+		app = await createApp();
+	});
+
+	afterEach(async () => {
+		await app.close();
+	});
+
+	test("TC-45: returns unique tags", async () => {
+		mockConvex.query.mockResolvedValue(["a", "b"]);
+
+		const response = await callTool(
+			app,
+			"list_tags",
+			{},
+			createTestJwt({ sub: "user_123" }),
+		);
+
+		expectStubToolError(response, "NotImplementedError: list_tags not implemented");
+		expect(mockConvex.query).toHaveBeenCalled();
+	});
+});
+
+describe("MCP Tools - update_prompt", () => {
+	let app: Awaited<ReturnType<typeof createApp>>;
+
+	beforeEach(async () => {
+		mockConvex.mutation.mockClear();
+		app = await createApp();
+	});
+
+	afterEach(async () => {
+		await app.close();
+	});
+
+	test("TC-46: updates prompt by slug", async () => {
+		mockConvex.mutation.mockResolvedValue(true);
+		mockConvex.query.mockResolvedValue({
+			slug: "test-prompt",
+			name: "Old",
+			description: "Old",
+			content: "Old",
+			tags: [],
+		});
+
+		const response = await callTool(
+			app,
+			"update_prompt",
+			{ slug: "test-prompt", name: "Updated" },
+			createTestJwt({ sub: "user_123" }),
+		);
+
+		expectStubToolError(
+			response,
+			"NotImplementedError: update_prompt not implemented",
+		);
+		expect(mockConvex.mutation).toHaveBeenCalled();
+	});
+});
+
+describe("MCP Tools - errors", () => {
+	let app: Awaited<ReturnType<typeof createApp>>;
+
+	beforeEach(async () => {
+		mockConvex.mutation.mockClear();
+		app = await createApp();
+	});
+
+	afterEach(async () => {
+		await app.close();
+	});
+
+	test("TC-47: returns clear error message on failure", async () => {
+		mockConvex.query.mockResolvedValue(null);
+
+		const response = await callTool(
+			app,
+			"update_prompt",
+			{ slug: "bad", name: "Bad" },
+			createTestJwt({ sub: "user_123" }),
+		);
+
+		// Red-phase diagnostic: prove the MCP server resolved and executed update_prompt.
+		expectStubToolError(
+			response,
+			"NotImplementedError: update_prompt not implemented",
+		);
+
+		// Green should return isError: true + a clear message like "Prompt not found".
+		// This assertion is intentionally RED until the tool is implemented.
+		expect(response.body).toContain("Prompt not found");
+	});
+});
+
+describe("MCP Tools - track_prompt_use", () => {
+	let app: Awaited<ReturnType<typeof createApp>>;
+
+	beforeEach(async () => {
+		mockConvex.mutation.mockClear();
+		app = await createApp();
+	});
+
+	afterEach(async () => {
+		await app.close();
+	});
+
+	test("TC-19 / TC-48: increments usage count", async () => {
+		mockConvex.mutation.mockResolvedValue(true);
+
+		const response = await callTool(
+			app,
+			"track_prompt_use",
+			{ slug: "test-prompt" },
+			createTestJwt({ sub: "user_123" }),
+		);
+
+		expectStubToolError(
+			response,
+			"NotImplementedError: track_prompt_use not implemented",
+		);
+		expect(mockConvex.mutation).toHaveBeenCalled();
 	});
 });
