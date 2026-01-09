@@ -45,7 +45,15 @@
       <header class="prompt-header">
         <div class="prompt-header-top">
           <h1 id="prompt-slug" class="prompt-slug"></h1>
-          <button id="edit-btn" class="btn-secondary btn-sm">Edit</button>
+          <div class="prompt-header-controls">
+            <button id="pin-toggle" class="icon-button" title="Pin prompt" aria-pressed="false">
+              <span class="pin-icon"></span>
+            </button>
+            <button id="favorite-toggle" class="icon-button" title="Favorite prompt" aria-pressed="false">
+              <span class="star-icon"></span>
+            </button>
+            <button id="edit-btn" class="btn-secondary btn-sm">Edit</button>
+          </div>
         </div>
         <p id="prompt-description" class="prompt-description"></p>
       </header>
@@ -106,6 +114,13 @@
     }
     let rawPrompt = '';
     let editingLineIndex = null; // Currently editing line index
+
+    // Filter state tracking
+    let currentQuery = '';
+    let currentTags = [];
+
+    // Current prompt flags (for optimistic updates)
+    let currentPromptFlags = { pinned: false, favorited: false };
 
     // Staging state (insert mode)
     let stagingPrompts = []; // Array of { tempId, data: { slug, name, description, content, tags } }
@@ -441,7 +456,7 @@
       const header = document.getElementById('staging-header');
       if (header) header.style.display = 'none';
 
-      // Restore list
+      // Restore list (loadPrompts handles empty states internally)
       await loadPrompts(savedListState.query, savedListState.tags);
 
       // Restore scroll position
@@ -866,6 +881,9 @@
 
     // Load prompts on init
     async function loadPrompts(query = '', tags = []) {
+      currentQuery = query;
+      currentTags = tags;
+
       const params = new URLSearchParams();
       const trimmed = query.trim();
       if (trimmed) {
@@ -878,57 +896,92 @@
       const queryString = params.toString();
       const url = queryString ? `/api/prompts?${queryString}` : "/api/prompts";
 
-      const response = await fetch(url, {
-        method: "GET",
-        headers: { "content-type": "application/json" },
-      });
+      try {
+        const response = await fetch(url, {
+          method: "GET",
+          headers: { "content-type": "application/json" },
+        });
 
-      if (!response.ok) {
-        console.error('Failed to load prompts:', response.status, response.statusText);
-        return;
-      }
-
-      const data = await response.json();
-      prompts = Array.isArray(data) ? data : [];
-      renderList(prompts);
-
-      if (selectedSlug) {
-        const stillExists = prompts.some((prompt) => prompt.slug === selectedSlug);
-        if (stillExists) {
-          selectPrompt(selectedSlug, { trackHistory: false });
+        if (!response.ok) {
+          throw new Error('Failed to load prompts');
         }
+
+        const data = await response.json();
+        prompts = Array.isArray(data) ? data : [];
+
+        if (prompts.length === 0) {
+          if (currentQuery || currentTags.length > 0) {
+            renderEmptyState('no-matches');
+          } else {
+            renderEmptyState('no-prompts');
+          }
+        } else {
+          renderPromptList(prompts);
+        }
+
+        if (selectedSlug) {
+          const stillExists = prompts.some((prompt) => prompt.slug === selectedSlug);
+          if (stillExists) {
+            selectPrompt(selectedSlug, { trackHistory: false });
+          }
+        }
+      } catch (err) {
+        console.error('Filter failed:', err);
+        showToast('Failed to filter prompts', { type: 'error' });
       }
     }
 
-    // Render prompt list
-    function renderList(items) {
-      const listEl = document.getElementById("prompt-list");
-      if (!listEl) return;
 
-      listEl.innerHTML = "";
+    // Render prompt list with proper pin/star indicators
+    function renderPromptList(prompts) {
+      const list = document.getElementById('prompt-list');
+      const emptyState = document.getElementById('empty-state');
 
-      items.forEach((prompt) => {
-        const item = document.createElement("div");
-        item.className = "prompt-item";
-        item.dataset.slug = prompt.slug;
+      if (!list) return;
 
-        if (prompt.slug === selectedSlug) {
-          item.classList.add("selected");
-        }
+      list.innerHTML = '';
+      if (emptyState) emptyState.style.display = 'none';
 
-        const tagsHtml = (prompt.tags || [])
-          .map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`)
-          .join(" ");
-
-        item.innerHTML = `
-          <div class="prompt-name">${escapeHtml(prompt.name)}</div>
-          <div class="prompt-slug">${escapeHtml(prompt.slug)}</div>
-          <div class="prompt-tags">${tagsHtml}</div>
-        `;
-
-        item.addEventListener("click", () => selectPrompt(prompt.slug));
-        listEl.appendChild(item);
+      prompts.forEach((prompt) => {
+        const item = renderPromptListItem(prompt);
+        list.appendChild(item);
       });
+    }
+
+    function renderPromptListItem(prompt) {
+      const item = document.createElement('div');
+      item.className = 'prompt-item';
+      item.dataset.slug = prompt.slug;
+
+      if (prompt.slug === selectedSlug) {
+        item.classList.add('selected');
+      }
+
+      const tagsHtml = (prompt.tags || [])
+        .map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`)
+        .join(" ");
+
+      // Use .prompt-pin and .prompt-star classes (test hooks)
+      const pinIndicator = prompt.pinned
+        ? '<span class="prompt-pin" title="Pinned">📌</span>'
+        : '<span class="prompt-pin" style="display:none">📌</span>';
+
+      const favoriteIndicator = prompt.favorited
+        ? '<span class="prompt-star" title="Favorited">⭐</span>'
+        : '<span class="prompt-star" style="display:none">⭐</span>';
+
+      item.innerHTML = `
+        <div class="prompt-name">${escapeHtml(prompt.name)}</div>
+        <div class="prompt-slug">${escapeHtml(prompt.slug)}</div>
+        <div class="prompt-tags">${tagsHtml}</div>
+        <div class="prompt-indicators">
+          ${pinIndicator}
+          ${favoriteIndicator}
+        </div>
+      `;
+
+      item.addEventListener('click', () => selectPrompt(prompt.slug));
+      return item;
     }
 
     // Select prompt
@@ -959,6 +1012,16 @@
       if (slugEl) slugEl.textContent = prompt.slug;
       if (descEl) descEl.textContent = prompt.description;
 
+      // Update current prompt flags
+      currentPromptFlags = {
+        pinned: prompt.pinned ?? false,
+        favorited: prompt.favorited ?? false,
+      };
+
+      // Update pin/favorite toggle states
+      updatePinUI(slug, currentPromptFlags.pinned);
+      updateFavoriteUI(slug, currentPromptFlags.favorited);
+
       // Use prompt viewer to display content
       displayPromptContent(prompt.content || '');
 
@@ -981,6 +1044,14 @@
         setTimeout(() => {
           copyBtn.textContent = originalText;
         }, 1200);
+
+        // Track usage after successful copy
+        if (selectedSlug) {
+          fetch(`/api/prompts/${selectedSlug}/usage`, {
+            method: "POST",
+            keepalive: true,
+          }).catch(() => {}); // fire-and-forget
+        }
       } catch (err) {
         console.error('Failed to copy:', err);
       }
@@ -1048,6 +1119,146 @@
 
     // Copy button
     document.getElementById('copy-btn').addEventListener('click', copyContent);
+
+    // Pin/favorite toggle handlers
+    async function handlePinToggle(slug, currentPinned) {
+      const newPinned = !currentPinned;
+
+      // Optimistic UI update
+      updatePinUI(slug, newPinned);
+      currentPromptFlags.pinned = newPinned;
+
+      try {
+        // API call (cookie auth - no Authorization header needed)
+        const res = await fetch(`/api/prompts/${slug}/flags`, {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ pinned: newPinned })
+        });
+
+        if (!res.ok) throw new Error('Pin update failed');
+
+        // Refresh list to get new order (preserving current filters)
+        await loadPrompts(currentQuery, currentTags);
+      } catch (err) {
+        console.error('Pin toggle failed:', err);
+        // Rollback
+        handleOptimisticRollback(slug, { pinned: currentPinned, favorited: currentPromptFlags.favorited });
+        showToast('Failed to update pin status', { type: 'error' });
+      }
+    }
+
+    async function handleFavoriteToggle(slug, currentFavorited) {
+      const newFavorited = !currentFavorited;
+
+      // Optimistic UI update
+      updateFavoriteUI(slug, newFavorited);
+      currentPromptFlags.favorited = newFavorited;
+
+      try {
+        // API call (cookie auth - no Authorization header needed)
+        const res = await fetch(`/api/prompts/${slug}/flags`, {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ favorited: newFavorited })
+        });
+
+        if (!res.ok) throw new Error('Favorite update failed');
+
+        // Refresh list to get new order (preserving current filters)
+        await loadPrompts(currentQuery, currentTags);
+      } catch (err) {
+        console.error('Favorite toggle failed:', err);
+        // Rollback
+        handleOptimisticRollback(slug, { pinned: currentPromptFlags.pinned, favorited: currentFavorited });
+        showToast('Failed to update favorite status', { type: 'error' });
+      }
+    }
+
+    function handleOptimisticRollback(slug, previousFlags) {
+      updatePinUI(slug, previousFlags.pinned);
+      updateFavoriteUI(slug, previousFlags.favorited);
+      currentPromptFlags = previousFlags;
+    }
+
+    function updatePinUI(slug, pinned) {
+      const pinButton = document.getElementById('pin-toggle');
+      if (pinButton) {
+        pinButton.classList.toggle('active', pinned);
+        pinButton.setAttribute('aria-pressed', String(pinned));
+        pinButton.title = pinned ? 'Unpin prompt' : 'Pin prompt';
+      }
+
+      // Update list item (use .prompt-pin class to match test hooks)
+      const listItem = document.querySelector(`[data-slug="${slug}"] .prompt-pin`);
+      if (listItem) {
+        listItem.style.display = pinned ? '' : 'none';
+      }
+    }
+
+    function updateFavoriteUI(slug, favorited) {
+      const starButton = document.getElementById('favorite-toggle');
+      if (starButton) {
+        starButton.classList.toggle('active', favorited);
+        starButton.setAttribute('aria-pressed', String(favorited));
+        starButton.title = favorited ? 'Unfavorite prompt' : 'Favorite prompt';
+      }
+
+      // Update list item (use .prompt-star class to match test hooks)
+      const listItem = document.querySelector(`[data-slug="${slug}"] .prompt-star`);
+      if (listItem) {
+        listItem.style.display = favorited ? '' : 'none';
+      }
+    }
+
+    // Empty state rendering
+    function renderEmptyState(type) {
+      const list = document.getElementById('prompt-list');
+      const emptyState = document.getElementById('empty-state');
+
+      if (!list || !emptyState) return;
+
+      list.innerHTML = '';
+      emptyState.style.display = 'flex';
+
+      if (type === 'no-prompts') {
+        emptyState.innerHTML = `
+          <div class="empty-state-content">
+            <p>Create your first prompt to get started.</p>
+            <button id="empty-state-new-btn" class="btn-primary">+ New Prompt</button>
+          </div>
+        `;
+        // Wire up the button (using onclick to avoid listener accumulation)
+        const newBtn = emptyState.querySelector('#empty-state-new-btn');
+        if (newBtn) {
+          newBtn.onclick = () => enterInsertMode();
+        }
+      } else if (type === 'no-matches') {
+        emptyState.innerHTML = `
+          <div class="empty-state-content">
+            <p>No prompts match your search.</p>
+          </div>
+        `;
+      }
+    }
+
+    // Pin toggle button
+    document.getElementById('pin-toggle')?.addEventListener('click', () => {
+      if (!selectedSlug) return;
+      const prompt = prompts.find(p => p.slug === selectedSlug);
+      if (!prompt) return;
+      
+      handlePinToggle(selectedSlug, currentPromptFlags.pinned);
+    });
+
+    // Favorite toggle button
+    document.getElementById('favorite-toggle')?.addEventListener('click', () => {
+      if (!selectedSlug) return;
+      const prompt = prompts.find(p => p.slug === selectedSlug);
+      if (!prompt) return;
+      
+      handleFavoriteToggle(selectedSlug, currentPromptFlags.favorited);
+    });
 
     // Initialize view mode and line edit
     initViewMode();

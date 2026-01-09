@@ -89,4 +89,35 @@ describe("Shell history (popstate)", () => {
 		);
 		expect(restoredState).toEqual(previousState);
 	});
+
+	describe("Search Performance", () => {
+		test("TC-6: rapid typing remains responsive", async () => {
+			const dom = await loadShell();
+			const iframe = dom.window.document.getElementById(
+				"main-module",
+			) as HTMLIFrameElement;
+			const portlet = { postMessage: vi.fn() };
+			Object.defineProperty(iframe, "contentWindow", {
+				value: portlet,
+				writable: true,
+			});
+
+			const searchInput = dom.window.document.getElementById(
+				"search-input",
+			) as HTMLInputElement;
+			vi.useFakeTimers();
+
+			for (const char of "kubernetes") {
+				searchInput.value += char;
+				searchInput.dispatchEvent(new dom.window.Event("input"));
+				vi.advanceTimersByTime(30);
+			}
+
+			vi.advanceTimersByTime(200);
+
+			// Assert: debounce collapses rapid typing into a single filter broadcast
+			expect(portlet.postMessage).toHaveBeenCalledTimes(1);
+			vi.useRealTimers();
+		});
+	});
 });

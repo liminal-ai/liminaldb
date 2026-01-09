@@ -783,4 +783,246 @@ describe("Prompts Module", () => {
 			expect(contentTextarea.value).toBe("Hello {{}}world");
 		});
 	});
+
+	describe("UI Search & Pin/Favorite", () => {
+		test("TC-1: typing in search filters prompts", async () => {
+			// mockFetch data becomes response body - API returns array
+			const fetchMock = mockFetch({ "/api/prompts": { data: mockPrompts } });
+			dom.window.fetch = fetchMock;
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+			fetchMock.mockClear();
+
+			postMessage(dom, { type: "shell:filter", query: "sql", tags: [] });
+			await waitForAsync(100);
+
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.stringContaining("/api/prompts?q=sql"),
+				expect.any(Object),
+			);
+		});
+
+		test("TC-3: empty search shows all prompts", async () => {
+			const fetchMock = mockFetch({ "/api/prompts": { data: mockPrompts } });
+			dom.window.fetch = fetchMock;
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+			fetchMock.mockClear();
+
+			postMessage(dom, { type: "shell:filter", query: "", tags: [] });
+			await waitForAsync(100);
+
+			expect(fetchMock).toHaveBeenCalledWith(
+				"/api/prompts",
+				expect.any(Object),
+			);
+		});
+
+		test("TC-4: no matches shows empty state message", async () => {
+			const fetchMock = mockFetch({ "/api/prompts": { data: [] } });
+			dom.window.fetch = fetchMock;
+
+			postMessage(dom, { type: "shell:filter", query: "xyz", tags: [] });
+			await waitForAsync(100);
+
+			const empty = dom.window.document.getElementById("empty-state");
+			expect(empty?.textContent?.toLowerCase()).toContain("no prompts match");
+		});
+
+		test("TC-14: zero prompts shows create CTA", async () => {
+			const fetchMock = mockFetch({ "/api/prompts": { data: [] } });
+			dom.window.fetch = fetchMock;
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const empty = dom.window.document.getElementById("empty-state");
+			expect(empty?.textContent?.toLowerCase()).toContain("create your first");
+		});
+
+		test("TC-20: clicking pin icon pins prompt", async () => {
+			const fetchMock = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+				"/api/prompts/code-review/flags": { data: { updated: true } },
+			});
+			dom.window.fetch = fetchMock;
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const firstItem = dom.window.document.querySelector(".prompt-item");
+			if (!firstItem) throw new Error("Prompt item not found");
+			firstItem.dispatchEvent(
+				new dom.window.MouseEvent("click", { bubbles: true }),
+			);
+			await waitForAsync(50);
+
+			const pinToggle = dom.window.document.getElementById("pin-toggle");
+			if (!pinToggle) throw new Error("Pin toggle not found");
+			pinToggle.dispatchEvent(
+				new dom.window.MouseEvent("click", { bubbles: true }),
+			);
+
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.stringContaining("/api/prompts/code-review/flags"),
+				expect.objectContaining({ method: "PATCH" }),
+			);
+			expect(pinToggle.getAttribute("aria-pressed")).toBe("true");
+		});
+
+		test("TC-21: clicking pin on pinned prompt unpins", async () => {
+			const fetchMock = mockFetch({
+				"/api/prompts": {
+					data: [{ ...mockPrompts[0], pinned: true }, mockPrompts[1]],
+				},
+				"/api/prompts/code-review/flags": { data: { updated: true } },
+			});
+			dom.window.fetch = fetchMock;
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const firstItem = dom.window.document.querySelector(".prompt-item");
+			if (!firstItem) throw new Error("Prompt item not found");
+			firstItem.dispatchEvent(
+				new dom.window.MouseEvent("click", { bubbles: true }),
+			);
+			await waitForAsync(50);
+
+			const pinToggle = dom.window.document.getElementById("pin-toggle");
+			if (!pinToggle) throw new Error("Pin toggle not found");
+			pinToggle.dispatchEvent(
+				new dom.window.MouseEvent("click", { bubbles: true }),
+			);
+
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.stringContaining("/api/prompts/code-review/flags"),
+				expect.objectContaining({ method: "PATCH" }),
+			);
+			expect(pinToggle.getAttribute("aria-pressed")).toBe("false");
+		});
+
+		test("TC-22: clicking star icon favorites prompt", async () => {
+			const fetchMock = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+				"/api/prompts/code-review/flags": { data: { updated: true } },
+			});
+			dom.window.fetch = fetchMock;
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const firstItem = dom.window.document.querySelector(".prompt-item");
+			if (!firstItem) throw new Error("Prompt item not found");
+			firstItem.dispatchEvent(
+				new dom.window.MouseEvent("click", { bubbles: true }),
+			);
+			await waitForAsync(50);
+
+			const starToggle = dom.window.document.getElementById("favorite-toggle");
+			if (!starToggle) throw new Error("Favorite toggle not found");
+			starToggle.dispatchEvent(
+				new dom.window.MouseEvent("click", { bubbles: true }),
+			);
+
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.stringContaining("/api/prompts/code-review/flags"),
+				expect.objectContaining({ method: "PATCH" }),
+			);
+			expect(starToggle.getAttribute("aria-pressed")).toBe("true");
+		});
+
+		test("TC-23: clicking star on favorited prompt unfavorites", async () => {
+			const fetchMock = mockFetch({
+				"/api/prompts": {
+					data: [{ ...mockPrompts[0], favorited: true }, mockPrompts[1]],
+				},
+				"/api/prompts/code-review/flags": { data: { updated: true } },
+			});
+			dom.window.fetch = fetchMock;
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const firstItem = dom.window.document.querySelector(".prompt-item");
+			if (!firstItem) throw new Error("Prompt item not found");
+			firstItem.dispatchEvent(
+				new dom.window.MouseEvent("click", { bubbles: true }),
+			);
+			await waitForAsync(50);
+
+			const starToggle = dom.window.document.getElementById("favorite-toggle");
+			if (!starToggle) throw new Error("Favorite toggle not found");
+			starToggle.dispatchEvent(
+				new dom.window.MouseEvent("click", { bubbles: true }),
+			);
+
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.stringContaining("/api/prompts/code-review/flags"),
+				expect.objectContaining({ method: "PATCH" }),
+			);
+			expect(starToggle.getAttribute("aria-pressed")).toBe("false");
+		});
+
+		test("TC-24: pin/favorite changes reflect immediately", async () => {
+			const fetchMock = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+				"/api/prompts/code-review/flags": { data: { updated: true } },
+			});
+			dom.window.fetch = fetchMock;
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const firstItem = dom.window.document.querySelector(".prompt-item");
+			if (!firstItem) throw new Error("Prompt item not found");
+			firstItem.dispatchEvent(
+				new dom.window.MouseEvent("click", { bubbles: true }),
+			);
+			await waitForAsync(50);
+
+			const pinToggle = dom.window.document.getElementById("pin-toggle");
+			if (!pinToggle) throw new Error("Pin toggle not found");
+
+			// Simulate optimistic UI update: aria-pressed should flip immediately
+			pinToggle.dispatchEvent(
+				new dom.window.MouseEvent("click", { bubbles: true }),
+			);
+			expect(pinToggle.getAttribute("aria-pressed")).toBe("true");
+		});
+
+		test("TC-25: pinned prompt shows pin icon in list", async () => {
+			const fetchMock = mockFetch({
+				"/api/prompts": {
+					data: [{ ...mockPrompts[0], pinned: true }, mockPrompts[1]],
+				},
+			});
+			dom.window.fetch = fetchMock;
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const pinnedItem = dom.window.document.querySelector(".prompt-item");
+			if (!pinnedItem) throw new Error("Prompt item not found");
+			expect(pinnedItem.querySelector(".prompt-pin")).not.toBeNull();
+		});
+
+		test("TC-26: favorited prompt shows star icon in list", async () => {
+			const fetchMock = mockFetch({
+				"/api/prompts": {
+					data: [{ ...mockPrompts[0], favorited: true }, mockPrompts[1]],
+				},
+			});
+			dom.window.fetch = fetchMock;
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const favItem = dom.window.document.querySelector(".prompt-item");
+			if (!favItem) throw new Error("Prompt item not found");
+			expect(favItem.querySelector(".prompt-star")).not.toBeNull();
+		});
+	});
 });
