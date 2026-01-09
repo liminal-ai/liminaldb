@@ -123,10 +123,10 @@ Follows existing shell/portlet message protocol.
 - `shell-history.test.ts`: 1 new test
 - **Total new tests: 12**
 
-**Running total:** 304 + 12 = 316 tests
+**Running total:** 311 + 12 = 323 tests
 
 **Verification:**
-- All 316 tests pass
+- All 323 tests pass
 - Manual: Type in search, results filter instantly
 - Manual: Click pin icon, prompt moves to top
 - Manual: Click star icon, ranking boosted

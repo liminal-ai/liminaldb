@@ -234,7 +234,7 @@ function getUserIdFromExtra(extra: { authInfo?: { extra?: unknown } }): string {
 
 ```bash
 bun run typecheck   # Should pass
-bun run test        # All 300 tests should PASS
+bun run test        # All 307 tests should PASS
 ```
 
 ### Manual Verification
@@ -250,7 +250,7 @@ Using MCP inspector or CLI:
 
 ## Done When
 
-- [ ] All 300 tests PASS (291 + 9)
+- [ ] All 307 tests PASS (298 + 9)
 - [ ] TypeScript compiles
 - [ ] MCP tools callable and return expected data
 - [ ] No console errors

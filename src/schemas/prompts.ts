@@ -109,3 +109,47 @@ export type Parameter = z.infer<typeof ParameterSchema>;
 export type PromptInput = z.infer<typeof PromptInputSchema>;
 export type CreatePromptsRequest = z.infer<typeof CreatePromptsRequestSchema>;
 export type PromptDTO = z.infer<typeof PromptDTOSchema>;
+
+// Epic 02: Search & Select additions
+
+export const PromptMetaSchema = z.object({
+	pinned: z.boolean(),
+	favorited: z.boolean(),
+	usageCount: z.number(),
+	lastUsedAt: z.number().optional(),
+});
+
+export type PromptMeta = z.infer<typeof PromptMetaSchema>;
+
+export const PromptDTOv2Schema = PromptInputSchema.extend({
+	pinned: z.boolean(),
+	favorited: z.boolean(),
+	usageCount: z.number(),
+	lastUsedAt: z.number().optional(),
+});
+
+export type PromptDTOv2 = z.infer<typeof PromptDTOv2Schema>;
+
+export const RankingWeightsSchema = z.object({
+	usage: z.number(),
+	recency: z.number(),
+	favorite: z.number(),
+	pinned: z.number(),
+	halfLifeDays: z.number(),
+});
+
+export type RankingWeights = z.infer<typeof RankingWeightsSchema>;
+
+export const RankingConfigSchema = z.object({
+	weights: RankingWeightsSchema,
+	searchRerankLimit: z.number(),
+});
+
+export type RankingConfig = z.infer<typeof RankingConfigSchema>;
+
+export const FlagsPatchSchema = z.object({
+	pinned: z.boolean().optional(),
+	favorited: z.boolean().optional(),
+});
+
+export type FlagsPatch = z.infer<typeof FlagsPatchSchema>;

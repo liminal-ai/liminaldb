@@ -56,7 +56,7 @@ All of these should PASS:
 | `tests/service/drafts/drafts.test.ts` | TC-32, TC-36, TC-37, TC-39 | 4 tests |
 | `tests/service/prompts/updatePrompt.test.ts` | TC-36, TC-38 | 2 tests |
 | **Story 3 Verification Total** | | **6 tests** |
-| **Running Total** | | **304 tests** |
+| **Running Total** | | **311 tests** |
 
 ## Manual Verification
 
@@ -104,7 +104,7 @@ curl -sS -X DELETE http://localhost:5001/api/drafts/edit:test-prompt \
 
 ### Automated
 - [ ] All 6 Story 3 verification tests pass
-- [ ] Running total 304 tests pass
+- [ ] Running total 311 tests pass
 - [ ] `bun run typecheck` passes
 
 ### Implementation Details

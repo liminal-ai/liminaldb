@@ -63,7 +63,7 @@ All of these should PASS:
 | `tests/service/ui/prompts-module.test.ts` | TC-1, TC-3, TC-4, TC-14, TC-20..26 | 11 tests |
 | `tests/service/ui/shell-history.test.ts` | TC-6 | 1 test |
 | **Story 4 Total** | | **12 tests** |
-| **Running Total** | | **316 tests** |
+| **Running Total** | | **323 tests** |
 
 ## Manual Verification
 
@@ -86,7 +86,7 @@ All of these should PASS:
 
 ### Automated
 - [ ] All 12 Story 4 tests pass
-- [ ] Running total 316 tests pass
+- [ ] Running total 323 tests pass
 - [ ] `bun run typecheck` passes
 
 ### Implementation Details

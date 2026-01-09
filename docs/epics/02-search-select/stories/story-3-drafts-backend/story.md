@@ -105,10 +105,10 @@ This is backend-only. UI integration comes in Story 5.
 - `drafts.test.ts`: 4 new tests
 - **Total new tests: 4**
 
-**Running total:** 300 + 4 = 304 tests
+**Running total:** 307 + 4 = 311 tests
 
 **Verification:**
-- All 304 tests pass
+- All 311 tests pass
 - Manual: Create draft via API, verify persists
 - Manual: Refresh, draft still exists
 - Manual: Delete draft, verify removed

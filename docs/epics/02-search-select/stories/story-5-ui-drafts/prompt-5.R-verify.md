@@ -61,7 +61,7 @@ All of these should PASS:
 | `tests/service/ui/prompts-module.test.ts` | TC-27..31, TC-35, TC-38, TC-40 | 8 tests |
 | `tests/service/ui/shell-history.test.ts` | TC-33..34 | 2 tests |
 | **Story 5 Total** | | **10 tests** |
-| **Running Total** | | **326 tests** |
+| **Running Total** | | **333 tests** |
 
 ## Manual Verification
 
@@ -98,7 +98,7 @@ All of these should PASS:
 
 ### Automated
 - [ ] All 10 Story 5 tests pass
-- [ ] Running total 326 tests pass
+- [ ] Running total 333 tests pass
 - [ ] `bun run typecheck` passes
 
 ### Implementation Details

@@ -128,10 +128,10 @@ This completes Epic 02.
 - `shell-history.test.ts`: 2 new tests
 - **Total new tests: 10**
 
-**Running total:** 316 + 10 = 326 tests
+**Running total:** 323 + 10 = 333 tests
 
 **Verification:**
-- All 326 tests pass
+- All 333 tests pass
 - Manual: Edit prompt, refresh, draft preserved
 - Manual: Line edit, see draft indicator, save commits
 - Manual: Open second tab, see indicator from first tab's draft
@@ -145,5 +145,5 @@ This completes Epic 02.
 After Story 5, Epic 02 is complete:
 - 50 ACs delivered
 - 48 TCs verified
-- 48 new tests across all stories (278 → 326)
+- 55 new tests across all stories (278 → 333)
 - Search, ranking, pin/favorite, drafts, MCP parity all working

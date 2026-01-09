@@ -42,7 +42,33 @@ export default defineSchema({
 				}),
 			),
 		),
+		// NEW fields (optional during migration)
+		searchText: v.optional(v.string()),
+		pinned: v.optional(v.boolean()),
+		favorited: v.optional(v.boolean()),
+		usageCount: v.optional(v.number()),
+		lastUsedAt: v.optional(v.number()),
 	})
 		.index("by_user_slug", ["userId", "slug"])
-		.index("by_user", ["userId"]),
+		.index("by_user", ["userId"])
+		// Full-text search index for prompt content.
+		// staged: false = synchronous indexing (immediate consistency).
+		// For large migrations (10K+ prompts), consider staged: true to avoid
+		// blocking deployments. Current scale doesn't require this.
+		.searchIndex("search_prompts", {
+			searchField: "searchText",
+			filterFields: ["userId"],
+		}),
+
+	rankingConfig: defineTable({
+		key: v.string(),
+		weights: v.object({
+			usage: v.number(),
+			recency: v.number(),
+			favorite: v.number(),
+			pinned: v.number(),
+			halfLifeDays: v.number(),
+		}),
+		searchRerankLimit: v.number(),
+	}).index("by_key", ["key"]),
 });

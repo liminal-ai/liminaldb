@@ -309,7 +309,7 @@ fetch(`/api/prompts/${selectedSlug}/usage`, {
 
 ```bash
 bun run typecheck   # Should pass
-bun run test        # All 316 tests should PASS
+bun run test        # All 323 tests should PASS
 ```
 
 ### Manual Verification
@@ -327,7 +327,7 @@ bun run test        # All 316 tests should PASS
 
 ## Done When
 
-- [ ] All 316 tests PASS (304 + 12)
+- [ ] All 323 tests PASS (311 + 12)
 - [ ] TypeScript compiles
 - [ ] Manual verification passes
 - [ ] No console errors in browser

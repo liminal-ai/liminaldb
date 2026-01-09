@@ -15,8 +15,9 @@ Story 1 must be complete — these backend capabilities exist:
 - `PATCH /api/prompts/:slug/flags` updates pin/favorite
 - `POST /api/prompts/:slug/usage` tracks usage
 - Baseline tests pass:
-  - If only Story 1 has run: 291 (278 + 13)
-  - If Stories 0–2 already ran: 300 (278 + 13 + 9)
+  - If only Story 1 has run: 298 (278 + 20)
+  - If Stories 0–2 already ran: 307 (278 + 20 + 9)
+  - If Stories 0–3 already ran: 311 (278 + 20 + 9 + 4)
 
 ## Reference Documents
 
@@ -376,14 +377,14 @@ describe("Search Performance", () => {
 - Do not implement actual functionality — handlers throw NotImplementedError
 - Do not modify Story 0-3 files
 - Tests assert real behavior, not that NotImplementedError is thrown
-- Existing 291 tests must continue to pass
+- Existing 298 tests must continue to pass
 - Follow shell/portlet message protocol from UI architecture doc
 
 ## Verification
 
 ```bash
 bun run typecheck   # Should pass
-bun run test        # 291 existing PASS, 12 new ERROR
+bun run test        # 311 existing PASS, 12 new ERROR
 ```
 
 ## Done When
@@ -395,7 +396,7 @@ bun run test        # 291 existing PASS, 12 new ERROR
 - [ ] 11 tests added to prompts-module.test.ts
 - [ ] 1 test added to shell-history.test.ts
 - [ ] New tests ERROR with NotImplementedError
-- [ ] Existing 291 tests still PASS
+- [ ] Existing 298 tests still PASS
 - [ ] TypeScript compiles
 
-After completion, summarize: which files were created/modified, how many tests were added, and confirm the expected test state (291 PASS, 12 ERROR).
+After completion, summarize: which files were created/modified, how many tests were added, and confirm the expected test state (311 PASS, 12 ERROR).

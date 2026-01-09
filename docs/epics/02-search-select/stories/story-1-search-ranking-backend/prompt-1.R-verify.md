@@ -65,12 +65,13 @@ All of these should PASS:
 
 | Test File | TCs | Expected |
 |-----------|-----|----------|
-| `tests/convex/prompts/ranking.test.ts` | TC-7..13 | 7 tests |
-| `tests/convex/prompts/searchPrompts.test.ts` | TC-2 | 1 test |
-| `tests/convex/prompts/usageTracking.test.ts` | TC-15..16 | 2 tests |
+| `tests/convex/prompts/ranking.test.ts` | TC-7..13 (+ hardening) | 8 tests |
+| `tests/convex/prompts/searchPrompts.test.ts` | TC-2 (+ hardening) | 2 tests |
+| `tests/convex/prompts/usageTracking.test.ts` | TC-15..16 (+ hardening) | 3 tests |
+| `tests/service/prompts/flagsUsage.test.ts` | Flags + usage endpoints wiring | 4 tests |
 | `tests/service/prompts/listPrompts.test.ts` | TC-5, TC-17, TC-18 | 3 tests |
-| **Story 1 Total** | | **13 tests** |
-| **Running Total** | | **291 tests** |
+| **Story 1 Total** | | **20 tests** |
+| **Running Total** | | **298 tests** |
 
 ## Manual Verification
 
@@ -91,8 +92,8 @@ Requires an authenticated session or bearer token.
 ## Checklist
 
 ### Automated
-- [ ] All 13 Story 1 tests pass
-- [ ] Running total 291 tests pass
+- [ ] All 20 Story 1 tests pass
+- [ ] Running total 298 tests pass
 - [ ] `bun run typecheck` passes
 
 ### Implementation Details

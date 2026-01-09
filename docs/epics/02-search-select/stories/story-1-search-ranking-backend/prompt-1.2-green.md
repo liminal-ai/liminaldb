@@ -142,7 +142,7 @@ export async function listPromptsRanked(
 
   const prompts = await ctx.db
     .query("prompts")
-    .withIndex("by_user_name", (q) => q.eq("userId", userId))
+    .withIndex("by_user", (q) => q.eq("userId", userId))
     .collect();
 
   const ranked = rerank(prompts, config.weights, { mode: "list", now });
@@ -230,7 +230,7 @@ export async function listTags(
 ): Promise<string[]> {
   const tags = await ctx.db
     .query("tags")
-    .withIndex("by_user_name", (q) => q.eq("userId", userId))
+    .withIndex("by_user", (q) => q.eq("userId", userId))
     .collect();
 
   return tags.map((t) => t.name).sort();
@@ -336,28 +336,44 @@ fastify.get("/", async (request, reply) => {
     limit?: string;
   };
 
-  const parsedTags = tags ? tags.split(",").filter(Boolean) : undefined;
+  const parsedTags = tags
+    ? tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+    : undefined;
   const parsedLimit = limit ? parseInt(limit, 10) : undefined;
 
-  if (q) {
+  if (q && q.trim().length > 0) {
     // Search mode
-    const results = await convex.query(api.prompts.searchPrompts, {
+    let results = await convex.query(api.prompts.searchPrompts, {
       apiKey: config.convexApiKey,
       userId: user.sub,
-      query: q,
+      query: q.trim(),
       tags: parsedTags,
       limit: parsedLimit,
     });
-    return reply.send({ data: results });
+
+    // Defensive: if tag filtering isn't pushed into Convex yet, enforce ANY-of tags here.
+    if (parsedTags && parsedTags.length > 0) {
+      results = results.filter((p) => parsedTags.some((t) => p.tags.includes(t)));
+    }
+
+    return reply.send(results);
   }
 
-  // List mode (ranked)
-  const results = await convex.query(api.prompts.listPromptsRanked, {
+  // List mode (ranked) — tags-only filtering should still work without q
+  let results = await convex.query(api.prompts.listPromptsRanked, {
     apiKey: config.convexApiKey,
     userId: user.sub,
     limit: parsedLimit,
   });
-  return reply.send({ data: results });
+
+  if (parsedTags && parsedTags.length > 0) {
+    results = results.filter((p) => parsedTags.some((t) => p.tags.includes(t)));
+  }
+
+  return reply.send(results);
 });
 
 // PATCH /api/prompts/:slug/flags
@@ -378,7 +394,7 @@ fastify.patch("/:slug/flags", async (request, reply) => {
     return reply.status(404).send({ error: "Prompt not found" });
   }
 
-  return reply.send({ success: true });
+  return reply.send({ updated: true });
 });
 
 // POST /api/prompts/:slug/usage
@@ -405,7 +421,7 @@ fastify.get("/tags", async (request, reply) => {
     userId: user.sub,
   });
 
-  return reply.send({ data: tags });
+  return reply.send(tags);
 });
 ```
 
@@ -422,7 +438,7 @@ fastify.get("/tags", async (request, reply) => {
 
 ```bash
 bun run typecheck   # Should pass
-bun run test        # All 291 tests should PASS
+bun run test        # All 298 tests should PASS
 ```
 
 ### Manual Verification
@@ -436,7 +452,7 @@ bun run test        # All 291 tests should PASS
 
 ## Done When
 
-- [ ] All 291 tests PASS (278 + 13)
+- [ ] All 298 tests PASS (278 + 20)
 - [ ] TypeScript compiles
 - [ ] Manual verification passes
 - [ ] Convex schema deploys successfully

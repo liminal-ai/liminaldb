@@ -10,10 +10,21 @@ import { registerWellKnownRoutes } from "./routes/well-known";
 import { registerPromptRoutes } from "./routes/prompts";
 import { registerAppRoutes } from "./routes/app";
 import { registerModuleRoutes } from "./routes/modules";
+import { draftsRoutes } from "./routes/drafts";
 import { config } from "./lib/config";
+import { NotImplementedError } from "./lib/redis";
 
 const fastify = Fastify({
 	logger: true,
+});
+
+// Global error handler for NotImplementedError → HTTP 501
+fastify.setErrorHandler((error, _request, reply) => {
+	if (error instanceof NotImplementedError) {
+		return reply.status(501).send({ code: "NOT_IMPLEMENTED" });
+	}
+	// Let Fastify handle other errors with default behavior
+	throw error;
 });
 
 // Register cookie plugin
@@ -44,6 +55,7 @@ registerWellKnownRoutes(fastify);
 registerPromptRoutes(fastify);
 registerAppRoutes(fastify);
 registerModuleRoutes(fastify);
+fastify.register(draftsRoutes, { prefix: "/api/drafts" });
 
 const start = async () => {
 	try {

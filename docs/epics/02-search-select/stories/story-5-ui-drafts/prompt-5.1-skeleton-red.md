@@ -13,7 +13,7 @@ Add draft indicator to shell, draft management to portlet, and write UI tests th
 Story 3 and Story 4 must be complete:
 - Draft API endpoints exist (`/api/drafts/*`)
 - Search/pin UI exists in shell and portlet
-- All 316 tests pass (278 + 13 + 9 + 4 + 12 from Stories 0-4)
+- All 323 tests pass (278 + 20 + 9 + 4 + 12 from Stories 0-4)
 
 ## Reference Documents
 
@@ -494,7 +494,7 @@ New messages for shell/portlet communication:
 - Do not implement actual functionality — handlers throw NotImplementedError
 - Only modify `src/ui/templates/shell.html`, `src/ui/templates/prompts.html`, and the listed test files
 - Tests assert real behavior, not that NotImplementedError is thrown
-- Existing 316 tests must continue to pass
+- Existing 323 tests must continue to pass
 - Follow shell/portlet message protocol from UI architecture doc
 - Polling interval is 15 seconds (per tech design)
 - Debounce interval is 500ms for draft saves
@@ -503,7 +503,7 @@ New messages for shell/portlet communication:
 
 ```bash
 bun run typecheck   # Should pass
-bun run test        # 316 existing PASS, 10 new ERROR
+bun run test        # 323 existing PASS, 10 new ERROR
 ```
 
 ## Done When
@@ -515,10 +515,10 @@ bun run test        # 316 existing PASS, 10 new ERROR
 - [ ] 8 tests added to prompts-module.test.ts
 - [ ] 2 tests added to shell-history.test.ts
 - [ ] New tests ERROR with NotImplementedError
-- [ ] Existing 316 tests still PASS
+- [ ] Existing 323 tests still PASS
 - [ ] TypeScript compiles
 
-After completion, summarize: which files were created/modified, how many tests were added, and confirm the expected test state (316 PASS, 10 ERROR).
+After completion, summarize: which files were created/modified, how many tests were added, and confirm the expected test state (323 PASS, 10 ERROR).
 
 ---
 
@@ -527,5 +527,5 @@ After completion, summarize: which files were created/modified, how many tests w
 After Story 5 green phase:
 - 50 ACs delivered
 - 48 TCs verified
-- 48 new tests (278 → 326)
+- 55 new tests (278 → 333)
 - Epic 02: Search & Select complete

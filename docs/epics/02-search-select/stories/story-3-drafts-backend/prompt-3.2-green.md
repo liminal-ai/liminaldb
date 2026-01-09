@@ -214,7 +214,7 @@ export const draftsRoutes: FastifyPluginAsync = async (fastify) => {
 
 ```bash
 bun run typecheck   # Should pass
-bun run test        # All 304 tests should PASS
+bun run test        # All 311 tests should PASS
 ```
 
 ### Manual Verification
@@ -229,7 +229,7 @@ bun run test        # All 304 tests should PASS
 
 ## Done When
 
-- [ ] All 304 tests PASS (300 + 4)
+- [ ] All 311 tests PASS (307 + 4)
 - [ ] TypeScript compiles
 - [ ] Manual verification passes
 - [ ] Drafts persist across requests
