@@ -19,7 +19,7 @@ const fastify = Fastify({
 });
 
 // Global error handler for NotImplementedError → HTTP 501
-fastify.setErrorHandler((error, request, reply) => {
+fastify.setErrorHandler((error, _request, reply) => {
 	if (error instanceof NotImplementedError) {
 		return reply.status(501).send({ code: "NOT_IMPLEMENTED" });
 	}

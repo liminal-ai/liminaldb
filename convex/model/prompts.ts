@@ -516,7 +516,7 @@ export async function deleteBySlug(
 
 /**
  * List prompts for a user with ranking applied.
- * 
+ *
  * SCALABILITY NOTE: This function fetches ALL user prompts into memory before
  * filtering and sorting. This is O(n) for fetch and O(n log n) for sort.
  * For users with large prompt collections (1000+), consider adding pagination
