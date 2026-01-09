@@ -197,4 +197,35 @@ describe("Drafts API", () => {
 		});
 		expect(response.statusCode).toBe(401);
 	});
+
+	it("returns 400 for invalid draft data", async () => {
+		const response = await app.inject({
+			method: "PUT",
+			url: "/api/drafts/test:draft",
+			payload: { type: "invalid" }, // missing required fields
+			headers: authHeaders(),
+		});
+		expect(response.statusCode).toBe(400);
+	});
+
+	it("returns 400 for overly long draft ID", async () => {
+		const longId = "a".repeat(51); // MAX_DRAFT_ID_LENGTH is 50
+		const draftData: DraftUpsertRequest = {
+			type: "edit",
+			data: {
+				slug: "test",
+				name: "Test",
+				description: "Test",
+				content: "Test",
+				tags: [],
+			},
+		};
+		const response = await app.inject({
+			method: "PUT",
+			url: `/api/drafts/${longId}`,
+			payload: draftData,
+			headers: authHeaders(),
+		});
+		expect(response.statusCode).toBe(400);
+	});
 });

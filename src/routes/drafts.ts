@@ -12,7 +12,7 @@ import {
 const DRAFT_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 const INDEX_TTL_SECONDS = 25 * 60 * 60; // 25 hours (outlives all drafts)
 const EXPIRY_WARNING_MS = 2 * 60 * 60 * 1000; // 2 hours
-const MAX_DRAFT_ID_LENGTH = 100;
+const MAX_DRAFT_ID_LENGTH = 50;
 
 function getDraftKey(userId: string, draftId: string): string {
 	return `liminal:draft:${userId}:${draftId}`;
