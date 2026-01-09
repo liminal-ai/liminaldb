@@ -51,10 +51,13 @@ export default defineSchema({
 	})
 		.index("by_user_slug", ["userId", "slug"])
 		.index("by_user", ["userId"])
+		// Full-text search index for prompt content.
+		// staged: false = synchronous indexing (immediate consistency).
+		// For large migrations (10K+ prompts), consider staged: true to avoid
+		// blocking deployments. Current scale doesn't require this.
 		.searchIndex("search_prompts", {
 			searchField: "searchText",
 			filterFields: ["userId"],
-			staged: false,
 		}),
 
 	rankingConfig: defineTable({

@@ -614,6 +614,15 @@ export async function updatePromptFlags(
 	return true;
 }
 
+/**
+ * Track prompt usage by incrementing usageCount and updating lastUsedAt.
+ *
+ * CONCURRENCY NOTE: This uses a read-then-write pattern for usageCount.
+ * Convex mutations are serializable transactions with automatic OCC retries,
+ * so concurrent updates won't lose increments. This is acceptable for analytics
+ * where exact counts aren't critical. If precise counting is needed in the future,
+ * consider a dedicated counter table with append-only writes.
+ */
 export async function trackPromptUse(
 	ctx: MutationCtx,
 	userId: string,
