@@ -12,6 +12,7 @@ import {
 const DRAFT_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 const INDEX_TTL_SECONDS = 25 * 60 * 60; // 25 hours (outlives all drafts)
 const EXPIRY_WARNING_MS = 2 * 60 * 60 * 1000; // 2 hours
+const MAX_DRAFT_ID_LENGTH = 100;
 
 function getDraftKey(userId: string, draftId: string): string {
 	return `liminal:draft:${userId}:${draftId}`;
@@ -205,6 +206,10 @@ async function upsertDraftHandler(
 
 	const { draftId } = request.params as { draftId: string };
 
+	if (draftId.length > MAX_DRAFT_ID_LENGTH) {
+		return reply.code(400).send({ error: "Draft ID too long" });
+	}
+
 	let body: DraftUpsertRequest;
 	try {
 		body = DraftUpsertRequestSchema.parse(request.body);
@@ -251,6 +256,8 @@ async function upsertDraftHandler(
 		await redis.set(key, JSON.stringify(draft), DRAFT_TTL_SECONDS);
 
 		// Add to user's draft set and refresh index TTL
+		// Note: Not using MULTI/EXEC - if crash occurs between operations,
+		// orphaned drafts are cleaned up by listDrafts/getSummary on next access
 		const indexKey = getDraftSetKey(userId);
 		await redis.sadd(indexKey, draftId);
 		await redis.expire(indexKey, INDEX_TTL_SECONDS);
@@ -280,6 +287,10 @@ async function deleteDraftHandler(
 	}
 
 	const { draftId } = request.params as { draftId: string };
+
+	if (draftId.length > MAX_DRAFT_ID_LENGTH) {
+		return reply.code(400).send({ error: "Draft ID too long" });
+	}
 
 	try {
 		const redis = getRedis();

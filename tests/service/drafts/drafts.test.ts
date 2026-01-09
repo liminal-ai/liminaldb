@@ -189,4 +189,12 @@ describe("Drafts API", () => {
 		expect(draft.expiresAt).toBeGreaterThan(Date.now());
 		expect(draft.expiresAt).toBeLessThanOrEqual(expectedExpiry + 1000); // 1s tolerance
 	});
+
+	it("returns 401 when not authenticated", async () => {
+		const response = await app.inject({
+			method: "GET",
+			url: "/api/drafts",
+		});
+		expect(response.statusCode).toBe(401);
+	});
 });
