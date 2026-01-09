@@ -19,9 +19,11 @@ type MockFn = ReturnType<typeof vi.fn>;
 
 interface MockQueryBuilder {
 	withIndex: MockFn;
+	withSearchIndex: MockFn;
 	filter: MockFn;
 	unique: MockFn;
 	collect: MockFn;
+	take: MockFn;
 	first: MockFn;
 }
 
@@ -59,9 +61,11 @@ export function asConvexCtx<T>(mock: MockCtx): T {
 function createQueryBuilder(): MockQueryBuilder {
 	const builder: MockQueryBuilder = {
 		withIndex: vi.fn(() => builder),
+		withSearchIndex: vi.fn(() => builder),
 		filter: vi.fn(() => builder),
 		unique: vi.fn(() => Promise.resolve(null)),
 		collect: vi.fn(() => Promise.resolve([])),
+		take: vi.fn(() => Promise.resolve([])),
 		first: vi.fn(() => Promise.resolve(null)),
 	};
 	return builder;

@@ -82,4 +82,7 @@ export const config = {
 	 * In production: parsed from CORS_ALLOWED_ORIGINS env var
 	 */
 	corsOrigins: parseCorsOrigins(),
+
+	/** Redis URL for durable drafts */
+	redisUrl: optionalEnv("REDIS_URL"),
 } as const;

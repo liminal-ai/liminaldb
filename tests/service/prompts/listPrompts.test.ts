@@ -122,4 +122,45 @@ describe("GET /api/prompts", () => {
 			expect(response.statusCode).toBe(401);
 		});
 	});
+
+	describe("Search & Ranking", () => {
+		test("TC-5: tag filter uses ANY-of semantics", async () => {
+			mockConvex.query.mockResolvedValue([]);
+
+			await app.inject({
+				method: "GET",
+				url: "/api/prompts?tags=sql,python",
+				headers: { authorization: `Bearer ${createTestJwt()}` },
+			});
+
+			const args = mockConvex.query.mock.calls[0]?.[1] as
+				| { tags?: unknown }
+				| undefined;
+			expect(args?.tags).toEqual(["sql", "python"]);
+		});
+
+		test("TC-17: listing prompts does not increment usage", async () => {
+			mockConvex.query.mockResolvedValue([]);
+
+			await app.inject({
+				method: "GET",
+				url: "/api/prompts",
+				headers: { authorization: `Bearer ${createTestJwt()}` },
+			});
+
+			expect(mockConvex.mutation).not.toHaveBeenCalled();
+		});
+
+		test("TC-18: searching prompts does not increment usage", async () => {
+			mockConvex.query.mockResolvedValue([]);
+
+			await app.inject({
+				method: "GET",
+				url: "/api/prompts?q=test",
+				headers: { authorization: `Bearer ${createTestJwt()}` },
+			});
+
+			expect(mockConvex.mutation).not.toHaveBeenCalled();
+		});
+	});
 });

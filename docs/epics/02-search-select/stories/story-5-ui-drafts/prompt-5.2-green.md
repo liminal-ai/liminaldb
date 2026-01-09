@@ -401,7 +401,7 @@ document.getElementById('discard-btn').addEventListener('click', handleDiscard);
 
 ```bash
 bun run typecheck   # Should pass
-bun run test        # All 326 tests should PASS
+bun run test        # All 333 tests should PASS
 ```
 
 ### Manual Verification
@@ -423,7 +423,7 @@ bun run test        # All 326 tests should PASS
 
 ## Done When
 
-- [ ] All 326 tests PASS (316 + 10)
+- [ ] All 333 tests PASS (323 + 10)
 - [ ] TypeScript compiles
 - [ ] Manual verification passes
 - [ ] Drafts persist across refreshes
@@ -438,5 +438,5 @@ After completion, summarize: which files were modified, how many tests now pass,
 After Story 5 green phase:
 - 50 ACs delivered
 - 48 TCs verified
-- 48 new tests (278 → 326)
+- 55 new tests (278 → 333)
 - Epic 02: Search & Select complete

@@ -104,10 +104,10 @@ MCP clients (Claude Code, Cursor, etc.) have full parity with web UI for prompt 
 - `mcpTools.test.ts`: 9 new tests
 - **Total new tests: 9**
 
-**Running total:** 291 + 9 = 300 tests
+**Running total:** 298 + 9 = 307 tests
 
 **Verification:**
-- All 300 tests pass
+- All 307 tests pass
 - Manual: `list_prompts` via MCP returns ranked list
 - Manual: `search_prompts` via MCP filters correctly
 - Manual: `track_prompt_use` via MCP increments usage

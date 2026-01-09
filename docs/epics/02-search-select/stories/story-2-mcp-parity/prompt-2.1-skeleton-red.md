@@ -16,7 +16,7 @@ Story 1 must be complete — these Convex queries/mutations exist and work:
 - `updatePromptFlags()`
 - `trackPromptUse()`
 - `listTags()`
-- All 291 tests PASS (278 + 13 from Story 1)
+- All 298 tests PASS (278 + 20 from Story 1)
 
 ## Reference Documents
 
@@ -418,13 +418,13 @@ describe("MCP Tools - track_prompt_use", () => {
 - Do not modify Story 1 Convex files (they should be implemented)
 - MCP tools should call Convex queries/mutations (when implemented)
 - Tests assert MCP routing/argument wiring via the mocked transport
-- Existing 291 tests must continue to pass
+- Existing 298 tests must continue to pass
 
 ## Verification
 
 ```bash
 bun run typecheck   # Should pass
-bun run test        # 291 existing PASS, 9 new ERROR
+bun run test        # 298 existing PASS, 9 new ERROR
 ```
 
 ## Done When
@@ -432,7 +432,7 @@ bun run test        # 291 existing PASS, 9 new ERROR
 - [ ] 5 MCP tool stubs added to `src/lib/mcp.ts`
 - [ ] `tests/service/prompts/mcpTools.test.ts` extended with 9 tests
 - [ ] New tests ERROR with NotImplementedError
-- [ ] Existing 291 tests still PASS
+- [ ] Existing 298 tests still PASS
 - [ ] TypeScript compiles
 
-After completion, summarize: which files were created/modified, how many tests were added, and confirm the expected test state (291 PASS, 9 ERROR).
+After completion, summarize: which files were created/modified, how many tests were added, and confirm the expected test state (298 PASS, 9 ERROR).

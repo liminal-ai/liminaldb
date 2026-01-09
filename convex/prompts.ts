@@ -2,6 +2,7 @@ import { mutation, query } from "./functions";
 import { v } from "convex/values";
 import * as Prompts from "./model/prompts";
 import { validateApiKey, getApiKeyConfig } from "./auth/apiKey";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 
 /** Shared schema for prompt parameters */
 const parameterSchema = v.array(
@@ -155,5 +156,117 @@ export const deletePromptBySlug = mutation({
 			throw new Error("Invalid API key");
 		}
 		return Prompts.deleteBySlug(ctx, userId, slug);
+	},
+});
+
+async function assertValidApiKey(
+	ctx: QueryCtx | MutationCtx,
+	apiKey: string,
+	operation: string,
+): Promise<void> {
+	const config = await getApiKeyConfig(ctx);
+	if (!validateApiKey(apiKey, config)) {
+		console.error("API key validation failed", {
+			operation,
+			timestamp: Date.now(),
+		});
+		throw new Error("Invalid API key");
+	}
+}
+
+// Epic 02: Search & Select (Story 1)
+
+const promptDtoV2Schema = v.object({
+	slug: v.string(),
+	name: v.string(),
+	description: v.string(),
+	content: v.string(),
+	tags: v.array(v.string()),
+	parameters: v.optional(parameterSchema),
+	pinned: v.boolean(),
+	favorited: v.boolean(),
+	usageCount: v.number(),
+	lastUsedAt: v.optional(v.number()),
+});
+
+export const listPromptsRanked = query({
+	args: {
+		apiKey: v.string(),
+		userId: v.string(),
+		tags: v.optional(v.array(v.string())),
+		limit: v.optional(v.number()),
+	},
+	returns: v.array(promptDtoV2Schema),
+	handler: async (ctx, { apiKey, userId, tags, limit }) => {
+		await assertValidApiKey(ctx, apiKey, "listPromptsRanked");
+		const safeLimit =
+			limit !== undefined ? Math.max(1, Math.min(limit, 1000)) : undefined;
+		return Prompts.listPromptsRanked(ctx, userId, {
+			limit: safeLimit,
+			tags: tags ?? undefined,
+		});
+	},
+});
+
+export const searchPrompts = query({
+	args: {
+		apiKey: v.string(),
+		userId: v.string(),
+		query: v.string(),
+		tags: v.optional(v.array(v.string())),
+		limit: v.optional(v.number()),
+	},
+	returns: v.array(promptDtoV2Schema),
+	handler: async (ctx, { apiKey, userId, query, tags, limit }) => {
+		await assertValidApiKey(ctx, apiKey, "searchPrompts");
+		const safeLimit =
+			limit !== undefined ? Math.max(1, Math.min(limit, 1000)) : undefined;
+		return Prompts.searchPrompts(
+			ctx,
+			userId,
+			query,
+			tags ?? undefined,
+			safeLimit,
+		);
+	},
+});
+
+export const updatePromptFlags = mutation({
+	args: {
+		apiKey: v.string(),
+		userId: v.string(),
+		slug: v.string(),
+		pinned: v.optional(v.boolean()),
+		favorited: v.optional(v.boolean()),
+	},
+	returns: v.boolean(),
+	handler: async (ctx, { apiKey, userId, slug, pinned, favorited }) => {
+		await assertValidApiKey(ctx, apiKey, "updatePromptFlags");
+		return Prompts.updatePromptFlags(ctx, userId, slug, { pinned, favorited });
+	},
+});
+
+export const trackPromptUse = mutation({
+	args: {
+		apiKey: v.string(),
+		userId: v.string(),
+		slug: v.string(),
+	},
+	returns: v.boolean(),
+	handler: async (ctx, { apiKey, userId, slug }) => {
+		await assertValidApiKey(ctx, apiKey, "trackPromptUse");
+		return Prompts.trackPromptUse(ctx, userId, slug);
+	},
+});
+
+export const listTags = query({
+	args: {
+		apiKey: v.string(),
+		userId: v.string(),
+	},
+	returns: v.array(v.string()),
+	handler: async (ctx, { apiKey, userId }) => {
+		await assertValidApiKey(ctx, apiKey, "listTags");
+		return Prompts.listTags(ctx, userId);
 	},
 });

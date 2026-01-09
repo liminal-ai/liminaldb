@@ -1,6 +1,7 @@
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { findOrCreateTag } from "./tags";
+import { getRankingConfig, rerank } from "./ranking";
 
 // Slug validation: lowercase, numbers, dashes only. No colons (reserved for namespacing).
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -44,6 +45,26 @@ export interface PromptDTO {
 		required: boolean;
 		description?: string;
 	}[];
+}
+
+export interface PromptMeta {
+	pinned: boolean;
+	favorited: boolean;
+	usageCount: number;
+	lastUsedAt?: number;
+}
+
+export interface PromptDTOv2 extends PromptDTO, PromptMeta {}
+
+export function buildSearchText(prompt: {
+	slug: string;
+	name: string;
+	description: string;
+	content: string;
+}): string {
+	return `${prompt.slug} ${prompt.name} ${prompt.description} ${prompt.content}`
+		.toLowerCase()
+		.trim();
 }
 
 /**
@@ -219,6 +240,11 @@ export async function insertMany(
 			content: prompt.content,
 			tagNames: [], // Synced by trigger
 			parameters: prompt.parameters,
+			// Epic 02 defaults
+			searchText: buildSearchText(prompt),
+			pinned: false,
+			favorited: false,
+			usageCount: 0,
 		});
 
 		// Create junction records - trigger fires on each insert, syncing tagNames
@@ -425,6 +451,8 @@ export async function updateBySlug(
 		description: updates.description,
 		content: updates.content,
 		parameters: updates.parameters,
+		// Epic 02: keep search index field derived from main fields
+		searchText: buildSearchText(updates),
 	});
 
 	return true;
@@ -482,4 +510,150 @@ export async function deleteBySlug(
 	}
 
 	return true;
+}
+
+// Epic 02: Search & Select (Story 1) stubs (TDD red)
+
+export async function listPromptsRanked(
+	ctx: QueryCtx,
+	userId: string,
+	options: { limit?: number; tags?: string[] } = {},
+): Promise<PromptDTOv2[]> {
+	const config = await getRankingConfig(ctx);
+	const now = Date.now();
+
+	const limit = options.limit ?? 50;
+	const tags = options.tags
+		?.map((t) => t.trim().toLowerCase())
+		.filter((t) => t.length > 0);
+
+	const all = await ctx.db
+		.query("prompts")
+		.withIndex("by_user", (q) => q.eq("userId", userId))
+		.collect();
+
+	const filtered =
+		tags && tags.length > 0
+			? all.filter((p) =>
+					p.tagNames.some((name) => tags.includes(name.toLowerCase())),
+				)
+			: all;
+
+	const ranked = rerank(filtered, config.weights, { mode: "list", now });
+	return ranked.slice(0, limit).map(toDTOv2);
+}
+
+export async function searchPrompts(
+	ctx: QueryCtx,
+	userId: string,
+	query: string,
+	tags?: string[],
+	limit?: number,
+): Promise<PromptDTOv2[]> {
+	const config = await getRankingConfig(ctx);
+	const now = Date.now();
+	const normalized = query.trim().toLowerCase();
+
+	const requested = limit ?? 50;
+	const searchLimit = Math.min(requested, config.searchRerankLimit);
+
+	let results = await ctx.db
+		.query("prompts")
+		.withSearchIndex("search_prompts", (q) =>
+			q.search("searchText", normalized).eq("userId", userId),
+		)
+		.take(searchLimit);
+
+	const tagList = tags?.map((t) => t.trim().toLowerCase()).filter(Boolean);
+	if (tagList && tagList.length > 0) {
+		results = results.filter((p) =>
+			p.tagNames.some((name) => tagList.includes(name.toLowerCase())),
+		);
+	}
+
+	const ranked = rerank(results, config.weights, { mode: "search", now });
+	return ranked.map(toDTOv2);
+}
+
+export async function updatePromptFlags(
+	ctx: MutationCtx,
+	userId: string,
+	slug: string,
+	updates: { pinned?: boolean; favorited?: boolean },
+): Promise<boolean> {
+	const prompt = await ctx.db
+		.query("prompts")
+		.withIndex("by_user_slug", (q) => q.eq("userId", userId).eq("slug", slug))
+		.unique();
+
+	if (!prompt) return false;
+
+	const patch: Partial<{ pinned: boolean; favorited: boolean }> = {};
+	if (updates.pinned !== undefined) patch.pinned = updates.pinned;
+	if (updates.favorited !== undefined) patch.favorited = updates.favorited;
+	if (Object.keys(patch).length === 0) return true;
+
+	await ctx.db.patch(prompt._id, patch);
+	return true;
+}
+
+export async function trackPromptUse(
+	ctx: MutationCtx,
+	userId: string,
+	slug: string,
+): Promise<boolean> {
+	const prompt = await ctx.db
+		.query("prompts")
+		.withIndex("by_user_slug", (q) => q.eq("userId", userId).eq("slug", slug))
+		.unique();
+
+	if (!prompt) return false;
+
+	await ctx.db.patch(prompt._id, {
+		usageCount: (prompt.usageCount ?? 0) + 1,
+		lastUsedAt: Date.now(),
+	});
+
+	return true;
+}
+
+export async function listTags(
+	ctx: QueryCtx,
+	userId: string,
+): Promise<string[]> {
+	const tags = await ctx.db
+		.query("tags")
+		.withIndex("by_user_name", (q) => q.eq("userId", userId))
+		.collect();
+
+	// Index orders by name already, but keep stable+defensive.
+	return [...new Set(tags.map((t) => t.name))].sort((a, b) =>
+		a.toLowerCase().localeCompare(b.toLowerCase()),
+	);
+}
+
+function toDTOv2(prompt: {
+	slug: string;
+	name: string;
+	description: string;
+	content: string;
+	tagNames: string[];
+	parameters?: PromptDTO["parameters"];
+	pinned?: boolean;
+	favorited?: boolean;
+	usageCount?: number;
+	lastUsedAt?: number;
+}): PromptDTOv2 {
+	return {
+		slug: prompt.slug,
+		name: prompt.name,
+		description: prompt.description,
+		content: prompt.content,
+		tags: prompt.tagNames,
+		parameters: prompt.parameters,
+		pinned: prompt.pinned ?? false,
+		favorited: prompt.favorited ?? false,
+		usageCount: prompt.usageCount ?? 0,
+		lastUsedAt: prompt.lastUsedAt,
+	};
 }

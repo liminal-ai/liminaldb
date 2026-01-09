@@ -105,9 +105,10 @@ This is backend-only. UI comes in Story 4.
 
 | File | Tests |
 |------|-------|
-| `tests/convex/prompts/ranking.test.ts` | TC-7..13 (7 tests) |
-| `tests/convex/prompts/searchPrompts.test.ts` | TC-2 (1 test) |
-| `tests/convex/prompts/usageTracking.test.ts` | TC-15..16 (2 tests) |
+| `tests/convex/prompts/ranking.test.ts` | TC-7..13 (+ empty list hardening) (8 tests) |
+| `tests/convex/prompts/searchPrompts.test.ts` | TC-2 (+ trim hardening) (2 tests) |
+| `tests/convex/prompts/usageTracking.test.ts` | TC-15..16 (+ missing prompt hardening) (3 tests) |
+| `tests/service/prompts/flagsUsage.test.ts` | Flags + usage endpoints wiring (4 tests) |
 
 **Modified files:**
 
@@ -126,16 +127,17 @@ This is backend-only. UI comes in Story 4.
 ## Definition of Done
 
 **Test counts:**
-- `ranking.test.ts`: 7 tests
-- `searchPrompts.test.ts`: 1 test
-- `usageTracking.test.ts`: 2 tests
+- `ranking.test.ts`: 8 tests
+- `searchPrompts.test.ts`: 2 tests
+- `usageTracking.test.ts`: 3 tests
+- `flagsUsage.test.ts`: 4 tests
 - `listPrompts.test.ts`: 3 additional tests
-- **Total new tests: 13**
+- **Total new tests: 20**
 
-**Running total:** 278 + 13 = 291 tests
+**Running total:** 278 + 20 = 298 tests
 
 **Verification:**
-- All 291 tests pass
+- All 298 tests pass
 - Migration backfill completes (all prompts have searchText, defaults)
 - Manual: Search via API returns expected results
 - Manual: Flags endpoint updates pinned/favorited

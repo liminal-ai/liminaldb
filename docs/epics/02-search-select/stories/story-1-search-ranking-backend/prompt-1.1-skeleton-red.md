@@ -190,7 +190,7 @@ fastify.get("/tags", async (request, reply) => {
 
 ## Tests to Write
 
-### `tests/convex/prompts/ranking.test.ts` — 7 tests (NEW FILE)
+### `tests/convex/prompts/ranking.test.ts` — 8 tests (NEW FILE)
 
 **TC-7 to TC-13**
 
@@ -211,6 +211,11 @@ const weights: RankingWeights = {
 };
 
 describe("Ranking", () => {
+  it("TC-7b: rerank handles empty list", () => {
+    const ranked = rerank([], weights, { mode: "list", now });
+    expect(ranked).toEqual([]);
+  });
+
   it("TC-7: prompts sorted by ranking score by default", () => {
     const ranked = rerank(
       [
@@ -298,7 +303,7 @@ describe("Ranking", () => {
 });
 ```
 
-### `tests/convex/prompts/searchPrompts.test.ts` — 1 test (NEW FILE)
+### `tests/convex/prompts/searchPrompts.test.ts` — 2 tests (NEW FILE)
 
 **TC-2**
 
@@ -335,10 +340,14 @@ describe("searchPrompts", () => {
     expect(q.search).toHaveBeenCalledWith("searchText", "sql");
     expect(q.eq).toHaveBeenCalledWith("userId", "user_123");
   });
+
+  it("TC-2b: search query is trimmed before searching", async () => {
+    // Add this as a hardening check for query normalization.
+  });
 });
 ```
 
-### `tests/convex/prompts/usageTracking.test.ts` — 2 tests (NEW FILE)
+### `tests/convex/prompts/usageTracking.test.ts` — 3 tests (NEW FILE)
 
 **TC-15, TC-16**
 
@@ -348,6 +357,10 @@ import { createMockCtx, getQueryBuilder, asConvexCtx } from "../../fixtures/mock
 import { trackPromptUse } from "../../../convex/model/prompts";
 
 describe("trackPromptUse", () => {
+  it("TC-15b: tracking usage returns false when prompt does not exist", async () => {
+    // Add this as a hardening check for missing prompts.
+  });
+
   it("TC-15: tracking usage increments usage count", async () => {
     const ctx = createMockCtx();
     const builder = getQueryBuilder(ctx, "prompts");
@@ -395,6 +408,12 @@ describe("trackPromptUse", () => {
   });
 });
 ```
+
+### `tests/service/prompts/flagsUsage.test.ts` — 4 tests (NEW FILE)
+
+Create a service-level test file that defines the desired green behavior for:
+- `PATCH /api/prompts/:slug/flags` (auth + Convex wiring + 200 `{ updated: true }` on success)
+- `POST /api/prompts/:slug/usage` (auth + Convex wiring + 204 on success)
 
 ### `tests/service/prompts/listPrompts.test.ts` — 3 additional tests (MODIFY)
 
@@ -458,7 +477,7 @@ describe("Search & Ranking", () => {
 
 ```bash
 bun run typecheck   # Should pass
-bun run test        # 278 existing PASS, 13 new ERROR
+bun run test        # 278 existing PASS, Story 1 new tests FAIL/ERROR (expected in red)
 ```
 
 ## Done When

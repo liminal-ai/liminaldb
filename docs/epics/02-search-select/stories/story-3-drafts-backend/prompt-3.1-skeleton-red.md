@@ -17,7 +17,7 @@ Story 0 must be complete — these files exist:
 - `src/schemas/drafts.ts`
 - `src/routes/drafts.ts` (stub routes registered)
 - `tests/__mocks__/redis.ts` (mock for testing)
-- All 300 tests PASS (278 + 13 + 9 from Stories 0-2)
+- All 307 tests PASS (278 + 20 + 9 from Stories 0-2)
 
 ## Reference Documents
 
@@ -312,13 +312,13 @@ describe("Drafts API", () => {
 - Route handlers remain stubs until green phase
 - Use Redis mock from Story 0 for testing
 - Tests assert real behavior
-- Existing 300 tests must continue to pass
+- Existing 307 tests must continue to pass
 
 ## Verification
 
 ```bash
 bun run typecheck   # Should pass
-bun run test        # 300 existing PASS, 4 new ERROR
+bun run test        # 307 existing PASS, 4 new ERROR
 ```
 
 ## Done When
@@ -328,7 +328,5 @@ bun run test        # 300 existing PASS, 4 new ERROR
 - [ ] 1 new test file created with 4 tests
 - [ ] Tests use Redis mock from Story 0
 - [ ] New tests ERROR with NotImplementedError (from route stubs)
-- [ ] Existing 300 tests still PASS
+- [ ] Existing 307 tests still PASS
 - [ ] TypeScript compiles
-
-After completion, summarize: which files were created/modified, how many tests were added, and confirm the expected test state (300 PASS, 4 ERROR).

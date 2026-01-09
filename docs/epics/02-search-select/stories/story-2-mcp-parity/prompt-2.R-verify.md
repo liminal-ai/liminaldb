@@ -57,7 +57,7 @@ All of these should PASS:
 |-----------|-----|----------|
 | `tests/service/prompts/mcpTools.test.ts` | TC-19, TC-41..48 | 9 tests |
 | **Story 2 Total** | | **9 tests** |
-| **Running Total** | | **300 tests** |
+| **Running Total** | | **307 tests** |
 
 ## Manual Verification
 
@@ -85,7 +85,7 @@ Repeat with:
 
 ### Automated
 - [ ] All 9 Story 2 tests pass
-- [ ] Running total 300 tests pass
+- [ ] Running total 307 tests pass
 - [ ] `bun run typecheck` passes
 
 ### Implementation Details

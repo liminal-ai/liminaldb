@@ -10,6 +10,7 @@ import { registerWellKnownRoutes } from "./routes/well-known";
 import { registerPromptRoutes } from "./routes/prompts";
 import { registerAppRoutes } from "./routes/app";
 import { registerModuleRoutes } from "./routes/modules";
+import { draftsRoutes } from "./routes/drafts";
 import { config } from "./lib/config";
 
 const fastify = Fastify({
@@ -44,6 +45,7 @@ registerWellKnownRoutes(fastify);
 registerPromptRoutes(fastify);
 registerAppRoutes(fastify);
 registerModuleRoutes(fastify);
+fastify.register(draftsRoutes, { prefix: "/api/drafts" });
 
 const start = async () => {
 	try {
