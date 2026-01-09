@@ -74,6 +74,7 @@ export async function loadTemplate(templateName: string): Promise<JSDOM> {
 
 /**
  * Mock prompts for testing.
+ * Includes v2 fields (pinned, favorited, usageCount, lastUsedAt) for Story 4+ tests.
  */
 export const mockPrompts = [
 	{
@@ -83,6 +84,10 @@ export const mockPrompts = [
 		content: "You are a code reviewer. Analyze the following code...",
 		tags: ["code", "review"],
 		parameters: [],
+		pinned: false,
+		favorited: false,
+		usageCount: 0,
+		lastUsedAt: undefined,
 	},
 	{
 		slug: "meeting-notes",
@@ -91,6 +96,10 @@ export const mockPrompts = [
 		content: "Summarize the following meeting transcript...",
 		tags: ["meetings"],
 		parameters: [],
+		pinned: false,
+		favorited: false,
+		usageCount: 0,
+		lastUsedAt: undefined,
 	},
 ];
 

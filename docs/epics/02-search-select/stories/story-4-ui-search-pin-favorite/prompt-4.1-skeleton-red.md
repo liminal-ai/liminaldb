@@ -14,10 +14,7 @@ Story 1 must be complete — these backend capabilities exist:
 - `GET /api/prompts?q=&tags=&limit=` returns ranked, filtered prompts
 - `PATCH /api/prompts/:slug/flags` updates pin/favorite
 - `POST /api/prompts/:slug/usage` tracks usage
-- Baseline tests pass:
-  - If only Story 1 has run: 298 (278 + 20)
-  - If Stories 0–2 already ran: 307 (278 + 20 + 9)
-  - If Stories 0–3 already ran: 311 (278 + 20 + 9 + 4)
+- Baseline tests pass: **319 tests** (run `bun run test` to verify)
 
 ## Reference Documents
 
@@ -49,21 +46,10 @@ Add pin/star icons to prompt header and list items:
 
 ```javascript
 // Add to prompts portlet JavaScript
+// IMPORTANT: Do NOT replace the existing shell:filter → loadPrompts wiring.
+// The existing handler already calls loadPrompts(query, tags). Just add the NEW handlers below.
 
-// Handle filter message from shell (query + tags)
-window.addEventListener('message', (event) => {
-  if (event.origin !== window.location.origin) return;
-
-  if (event.data.type === 'shell:filter') {
-    handleFilter(event.data.query, event.data.tags);
-  }
-});
-
-function handleFilter(query, tags) {
-  throw new Error("NotImplementedError: handleFilter not implemented");
-}
-
-// Pin/favorite toggle handlers
+// Pin/favorite toggle handlers (new stubs)
 function handlePinToggle(slug, currentPinned) {
   throw new Error("NotImplementedError: handlePinToggle not implemented");
 }
@@ -76,12 +62,7 @@ function handleOptimisticRollback(slug, previousFlags) {
   throw new Error("NotImplementedError: handleOptimisticRollback not implemented");
 }
 
-// Render list with pin/star icons
-function renderPromptListItem(prompt) {
-  throw new Error("NotImplementedError: renderPromptListItem not implemented");
-}
-
-// Empty states
+// Empty states (new stub)
 function renderEmptyState(type) {
   // type: 'no-prompts' | 'no-matches'
   throw new Error("NotImplementedError: renderEmptyState not implemented");
@@ -112,7 +93,9 @@ fetch(`/api/prompts/${selectedSlug}/usage`, {
 
 **TC-1, TC-3, TC-4, TC-14, TC-20..26**
 
-Use the shared UI test helpers (`loadTemplate`, `mockFetch`, `postMessage`, `click`, `waitForAsync`):
+Use the shared UI test helpers (`loadTemplate`, `mockFetch`, `postMessage`, `click`, `waitForAsync`).
+
+**Note:** API returns arrays directly (not `{ data: [...] }`). The `mockFetch` helper's `data` field becomes the response body.
 
 ```typescript
 import { describe, test, expect, beforeEach } from "vitest";
@@ -127,6 +110,7 @@ describe("UI Search & Pin/Favorite", () => {
   });
 
   test("TC-1: typing in search filters prompts", async () => {
+    // mockFetch data becomes response body - API returns array
     const fetchMock = mockFetch({ "/api/prompts": { data: mockPrompts } });
     dom.window.fetch = fetchMock;
 
@@ -377,14 +361,15 @@ describe("Search Performance", () => {
 - Do not implement actual functionality — handlers throw NotImplementedError
 - Do not modify Story 0-3 files
 - Tests assert real behavior, not that NotImplementedError is thrown
-- Existing 298 tests must continue to pass
+- Existing 319 tests must continue to pass
 - Follow shell/portlet message protocol from UI architecture doc
+- Do NOT break existing shell:filter → loadPrompts wiring
 
 ## Verification
 
 ```bash
 bun run typecheck   # Should pass
-bun run test        # 311 existing PASS, 12 new ERROR
+bun run test        # 319 existing PASS, 12 new tests (some will ERROR due to stubs)
 ```
 
 ## Done When
@@ -392,11 +377,11 @@ bun run test        # 311 existing PASS, 12 new ERROR
 - [ ] Search filter wiring verified in shell.html (no new input)
 - [ ] Pin/star icons added to prompts.html
 - [ ] Copy → usage tracking added to prompts.html
-- [ ] Message handlers stubbed with NotImplementedError
+- [ ] New handlers stubbed with NotImplementedError
 - [ ] 11 tests added to prompts-module.test.ts
 - [ ] 1 test added to shell-history.test.ts
-- [ ] New tests ERROR with NotImplementedError
-- [ ] Existing 298 tests still PASS
+- [ ] New tests fail (due to missing implementation)
+- [ ] Existing 319 tests still PASS
 - [ ] TypeScript compiles
 
-After completion, summarize: which files were created/modified, how many tests were added, and confirm the expected test state (311 PASS, 12 ERROR).
+After completion, summarize: which files were created/modified, how many tests were added, and confirm the expected test state.
