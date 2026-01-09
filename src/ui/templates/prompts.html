@@ -1122,6 +1122,8 @@
 
     // Pin/favorite toggle handlers
     async function handlePinToggle(slug, currentPinned) {
+      // Capture original state before any mutations (prevents race condition with concurrent toggles)
+      const originalFlags = { ...currentPromptFlags };
       const newPinned = !currentPinned;
 
       // Optimistic UI update
@@ -1142,13 +1144,15 @@
         await loadPrompts(currentQuery, currentTags);
       } catch (err) {
         console.error('Pin toggle failed:', err);
-        // Rollback
-        handleOptimisticRollback(slug, { pinned: currentPinned, favorited: currentPromptFlags.favorited });
+        // Rollback using captured original state
+        handleOptimisticRollback(slug, originalFlags);
         showToast('Failed to update pin status', { type: 'error' });
       }
     }
 
     async function handleFavoriteToggle(slug, currentFavorited) {
+      // Capture original state before any mutations (prevents race condition with concurrent toggles)
+      const originalFlags = { ...currentPromptFlags };
       const newFavorited = !currentFavorited;
 
       // Optimistic UI update
@@ -1169,8 +1173,8 @@
         await loadPrompts(currentQuery, currentTags);
       } catch (err) {
         console.error('Favorite toggle failed:', err);
-        // Rollback
-        handleOptimisticRollback(slug, { pinned: currentPromptFlags.pinned, favorited: currentFavorited });
+        // Rollback using captured original state
+        handleOptimisticRollback(slug, originalFlags);
         showToast('Failed to update favorite status', { type: 'error' });
       }
     }
@@ -1245,18 +1249,12 @@
     // Pin toggle button
     document.getElementById('pin-toggle')?.addEventListener('click', () => {
       if (!selectedSlug) return;
-      const prompt = prompts.find(p => p.slug === selectedSlug);
-      if (!prompt) return;
-      
       handlePinToggle(selectedSlug, currentPromptFlags.pinned);
     });
 
     // Favorite toggle button
     document.getElementById('favorite-toggle')?.addEventListener('click', () => {
       if (!selectedSlug) return;
-      const prompt = prompts.find(p => p.slug === selectedSlug);
-      if (!prompt) return;
-      
       handleFavoriteToggle(selectedSlug, currentPromptFlags.favorited);
     });
 
