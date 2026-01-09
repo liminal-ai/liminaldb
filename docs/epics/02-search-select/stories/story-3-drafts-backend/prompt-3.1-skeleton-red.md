@@ -6,7 +6,7 @@
 
 ## Objective
 
-Implement the Redis client and draft route handlers, then write tests that assert real behavior. Tests will ERROR (not pass) because stubs throw `NotImplementedError`.
+Implement the Redis client and draft route handlers, then write tests that assert real behavior. Tests will fail with HTTP 501 (not pass) because stubs throw `NotImplementedError` which is caught by the global error handler.
 
 **Note:** This story implements actual functionality for Redis (not just stubs) because the draft routes need a working Redis client. The route handlers remain as stubs until green phase.
 
@@ -17,7 +17,7 @@ Story 0 must be complete — these files exist:
 - `src/schemas/drafts.ts`
 - `src/routes/drafts.ts` (stub routes registered)
 - `tests/__mocks__/redis.ts` (mock for testing)
-- All 307 tests PASS (278 + 20 + 9 from Stories 0-2)
+- All 312 tests PASS (baseline from Stories 0-2)
 
 ## Reference Documents
 
@@ -145,12 +145,29 @@ export const draftsRoutes: FastifyPluginAsync = async (fastify) => {
 Uses the Redis mock from Story 0 (`tests/__mocks__/redis.ts`).
 
 ```typescript
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import Fastify from "fastify";
+import cookie from "@fastify/cookie";
 import { draftsRoutes } from "../../../src/routes/drafts";
 import { createRedisMock } from "../../__mocks__/redis";
 import { setRedisClient } from "../../../src/lib/redis";
+import { createTestJwt } from "../../fixtures";
 import type { DraftDTO, DraftUpsertRequest } from "../../../src/schemas/drafts";
+
+// Mock JWT validator
+vi.mock("../../../src/lib/auth/jwtValidator", () => ({
+  validateJwt: vi.fn(async () => ({ valid: true })),
+}));
+
+// Mock config
+vi.mock("../../../src/lib/config", () => ({
+  config: {
+    cookieSecret: "test_cookie_secret",
+    nodeEnv: "test",
+    isProduction: false,
+    isTest: true,
+  },
+}));
 
 describe("Drafts API", () => {
   let app: ReturnType<typeof Fastify>;
@@ -161,6 +178,7 @@ describe("Drafts API", () => {
     setRedisClient(redisMock);
 
     app = Fastify();
+    app.register(cookie, { secret: "test_cookie_secret" });
     await app.register(draftsRoutes, { prefix: "/api/drafts" });
     await app.ready();
   });
@@ -168,6 +186,11 @@ describe("Drafts API", () => {
   afterEach(async () => {
     await app.close();
     setRedisClient(null);
+  });
+
+  const authHeaders = () => ({
+    authorization: `Bearer ${createTestJwt({ sub: "user_123" })}`,
+    "Content-Type": "application/json",
   });
 
   it("TC-32: draft survives browser refresh (persists in Redis)", async () => {
@@ -184,17 +207,18 @@ describe("Drafts API", () => {
     };
 
     // Create draft
-    const createResponse = await app.inject({
+    await app.inject({
       method: "PUT",
       url: "/api/drafts/edit:test-prompt",
       payload: draftData,
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(),
     });
 
     // Simulate "refresh" by fetching drafts
     const listResponse = await app.inject({
       method: "GET",
       url: "/api/drafts",
+      headers: authHeaders(),
     });
 
     expect(listResponse.statusCode).toBe(200);
@@ -221,7 +245,7 @@ describe("Drafts API", () => {
       method: "PUT",
       url: "/api/drafts/edit:test-prompt",
       payload: draftData,
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(),
     });
 
     expect(response.statusCode).toBe(200);
@@ -251,13 +275,14 @@ describe("Drafts API", () => {
       method: "PUT",
       url: "/api/drafts/edit:test-prompt",
       payload: draftData,
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(),
     });
 
     // Delete the draft
     const deleteResponse = await app.inject({
       method: "DELETE",
       url: "/api/drafts/edit:test-prompt",
+      headers: authHeaders(),
     });
 
     expect(deleteResponse.statusCode).toBe(200);
@@ -268,6 +293,7 @@ describe("Drafts API", () => {
     const listResponse = await app.inject({
       method: "GET",
       url: "/api/drafts",
+      headers: authHeaders(),
     });
 
     const drafts = JSON.parse(listResponse.body) as DraftDTO[];
@@ -290,7 +316,7 @@ describe("Drafts API", () => {
       method: "PUT",
       url: "/api/drafts/new:abc123",
       payload: draftData,
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(),
     });
 
     expect(response.statusCode).toBe(200);
@@ -312,21 +338,21 @@ describe("Drafts API", () => {
 - Route handlers remain stubs until green phase
 - Use Redis mock from Story 0 for testing
 - Tests assert real behavior
-- Existing 307 tests must continue to pass
+- Existing 312 tests must continue to pass
 
 ## Verification
 
 ```bash
 bun run typecheck   # Should pass
-bun run test        # 307 existing PASS, 4 new ERROR
+bun run test        # 312 existing PASS, 4 new FAIL (501 status)
 ```
 
 ## Done When
 
 - [ ] Redis client implemented in `src/lib/redis.ts`
-- [ ] Draft routes updated with proper types
+- [ ] Draft routes updated with proper types and authMiddleware
 - [ ] 1 new test file created with 4 tests
 - [ ] Tests use Redis mock from Story 0
-- [ ] New tests ERROR with NotImplementedError (from route stubs)
-- [ ] Existing 307 tests still PASS
+- [ ] New tests FAIL with 501 status (from route stubs via global error handler)
+- [ ] Existing 312 tests still PASS
 - [ ] TypeScript compiles
