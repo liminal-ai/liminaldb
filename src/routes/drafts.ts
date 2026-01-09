@@ -10,6 +10,7 @@ import {
 } from "../schemas/drafts";
 
 const DRAFT_TTL_SECONDS = 24 * 60 * 60; // 24 hours
+const INDEX_TTL_SECONDS = 25 * 60 * 60; // 25 hours (outlives all drafts)
 const EXPIRY_WARNING_MS = 2 * 60 * 60 * 1000; // 2 hours
 
 function getDraftKey(userId: string, draftId: string): string {
@@ -64,10 +65,19 @@ async function listDraftsHandler(
 		// Get all draft IDs for this user
 		const draftIds = await redis.smembers(getDraftSetKey(userId));
 
-		// Fetch all drafts
+		// Fetch all drafts in parallel
+		const draftResults = await Promise.all(
+			draftIds.map(async (draftId) => {
+				const data = await redis.get(getDraftKey(userId, draftId));
+				return { draftId, data };
+			}),
+		);
+
+		// Process results and clean up expired entries
 		const drafts: DraftDTO[] = [];
-		for (const draftId of draftIds) {
-			const data = await redis.get(getDraftKey(userId, draftId));
+		const expiredIds: string[] = [];
+
+		for (const { draftId, data } of draftResults) {
 			if (data) {
 				try {
 					const draft = DraftDTOSchema.parse(JSON.parse(data));
@@ -76,9 +86,16 @@ async function listDraftsHandler(
 					// Invalid draft data, skip
 				}
 			} else {
-				// Draft expired or missing, remove from set
-				await redis.srem(getDraftSetKey(userId), draftId);
+				// Draft expired or missing, queue for removal
+				expiredIds.push(draftId);
 			}
+		}
+
+		// Remove expired entries in parallel
+		if (expiredIds.length > 0) {
+			await Promise.all(
+				expiredIds.map((id) => redis.srem(getDraftSetKey(userId), id)),
+			);
 		}
 
 		// Sort by updatedAt descending
@@ -110,15 +127,23 @@ async function getDraftSummaryHandler(
 
 		const draftIds = await redis.smembers(getDraftSetKey(userId));
 
+		// Fetch all drafts in parallel
+		const draftResults = await Promise.all(
+			draftIds.map(async (draftId) => {
+				const data = await redis.get(getDraftKey(userId, draftId));
+				return { draftId, data };
+			}),
+		);
+
 		let count = 0;
 		let latestDraftId: string | undefined;
 		let latestUpdatedAt = 0;
 		let nextExpiryAt: number | undefined;
 		let hasExpiringSoon = false;
 		const now = Date.now();
+		const expiredIds: string[] = [];
 
-		for (const draftId of draftIds) {
-			const data = await redis.get(getDraftKey(userId, draftId));
+		for (const { draftId, data } of draftResults) {
 			if (data) {
 				try {
 					const draft = DraftDTOSchema.parse(JSON.parse(data));
@@ -140,9 +165,16 @@ async function getDraftSummaryHandler(
 					// Invalid draft, skip
 				}
 			} else {
-				// Draft expired, remove from set
-				await redis.srem(getDraftSetKey(userId), draftId);
+				// Draft expired, queue for removal
+				expiredIds.push(draftId);
 			}
+		}
+
+		// Remove expired entries in parallel
+		if (expiredIds.length > 0) {
+			await Promise.all(
+				expiredIds.map((id) => redis.srem(getDraftSetKey(userId), id)),
+			);
 		}
 
 		return reply.code(200).send({
@@ -218,8 +250,10 @@ async function upsertDraftHandler(
 		// Store draft with TTL
 		await redis.set(key, JSON.stringify(draft), DRAFT_TTL_SECONDS);
 
-		// Add to user's draft set
-		await redis.sadd(getDraftSetKey(userId), draftId);
+		// Add to user's draft set and refresh index TTL
+		const indexKey = getDraftSetKey(userId);
+		await redis.sadd(indexKey, draftId);
+		await redis.expire(indexKey, INDEX_TTL_SECONDS);
 
 		return reply.code(200).send(draft);
 	} catch (error) {

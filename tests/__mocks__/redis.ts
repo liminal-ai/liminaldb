@@ -56,5 +56,10 @@ export function createRedisMock(): RedisWrapper & {
 			}
 			return removed;
 		},
+
+		async expire(key: string, _ttlSeconds: number) {
+			// Mock doesn't simulate actual expiry, just returns 1 if key exists
+			return store.has(key) || sets.has(key) ? 1 : 0;
+		},
 	};
 }

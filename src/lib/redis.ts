@@ -15,6 +15,7 @@ export interface RedisWrapper {
 	sadd(key: string, ...members: string[]): Promise<number>;
 	smembers(key: string): Promise<string[]>;
 	srem(key: string, ...members: string[]): Promise<number>;
+	expire(key: string, ttlSeconds: number): Promise<number>;
 }
 
 let client: RedisWrapper | null = null;
@@ -38,6 +39,7 @@ export const getRedis = (): RedisWrapper => {
 			sadd: (key, ...members) => raw.sadd(key, ...members),
 			smembers: (key) => raw.smembers(key),
 			srem: (key, ...members) => raw.srem(key, ...members),
+			expire: (key, ttlSeconds) => raw.expire(key, ttlSeconds),
 		};
 	}
 
