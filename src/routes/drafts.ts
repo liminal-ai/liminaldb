@@ -259,8 +259,10 @@ async function upsertDraftHandler(
 		// Note: Not using MULTI/EXEC - if crash occurs between operations,
 		// orphaned drafts are cleaned up by listDrafts/getSummary on next access
 		const indexKey = getDraftSetKey(userId);
-		await redis.sadd(indexKey, draftId);
-		await redis.expire(indexKey, INDEX_TTL_SECONDS);
+		await Promise.all([
+			redis.sadd(indexKey, draftId),
+			redis.expire(indexKey, INDEX_TTL_SECONDS),
+		]);
 
 		return reply.code(200).send(draft);
 	} catch (error) {
