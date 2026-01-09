@@ -10,7 +10,7 @@ import { registerWellKnownRoutes } from "./routes/well-known";
 import { registerPromptRoutes } from "./routes/prompts";
 import { registerAppRoutes } from "./routes/app";
 import { registerModuleRoutes } from "./routes/modules";
-import { draftsRoutes } from "./routes/drafts";
+import { registerDraftRoutes } from "./routes/drafts";
 import { config } from "./lib/config";
 import { NotImplementedError } from "./lib/redis";
 
@@ -55,7 +55,7 @@ registerWellKnownRoutes(fastify);
 registerPromptRoutes(fastify);
 registerAppRoutes(fastify);
 registerModuleRoutes(fastify);
-fastify.register(draftsRoutes, { prefix: "/api/drafts" });
+registerDraftRoutes(fastify);
 
 const start = async () => {
 	try {
