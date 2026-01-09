@@ -6,7 +6,9 @@
 
 ## Objective
 
-Create MCP tool stubs and write tests that assert MCP routing/argument wiring. Note: these tests use the mocked MCP transport in `tests/service/prompts/mcpTools.test.ts`, so they validate request/argument flow and may pass even before tool handlers are implemented. Functional behavior is exercised in green phase.
+Create MCP tool stubs and write tests that assert MCP routing/argument wiring using the **existing repo MCP test harness** (`tests/service/prompts/mcpTools.test.ts`).
+
+This is a **TDD Red** step: tests should fail because the stubs do not yet call Convex or return the expected success payloads. Functional behavior is implemented in Prompt 2.2.
 
 ## Prerequisites
 
@@ -29,7 +31,12 @@ Story 1 must be complete — these Convex queries/mutations exist and work:
 
 ### MCP Tool Stubs — Modify `src/lib/mcp.ts`
 
-Add these new MCP tools using the existing `registerTool` pattern:
+Add these new MCP tools using the existing `registerTool` pattern in `src/lib/mcp.ts` (same file that currently defines `save_prompts`, `get_prompt`, `delete_prompt`).
+
+**Important repo notes:**
+- This MCP server extracts user ID from `extra.authInfo.extra.userId` (see existing helpers in `src/lib/mcp.ts`).
+- The repo uses a Convex HTTP client wrapper (`src/lib/convex.ts`) and passes `apiKey: config.convexApiKey` + `userId` into Convex calls.
+- Tools should return JSON in `content[0].text` (stringified) for test parsing.
 
 ```typescript
 // list_prompts - Returns ranked prompts with optional limit
@@ -70,9 +77,9 @@ server.registerTool(
   {
     title: "List Tags",
     description: "List all unique tags used by this user's prompts",
-    inputSchema: {},
   },
-  async (_args, _extra) => {
+  // NOTE: when no inputSchema is defined, the handler signature is (extra) not (args, extra)
+  async (_extra) => {
     throw new Error("NotImplementedError: list_tags not implemented");
   }
 );
@@ -118,24 +125,24 @@ server.registerTool(
 
 ## Tests to Write
 
-### `tests/service/prompts/mcpTools.test.ts` — 9 tests (MODIFY EXISTING FILE)
+### `tests/service/prompts/mcpTools.test.ts` — add Story 2 tests (MODIFY EXISTING FILE)
 
 **TC-19, TC-41..48**
 
-Extend the existing Fastify + `/mcp` tests (same pattern as `save_prompts` / `get_prompt` / `delete_prompt`): each new describe block should create its own `app` with `registerMcpRoutes` and `createMockDeps()`.
+Extend the existing Fastify + `/mcp` tests using the **repo’s existing helpers**:
+- `createApp()` (registers `registerMcpRoutes(app)`).
+- `callTool(app, name, args, token?)` (sends JSON-RPC request with the required `Accept` header for SSE).
+- `readToolResult(response)` (parses JSON from `content[0].text`).
+
+**Do not use** `createMockDeps`, `lastToolCall`, or `mockToolResponse` — those do not exist in this repo.
 
 ```typescript
 describe("MCP Tools - list_prompts", () => {
-  let app: ReturnType<typeof Fastify>;
+  let app: Awaited<ReturnType<typeof createApp>>;
 
   beforeEach(async () => {
-    lastToolCall = null;
-    mockToolResponse = null;
     mockConvex.query.mockClear();
-    app = Fastify({ logger: false });
-    app.register(cookie, { secret: process.env.COOKIE_SECRET });
-    registerMcpRoutes(app, createMockDeps());
-    await app.ready();
+    app = await createApp();
   });
 
   afterEach(async () => {
@@ -143,60 +150,43 @@ describe("MCP Tools - list_prompts", () => {
   });
 
   test("TC-41: returns ranked prompts", async () => {
-    mockToolResponse = { prompts: [{ slug: "a" }] };
+    // In red phase, this should fail until list_prompts is implemented.
+    // The green phase should set this to a ranked prompt list.
+    mockConvex.query.mockResolvedValue([{ slug: "a" }]);
 
-    const response = await app.inject({
-      method: "POST",
-      url: "/mcp",
-      headers: {
-        authorization: `Bearer ${createTestJwt({ sub: "user_123" })}`,
-        "content-type": "application/json",
-      },
-      payload: {
-        jsonrpc: "2.0",
-        method: "tools/call",
-        params: { name: "list_prompts", arguments: {} },
-        id: 1,
-      },
-    });
+    const response = await callTool(
+      app,
+      "list_prompts",
+      {},
+      createTestJwt({ sub: "user_123" }),
+    );
 
     expect(response.statusCode).toBe(200);
-    expect(lastToolCall?.name).toBe("list_prompts");
+    // Green should call Convex listPromptsRanked with { apiKey, userId, limit? }.
+    expect(mockConvex.query).toHaveBeenCalled();
   });
 
   test("TC-42: respects limit parameter", async () => {
-    mockToolResponse = { prompts: [] };
+    mockConvex.query.mockResolvedValue([]);
 
-    await app.inject({
-      method: "POST",
-      url: "/mcp",
-      headers: {
-        authorization: `Bearer ${createTestJwt()}`,
-        "content-type": "application/json",
-      },
-      payload: {
-        jsonrpc: "2.0",
-        method: "tools/call",
-        params: { name: "list_prompts", arguments: { limit: 5 } },
-        id: 1,
-      },
-    });
+    const response = await callTool(
+      app,
+      "list_prompts",
+      { limit: 5 },
+      createTestJwt({ sub: "user_123" }),
+    );
 
-    expect(lastToolCall?.args).toEqual({ limit: 5 });
+    expect(response.statusCode).toBe(200);
+    expect(mockConvex.query).toHaveBeenCalled();
   });
 });
 
 describe("MCP Tools - search_prompts", () => {
-  let app: ReturnType<typeof Fastify>;
+  let app: Awaited<ReturnType<typeof createApp>>;
 
   beforeEach(async () => {
-    lastToolCall = null;
-    mockToolResponse = null;
     mockConvex.query.mockClear();
-    app = Fastify({ logger: false });
-    app.register(cookie, { secret: process.env.COOKIE_SECRET });
-    registerMcpRoutes(app, createMockDeps());
-    await app.ready();
+    app = await createApp();
   });
 
   afterEach(async () => {
@@ -204,66 +194,40 @@ describe("MCP Tools - search_prompts", () => {
   });
 
   test("TC-43: returns matching prompts for query", async () => {
-    mockToolResponse = { prompts: [{ slug: "sql" }] };
+    mockConvex.query.mockResolvedValue([{ slug: "sql" }]);
 
-    await app.inject({
-      method: "POST",
-      url: "/mcp",
-      headers: {
-        authorization: `Bearer ${createTestJwt()}`,
-        "content-type": "application/json",
-      },
-      payload: {
-        jsonrpc: "2.0",
-        method: "tools/call",
-        params: { name: "search_prompts", arguments: { query: "sql" } },
-        id: 1,
-      },
-    });
+    const response = await callTool(
+      app,
+      "search_prompts",
+      { query: "sql" },
+      createTestJwt({ sub: "user_123" }),
+    );
 
-    expect(lastToolCall?.name).toBe("search_prompts");
-    expect(lastToolCall?.args).toEqual({ query: "sql" });
+    expect(response.statusCode).toBe(200);
+    expect(mockConvex.query).toHaveBeenCalled();
   });
 
   test("TC-44: filters by tags", async () => {
-    mockToolResponse = { prompts: [] };
+    mockConvex.query.mockResolvedValue([]);
 
-    await app.inject({
-      method: "POST",
-      url: "/mcp",
-      headers: {
-        authorization: `Bearer ${createTestJwt()}`,
-        "content-type": "application/json",
-      },
-      payload: {
-        jsonrpc: "2.0",
-        method: "tools/call",
-        params: {
-          name: "search_prompts",
-          arguments: { query: "test", tags: ["sql", "database"] },
-        },
-        id: 1,
-      },
-    });
+    const response = await callTool(
+      app,
+      "search_prompts",
+      { query: "test", tags: ["sql", "database"] },
+      createTestJwt({ sub: "user_123" }),
+    );
 
-    expect(lastToolCall?.args).toEqual({
-      query: "test",
-      tags: ["sql", "database"],
-    });
+    expect(response.statusCode).toBe(200);
+    expect(mockConvex.query).toHaveBeenCalled();
   });
 });
 
 describe("MCP Tools - list_tags", () => {
-  let app: ReturnType<typeof Fastify>;
+  let app: Awaited<ReturnType<typeof createApp>>;
 
   beforeEach(async () => {
-    lastToolCall = null;
-    mockToolResponse = null;
     mockConvex.query.mockClear();
-    app = Fastify({ logger: false });
-    app.register(cookie, { secret: process.env.COOKIE_SECRET });
-    registerMcpRoutes(app, createMockDeps());
-    await app.ready();
+    app = await createApp();
   });
 
   afterEach(async () => {
@@ -271,38 +235,26 @@ describe("MCP Tools - list_tags", () => {
   });
 
   test("TC-45: returns unique tags", async () => {
-    mockToolResponse = { tags: ["a", "b"] };
+    mockConvex.query.mockResolvedValue(["a", "b"]);
 
-    await app.inject({
-      method: "POST",
-      url: "/mcp",
-      headers: {
-        authorization: `Bearer ${createTestJwt()}`,
-        "content-type": "application/json",
-      },
-      payload: {
-        jsonrpc: "2.0",
-        method: "tools/call",
-        params: { name: "list_tags", arguments: {} },
-        id: 1,
-      },
-    });
+    const response = await callTool(
+      app,
+      "list_tags",
+      {},
+      createTestJwt({ sub: "user_123" }),
+    );
 
-    expect(lastToolCall?.name).toBe("list_tags");
+    expect(response.statusCode).toBe(200);
+    expect(mockConvex.query).toHaveBeenCalled();
   });
 });
 
 describe("MCP Tools - update_prompt", () => {
-  let app: ReturnType<typeof Fastify>;
+  let app: Awaited<ReturnType<typeof createApp>>;
 
   beforeEach(async () => {
-    lastToolCall = null;
-    mockToolResponse = null;
     mockConvex.mutation.mockClear();
-    app = Fastify({ logger: false });
-    app.register(cookie, { secret: process.env.COOKIE_SECRET });
-    registerMcpRoutes(app, createMockDeps());
-    await app.ready();
+    app = await createApp();
   });
 
   afterEach(async () => {
@@ -310,38 +262,33 @@ describe("MCP Tools - update_prompt", () => {
   });
 
   test("TC-46: updates prompt by slug", async () => {
-    mockToolResponse = { updated: true };
-
-    await app.inject({
-      method: "POST",
-      url: "/mcp",
-      headers: {
-        authorization: `Bearer ${createTestJwt()}`,
-        "content-type": "application/json",
-      },
-      payload: {
-        jsonrpc: "2.0",
-        method: "tools/call",
-        params: { name: "update_prompt", arguments: { slug: "test-prompt", name: "Updated" } },
-        id: 1,
-      },
+    mockConvex.mutation.mockResolvedValue(true);
+    mockConvex.query.mockResolvedValue({
+      slug: "test-prompt",
+      name: "Old",
+      description: "Old",
+      content: "Old",
+      tags: [],
     });
 
-    expect(lastToolCall?.name).toBe("update_prompt");
+    const response = await callTool(
+      app,
+      "update_prompt",
+      { slug: "test-prompt", name: "Updated" },
+      createTestJwt({ sub: "user_123" }),
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(mockConvex.mutation).toHaveBeenCalled();
   });
 });
 
 describe("MCP Tools - errors", () => {
-  let app: ReturnType<typeof Fastify>;
+  let app: Awaited<ReturnType<typeof createApp>>;
 
   beforeEach(async () => {
-    lastToolCall = null;
-    mockToolResponse = null;
     mockConvex.mutation.mockClear();
-    app = Fastify({ logger: false });
-    app.register(cookie, { secret: process.env.COOKIE_SECRET });
-    registerMcpRoutes(app, createMockDeps());
-    await app.ready();
+    app = await createApp();
   });
 
   afterEach(async () => {
@@ -349,38 +296,26 @@ describe("MCP Tools - errors", () => {
   });
 
   test("TC-47: returns clear error message on failure", async () => {
-    mockToolResponse = { error: "Invalid slug" };
+    mockConvex.query.mockResolvedValue(null);
 
-    const response = await app.inject({
-      method: "POST",
-      url: "/mcp",
-      headers: {
-        authorization: `Bearer ${createTestJwt()}`,
-        "content-type": "application/json",
-      },
-      payload: {
-        jsonrpc: "2.0",
-        method: "tools/call",
-        params: { name: "update_prompt", arguments: { slug: "bad", name: "Bad" } },
-        id: 1,
-      },
-    });
+    const response = await callTool(
+      app,
+      "update_prompt",
+      { slug: "bad", name: "Bad" },
+      createTestJwt({ sub: "user_123" }),
+    );
 
     expect(response.statusCode).toBe(200);
+    // Green should return isError: true + a clear message like "Prompt not found".
   });
 });
 
 describe("MCP Tools - track_prompt_use", () => {
-  let app: ReturnType<typeof Fastify>;
+  let app: Awaited<ReturnType<typeof createApp>>;
 
   beforeEach(async () => {
-    lastToolCall = null;
-    mockToolResponse = null;
     mockConvex.mutation.mockClear();
-    app = Fastify({ logger: false });
-    app.register(cookie, { secret: process.env.COOKIE_SECRET });
-    registerMcpRoutes(app, createMockDeps());
-    await app.ready();
+    app = await createApp();
   });
 
   afterEach(async () => {
@@ -388,24 +323,17 @@ describe("MCP Tools - track_prompt_use", () => {
   });
 
   test("TC-19 / TC-48: increments usage count", async () => {
-    mockToolResponse = { success: true };
+    mockConvex.mutation.mockResolvedValue(true);
 
-    await app.inject({
-      method: "POST",
-      url: "/mcp",
-      headers: {
-        authorization: `Bearer ${createTestJwt()}`,
-        "content-type": "application/json",
-      },
-      payload: {
-        jsonrpc: "2.0",
-        method: "tools/call",
-        params: { name: "track_prompt_use", arguments: { slug: "test-prompt" } },
-        id: 1,
-      },
-    });
+    const response = await callTool(
+      app,
+      "track_prompt_use",
+      { slug: "test-prompt" },
+      createTestJwt({ sub: "user_123" }),
+    );
 
-    expect(lastToolCall?.name).toBe("track_prompt_use");
+    expect(response.statusCode).toBe(200);
+    expect(mockConvex.mutation).toHaveBeenCalled();
   });
 });
 ```
@@ -424,15 +352,15 @@ describe("MCP Tools - track_prompt_use", () => {
 
 ```bash
 bun run typecheck   # Should pass
-bun run test        # 298 existing PASS, 9 new ERROR
+bun run test --project service tests/service/prompts/mcpTools.test.ts
 ```
 
 ## Done When
 
 - [ ] 5 MCP tool stubs added to `src/lib/mcp.ts`
-- [ ] `tests/service/prompts/mcpTools.test.ts` extended with 9 tests
-- [ ] New tests ERROR with NotImplementedError
-- [ ] Existing 298 tests still PASS
+- [ ] `tests/service/prompts/mcpTools.test.ts` extended with Story 2 tests (TC-19, TC-41..48)
+- [ ] Story 2 tests are RED (failing) because stubs do not yet call Convex / return success payloads
+- [ ] Existing test suite remains green once Story 2 tests are excluded (or until green phase completes)
 - [ ] TypeScript compiles
 
-After completion, summarize: which files were created/modified, how many tests were added, and confirm the expected test state (298 PASS, 9 ERROR).
+After completion, summarize: which files were modified and which TCs are covered by the new tests.

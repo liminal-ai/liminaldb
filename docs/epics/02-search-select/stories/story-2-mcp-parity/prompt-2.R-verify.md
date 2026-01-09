@@ -51,13 +51,9 @@ bun run test --project service tests/service/prompts/mcpTools.test.ts
 
 ## Automated Tests
 
-All of these should PASS:
+All of these should PASS (do **not** gate on brittle test-count totals; gate on TC coverage + green test run):
 
-| Test File | TCs | Expected |
-|-----------|-----|----------|
-| `tests/service/prompts/mcpTools.test.ts` | TC-19, TC-41..48 | 7 tests |
-| **Story 2 Total** | | **7 tests** |
-| **Running Total** | | **305 tests** |
+- `tests/service/prompts/mcpTools.test.ts` includes tests covering: **TC-19, TC-41..48**
 
 ## Manual Verification
 
@@ -84,8 +80,7 @@ Repeat with:
 ## Checklist
 
 ### Automated
-- [ ] All 7 Story 2 tests pass
-- [ ] Running total 305 tests pass
+- [ ] `bun run test --project service tests/service/prompts/mcpTools.test.ts` passes
 - [ ] `bun run typecheck` passes
 
 ### Implementation Details
