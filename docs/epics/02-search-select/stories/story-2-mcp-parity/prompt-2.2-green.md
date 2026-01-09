@@ -255,6 +255,7 @@ function getUserIdFromExtra(extra: { authInfo?: { extra?: unknown } }): string {
 - Do not implement draft routes (Story 3)
 - Do not modify UI files (Stories 4-5)
 - Follow existing MCP tool patterns in the file
+- Do not stage or commit changes (handled outside this prompt)
 
 ## Verification
 

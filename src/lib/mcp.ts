@@ -581,11 +581,55 @@ export function createMcpServer(): McpServer {
 			description:
 				"List prompts sorted by ranking (usage, recency, pinned, favorited)",
 			inputSchema: {
-				limit: z.number().optional().describe("Maximum number of prompts to return"),
+				limit: z
+					.number()
+					.optional()
+					.describe("Maximum number of prompts to return"),
 			},
 		},
-		async (_args, _extra) => {
-			throw new Error("NotImplementedError: list_prompts not implemented");
+		async (args, extra) => {
+			const userId = extractMcpUserId(extra);
+
+			if (!userId) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Not authenticated",
+						},
+					],
+					isError: true,
+				};
+			}
+
+			try {
+				const prompts = await convex.query(api.prompts.listPromptsRanked, {
+					apiKey: config.convexApiKey,
+					userId,
+					limit: args.limit,
+				});
+
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: JSON.stringify({ prompts }),
+						},
+					],
+				};
+			} catch (error) {
+				const logger = extractMcpLogger(extra);
+				logger.error({ err: error, userId }, "[MCP] list_prompts error");
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Failed to list prompts",
+						},
+					],
+					isError: true,
+				};
+			}
 		},
 	);
 
@@ -599,12 +643,58 @@ export function createMcpServer(): McpServer {
 				query: z
 					.string()
 					.describe("Search query to match against prompt content"),
-				tags: z.array(z.string()).optional().describe("Filter by tags (ANY-of)"),
+				tags: z
+					.array(z.string())
+					.optional()
+					.describe("Filter by tags (ANY-of)"),
 				limit: z.number().optional().describe("Maximum number of results"),
 			},
 		},
-		async (_args, _extra) => {
-			throw new Error("NotImplementedError: search_prompts not implemented");
+		async (args, extra) => {
+			const userId = extractMcpUserId(extra);
+
+			if (!userId) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Not authenticated",
+						},
+					],
+					isError: true,
+				};
+			}
+
+			try {
+				const prompts = await convex.query(api.prompts.searchPrompts, {
+					apiKey: config.convexApiKey,
+					userId,
+					query: args.query,
+					tags: args.tags,
+					limit: args.limit,
+				});
+
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: JSON.stringify({ prompts }),
+						},
+					],
+				};
+			} catch (error) {
+				const logger = extractMcpLogger(extra);
+				logger.error({ err: error, userId }, "[MCP] search_prompts error");
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Failed to search prompts",
+						},
+					],
+					isError: true,
+				};
+			}
 		},
 	);
 
@@ -616,8 +706,48 @@ export function createMcpServer(): McpServer {
 			description: "List all unique tags used by this user's prompts",
 		},
 		// NOTE: when no inputSchema is defined, the handler signature is (extra) not (args, extra)
-		async (_extra) => {
-			throw new Error("NotImplementedError: list_tags not implemented");
+		async (extra) => {
+			const userId = extractMcpUserId(extra);
+
+			if (!userId) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Not authenticated",
+						},
+					],
+					isError: true,
+				};
+			}
+
+			try {
+				const tags = await convex.query(api.prompts.listTags, {
+					apiKey: config.convexApiKey,
+					userId,
+				});
+
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: JSON.stringify({ tags }),
+						},
+					],
+				};
+			} catch (error) {
+				const logger = extractMcpLogger(extra);
+				logger.error({ err: error, userId }, "[MCP] list_tags error");
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Failed to list tags",
+						},
+					],
+					isError: true,
+				};
+			}
 		},
 	);
 
@@ -634,11 +764,104 @@ export function createMcpServer(): McpServer {
 				content: z.string().optional().describe("New content"),
 				tags: z.array(z.string()).optional().describe("New tags"),
 				pinned: z.boolean().optional().describe("Pin/unpin the prompt"),
-				favorited: z.boolean().optional().describe("Favorite/unfavorite the prompt"),
+				favorited: z
+					.boolean()
+					.optional()
+					.describe("Favorite/unfavorite the prompt"),
 			},
 		},
-		async (_args, _extra) => {
-			throw new Error("NotImplementedError: update_prompt not implemented");
+		async (args, extra) => {
+			const userId = extractMcpUserId(extra);
+
+			if (!userId) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Not authenticated",
+						},
+					],
+					isError: true,
+				};
+			}
+
+			try {
+				const { slug, pinned, favorited, ...contentUpdates } = args;
+
+				// Handle content updates by read/merge/write because Convex requires full updates
+				const hasContentUpdates = Object.values(contentUpdates).some(
+					(v) => v !== undefined,
+				);
+				if (hasContentUpdates) {
+					const existing = await convex.query(api.prompts.getPromptBySlug, {
+						apiKey: config.convexApiKey,
+						userId,
+						slug,
+					});
+					if (!existing) {
+						return {
+							content: [
+								{
+									type: "text" as const,
+									text: "Prompt not found",
+								},
+							],
+							isError: true,
+						};
+					}
+
+					const updates = {
+						slug: existing.slug,
+						name: contentUpdates.name ?? existing.name,
+						description: contentUpdates.description ?? existing.description,
+						content: contentUpdates.content ?? existing.content,
+						tags: contentUpdates.tags ?? existing.tags,
+						parameters: existing.parameters,
+					};
+
+					await convex.mutation(api.prompts.updatePromptBySlug, {
+						apiKey: config.convexApiKey,
+						userId,
+						slug,
+						updates,
+					});
+				}
+
+				// Handle flag updates separately
+				if (pinned !== undefined || favorited !== undefined) {
+					await convex.mutation(api.prompts.updatePromptFlags, {
+						apiKey: config.convexApiKey,
+						userId,
+						slug,
+						pinned,
+						favorited,
+					});
+				}
+
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: JSON.stringify({ updated: true }),
+						},
+					],
+				};
+			} catch (error) {
+				const logger = extractMcpLogger(extra);
+				logger.error(
+					{ err: error, slug: args.slug, userId },
+					"[MCP] update_prompt error",
+				);
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Failed to update prompt",
+						},
+					],
+					isError: true,
+				};
+			}
 		},
 	);
 
@@ -653,8 +876,52 @@ export function createMcpServer(): McpServer {
 				slug: SlugSchema.describe("The prompt slug that was used"),
 			},
 		},
-		async (_args, _extra) => {
-			throw new Error("NotImplementedError: track_prompt_use not implemented");
+		async (args, extra) => {
+			const userId = extractMcpUserId(extra);
+
+			if (!userId) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Not authenticated",
+						},
+					],
+					isError: true,
+				};
+			}
+
+			try {
+				const tracked = await convex.mutation(api.prompts.trackPromptUse, {
+					apiKey: config.convexApiKey,
+					userId,
+					slug: args.slug,
+				});
+
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: JSON.stringify({ tracked: tracked === true }),
+						},
+					],
+				};
+			} catch (error) {
+				const logger = extractMcpLogger(extra);
+				logger.error(
+					{ err: error, slug: args.slug, userId },
+					"[MCP] track_prompt_use error",
+				);
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Failed to track prompt use",
+						},
+					],
+					isError: true,
+				};
+			}
 		},
 	);
 
