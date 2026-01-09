@@ -28,10 +28,11 @@ export function createRedisMock(): RedisWrapper & {
 		},
 
 		async sadd(key: string, ...members: string[]) {
-			if (!sets.has(key)) {
-				sets.set(key, new Set());
+			let set = sets.get(key);
+			if (!set) {
+				set = new Set();
+				sets.set(key, set);
 			}
-			const set = sets.get(key)!;
 			let added = 0;
 			for (const member of members) {
 				if (!set.has(member)) {

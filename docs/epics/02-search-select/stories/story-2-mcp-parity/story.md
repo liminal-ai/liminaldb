@@ -94,20 +94,15 @@ MCP clients (Claude Code, Cursor, etc.) have full parity with web UI for prompt 
 | File | Changes |
 |------|---------|
 | `src/lib/mcp.ts` | Register 5 new tools |
-| `tests/service/prompts/mcpTools.test.ts` | TC-19, TC-41..48 (9 tests) |
+| `tests/service/prompts/mcpTools.test.ts` | Tests covering TC-19, TC-41..48 |
 
 ---
 
 ## Definition of Done
 
-**Test counts:**
-- `mcpTools.test.ts`: 9 new tests
-- **Total new tests: 9**
-
-**Running total:** 298 + 9 = 307 tests
-
 **Verification:**
-- All 307 tests pass
+- `bun run typecheck` passes
+- `bun run test --project service tests/service/prompts/mcpTools.test.ts` passes
 - Manual: `list_prompts` via MCP returns ranked list
 - Manual: `search_prompts` via MCP filters correctly
 - Manual: `track_prompt_use` via MCP increments usage

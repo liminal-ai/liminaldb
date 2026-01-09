@@ -26,7 +26,17 @@ Prompt 2.1 must be complete — stubs and tests in place:
 
 ### Implement MCP Tools — `src/lib/mcp.ts`
 
-Replace stubs with implementations that call existing Convex queries/mutations:
+Replace stubs with implementations that call existing Convex queries/mutations **that actually exist in this repo**.
+
+**Repo reality:**
+- Prompt updates are implemented in Convex as:
+  - `api.prompts.updatePromptBySlug` (requires a full `updates` object)
+  - `api.prompts.updatePromptFlags` (for pinned/favorited)
+- Therefore the MCP `update_prompt` tool must:
+  - Fetch the current prompt (`api.prompts.getPromptBySlug`)
+  - Merge partial updates into a full `updates` object
+  - Call `updatePromptBySlug`
+  - Optionally call `updatePromptFlags`
 
 ```typescript
 import { convex } from "./convex";
@@ -103,9 +113,8 @@ server.registerTool(
   {
     title: "List Tags",
     description: "List all unique tags used by this user's prompts",
-    inputSchema: {},
   },
-  async (_args, extra) => {
+  async (extra) => {
     const userId = getUserIdFromExtra(extra);
 
     const tags = await convex.query(api.prompts.listTags, {
@@ -144,6 +153,34 @@ server.registerTool(
     const userId = getUserIdFromExtra(extra);
     const { slug, pinned, favorited, ...contentUpdates } = args;
 
+    // Handle content updates by read/merge/write because Convex requires full updates
+    const hasContentUpdates = Object.values(contentUpdates).some((v) => v !== undefined);
+    if (hasContentUpdates) {
+      const existing = await convex.query(api.prompts.getPromptBySlug, {
+        apiKey: config.convexApiKey,
+        userId,
+        slug,
+      });
+      if (!existing) {
+        throw new Error("Prompt not found");
+      }
+
+      const updates = {
+        slug: existing.slug,
+        name: contentUpdates.name ?? existing.name,
+        description: contentUpdates.description ?? existing.description,
+        content: contentUpdates.content ?? existing.content,
+        tags: contentUpdates.tags ?? existing.tags,
+      };
+
+      await convex.mutation(api.prompts.updatePromptBySlug, {
+        apiKey: config.convexApiKey,
+        userId,
+        slug,
+        updates,
+      });
+    }
+
     // Handle flag updates separately
     if (pinned !== undefined || favorited !== undefined) {
       await convex.mutation(api.prompts.updatePromptFlags, {
@@ -152,17 +189,6 @@ server.registerTool(
         slug,
         pinned,
         favorited,
-      });
-    }
-
-    // Handle content updates if any
-    const hasContentUpdates = Object.values(contentUpdates).some((v) => v !== undefined);
-    if (hasContentUpdates) {
-      await convex.mutation(api.prompts.updatePrompt, {
-        apiKey: config.convexApiKey,
-        userId,
-        slug,
-        ...contentUpdates,
       });
     }
 
@@ -190,7 +216,7 @@ server.registerTool(
   async (args, extra) => {
     const userId = getUserIdFromExtra(extra);
 
-    await convex.mutation(api.prompts.trackPromptUse, {
+    const tracked = await convex.mutation(api.prompts.trackPromptUse, {
       apiKey: config.convexApiKey,
       userId,
       slug: args.slug,
@@ -200,7 +226,7 @@ server.registerTool(
       content: [
         {
           type: "text",
-          text: JSON.stringify({ success: true }),
+          text: JSON.stringify({ tracked: tracked === true }),
         },
       ],
     };
@@ -229,12 +255,13 @@ function getUserIdFromExtra(extra: { authInfo?: { extra?: unknown } }): string {
 - Do not implement draft routes (Story 3)
 - Do not modify UI files (Stories 4-5)
 - Follow existing MCP tool patterns in the file
+- Do not stage or commit changes (handled outside this prompt)
 
 ## Verification
 
 ```bash
 bun run typecheck   # Should pass
-bun run test        # All 307 tests should PASS
+bun run test --project service tests/service/prompts/mcpTools.test.ts
 ```
 
 ### Manual Verification
@@ -250,7 +277,7 @@ Using MCP inspector or CLI:
 
 ## Done When
 
-- [ ] All 307 tests PASS (298 + 9)
+- [ ] Story 2 TCs in `tests/service/prompts/mcpTools.test.ts` pass (TC-19, TC-41..48)
 - [ ] TypeScript compiles
 - [ ] MCP tools callable and return expected data
 - [ ] No console errors
