@@ -1,6 +1,10 @@
 import type { FastifyPluginAsync } from "fastify";
 import { NotImplementedError } from "../lib/redis";
 
+// TODO: Add authMiddleware when implementing Story 3
+// All draft endpoints should require JWT authentication.
+// See src/routes/prompts.ts for the pattern: { preHandler: authMiddleware }
+
 export const draftsRoutes: FastifyPluginAsync = async (fastify) => {
 	// GET /api/drafts - List user's drafts
 	fastify.get("/", async () => {

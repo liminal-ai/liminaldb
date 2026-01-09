@@ -1,5 +1,4 @@
 import { internalMutation } from "../_generated/server";
-import { v } from "convex/values";
 import { DEFAULT_RANKING_CONFIG } from "../model/ranking";
 
 export const seedRankingConfig = internalMutation({

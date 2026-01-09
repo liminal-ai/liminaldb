@@ -101,7 +101,10 @@ async function listPromptsHandler(
 	};
 
 	try {
-		const parsedLimit = limit ? parseInt(limit, 10) : undefined;
+		// Handle NaN from non-numeric limit strings
+		const rawLimit = limit ? parseInt(limit, 10) : undefined;
+		const parsedLimit =
+			rawLimit !== undefined && !Number.isNaN(rawLimit) ? rawLimit : undefined;
 		const parsedTags = tags
 			? tags
 					.split(",")
@@ -237,7 +240,9 @@ async function trackUsageHandler(
 			userId,
 			slug,
 		})
-		.catch(() => {});
+		.catch((err) => {
+			request.log.warn({ err, slug, userId }, "Failed to track prompt usage");
+		});
 
 	return reply.code(204).send();
 }

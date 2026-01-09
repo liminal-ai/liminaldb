@@ -1,5 +1,3 @@
-import { config } from "./config";
-
 export class NotImplementedError extends Error {
 	constructor(message: string) {
 		super(message);
@@ -15,8 +13,6 @@ export interface RedisWrapper {
 	smembers(key: string): Promise<string[]>;
 	srem(key: string, ...members: string[]): Promise<number>;
 }
-
-const client: RedisWrapper | null = null;
 
 export const getRedis = (): RedisWrapper => {
 	throw new NotImplementedError("Redis client not implemented");

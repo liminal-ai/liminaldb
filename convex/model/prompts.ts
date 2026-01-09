@@ -514,6 +514,14 @@ export async function deleteBySlug(
 
 // Epic 02: Search & Select (Story 1) stubs (TDD red)
 
+/**
+ * List prompts for a user with ranking applied.
+ * 
+ * SCALABILITY NOTE: This function fetches ALL user prompts into memory before
+ * filtering and sorting. This is O(n) for fetch and O(n log n) for sort.
+ * For users with large prompt collections (1000+), consider adding pagination
+ * or a dedicated index-based approach in a future optimization pass.
+ */
 export async function listPromptsRanked(
 	ctx: QueryCtx,
 	userId: string,
@@ -554,8 +562,18 @@ export async function searchPrompts(
 	const now = Date.now();
 	const normalized = query.trim().toLowerCase();
 
+	// Short-circuit empty/whitespace queries to use ranked list behavior
+	if (!normalized) {
+		return listPromptsRanked(ctx, userId, { limit, tags });
+	}
+
 	const requested = limit ?? 50;
-	const searchLimit = Math.min(requested, config.searchRerankLimit);
+	const tagList = tags?.map((t) => t.trim().toLowerCase()).filter(Boolean);
+
+	// Over-fetch when tags are applied to compensate for post-fetch filtering
+	const baseTake =
+		tagList && tagList.length > 0 ? config.searchRerankLimit : requested;
+	const searchLimit = Math.min(baseTake, config.searchRerankLimit);
 
 	let results = await ctx.db
 		.query("prompts")
@@ -564,7 +582,6 @@ export async function searchPrompts(
 		)
 		.take(searchLimit);
 
-	const tagList = tags?.map((t) => t.trim().toLowerCase()).filter(Boolean);
 	if (tagList && tagList.length > 0) {
 		results = results.filter((p) =>
 			p.tagNames.some((name) => tagList.includes(name.toLowerCase())),
@@ -572,7 +589,7 @@ export async function searchPrompts(
 	}
 
 	const ranked = rerank(results, config.weights, { mode: "search", now });
-	return ranked.map(toDTOv2);
+	return ranked.slice(0, requested).map(toDTOv2);
 }
 
 export async function updatePromptFlags(
