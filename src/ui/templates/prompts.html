@@ -105,6 +105,26 @@
   <script src="/js/prompt-viewer.js"></script>
   <script src="/js/prompt-editor.js"></script>
   <script>
+    /**
+     * @typedef {Object} DraftData
+     * @property {string} slug
+     * @property {string} name
+     * @property {string} description
+     * @property {string} content
+     * @property {string[]} tags
+     */
+
+    /**
+     * @typedef {Object} Draft
+     * @property {string} draftId - Format: "edit:{slug}" or "new:{tempId}"
+     * @property {'edit'|'new'} type
+     * @property {string|null} promptSlug - Slug of prompt being edited (null for new)
+     * @property {DraftData} data
+     * @property {number} [createdAt]
+     * @property {number} [updatedAt]
+     * @property {number} [expiresAt]
+     */
+
     // State
     let prompts = [];
     let selectedSlug = null;
@@ -1130,8 +1150,13 @@
      *   promptSlug: string | undefined,
      *   data: { slug, name, description, content, tags }
      * }
-     * 
+     *
      * API: PUT /api/drafts/:draftId
+     */
+
+    /**
+     * Get the draft ID for the current editing context.
+     * @returns {string|null} Draft ID in format "edit:{slug}" or "new:{tempId}", or null if not in draft context
      */
     function getDraftIdForCurrentContext() {
       if (currentDraft?.draftId) return currentDraft.draftId;
@@ -1142,6 +1167,10 @@
       return null;
     }
 
+    /**
+     * Get the draft type for the current editing context.
+     * @returns {'edit'|'new'} The draft type
+     */
     function getDraftTypeForCurrentContext() {
       if (currentDraft?.type) return currentDraft.type;
       if (currentMode === 'new') return 'new';
@@ -1159,6 +1188,11 @@
       }
     }
 
+    /**
+     * Save current editor state to draft storage.
+     * @param {Partial<Draft>|null} [override] - Optional override for draft properties
+     * @returns {Promise<void>}
+     */
     async function saveToDraft(override = null) {
       if (typeof fetch !== 'function') return;
       const draftId = override?.draftId || getDraftIdForCurrentContext();
@@ -1289,7 +1323,7 @@
 
     /**
      * Discard button clears draft from Redis
-     * 
+     *
      * API: DELETE /api/drafts/:draftId
      */
     function clearDraftFromRedis() {
@@ -1307,7 +1341,7 @@
             if (summary) notifyShellOfDrafts(summary);
           }
         })
-        .catch(() => {});
+        .catch((err) => console.warn('Draft cleanup failed:', err));
     }
 
     /**
@@ -1321,10 +1355,11 @@
     }
 
     /**
-     * Expiration warning
-     * 
+     * Check draft expiration and show warning if expiring soon.
      * Shows warning when draft expires within 2 hours.
-     * Renders .draft-expiry-warning element.
+     *
+     * @param {Draft} draft - The draft object to check for expiration
+     * @returns {void}
      */
     function checkDraftExpiration(draft) {
       const warningEl = document.querySelector('.draft-expiry-warning');
@@ -1338,13 +1373,12 @@
     }
 
     /**
-     * Notify shell of draft changes
-     * 
+     * Notify shell of draft changes.
      * Sends draft summary to shell for indicator updates.
      * Called after draft create/update/delete operations.
-     * 
-     * Summary structure matches API response:
-     * { count, latestDraftId, nextExpiryAt?, hasExpiringSoon }
+     *
+     * @param {{count: number, latestDraftId: string|null, nextExpiryAt?: number, hasExpiringSoon: boolean}} summary - Draft summary from API
+     * @returns {void}
      */
     function notifyShellOfDrafts(summary) {
       if (window.parent && window.parent !== window) {
@@ -1359,10 +1393,11 @@
     }
 
     /**
-     * Open draft from shell request
+     * Open draft from shell request.
+     * Fetches draft list from API and finds matching draft, then restores the editor state.
      *
-     * Fetches draft list from API and finds matching draft.
-     * API: GET /api/drafts (no single-get endpoint exists)
+     * @param {string} draftId - Draft ID in format "edit:{slug}" or "new:{tempId}"
+     * @returns {Promise<void>}
      */
     async function openDraft(draftId) {
       if (typeof fetch !== 'function') return;
@@ -1384,11 +1419,31 @@
         }
 
         if (draft.type === 'new') {
-          // Enter insert mode and populate editor with draft data
-          enterInsertMode();
-          // showEditor already called; re-init with draft data
+          // Extract tempId from draftId (format: "new:temp_...")
+          const tempId = draft.draftId.replace(/^new:/, '');
+
+          // Save current list state if first staging entry
+          if (stagingPrompts.length === 0) {
+            const listEl = document.getElementById('prompt-list');
+            savedListState = {
+              query: '',
+              tags: [],
+              scrollTop: listEl ? listEl.scrollTop : 0
+            };
+          }
+
+          // Create staging entry with matching tempId (do NOT call enterInsertMode)
+          stagingPrompts.push({
+            tempId: tempId,
+            data: draft.data
+          });
+          selectedStagingId = tempId;
           currentMode = 'new';
+
+          renderStagingList();
           showEditor(draft.data);
+          isDirty = false;
+          updateStagingFooter();
         } else {
           // Edit draft: show editor with draft data
           selectedSlug = draft.promptSlug || selectedSlug;
@@ -1579,13 +1634,13 @@
     }
 
     // Pin toggle button
-    document.getElementById('pin-toggle')?.addEventListener('click', () => {
+    document.getElementById('pin-toggle').addEventListener('click', () => {
       if (!selectedSlug) return;
       handlePinToggle(selectedSlug, currentPromptFlags.pinned);
     });
 
     // Favorite toggle button
-    document.getElementById('favorite-toggle')?.addEventListener('click', () => {
+    document.getElementById('favorite-toggle').addEventListener('click', () => {
       if (!selectedSlug) return;
       handleFavoriteToggle(selectedSlug, currentPromptFlags.favorited);
     });
