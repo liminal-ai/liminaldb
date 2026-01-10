@@ -188,49 +188,11 @@ Uses AI daily across surfaces → Cares about prompt quality → Hates friction
 
 ---
 
-## Feature Roadmap
+## Development Status & Roadmap
 
-*See `ROADMAP.md` for full context and strategic rationale.*
+See the [main README](../README.md) for current roadmap and technical details.
 
-### Feature 1: Prompt CRUD (Current)
-*Get the thin slice working end-to-end.*
-
-| Layer | Status |
-|-------|--------|
-| Convex (schema, model, triggers) | Done |
-| Fastify REST API | Done |
-| MCP tools (save, get, delete) | Done |
-| Vitest framework | Done |
-| Web frontend | Next |
-
-### Feature 2: Skills
-*Skills are big prompts with attachments.*
-
-A skill has a slug, main content, tags - plus attachments (markdown files, CSVs, Python scripts, reference documents). Introduces Redis for text handling and caching.
-
-### Feature 3: ChatGPT Widgets (Optional)
-*Depends on timing and OpenAI policy changes.*
-
-If ChatGPT's app store situation improves:
-- PiP widget (low-profile prompt picker)
-- Inline cards (prompt display)
-- Fullscreen viewer (batch prompt review)
-
-### Feature 4: Search
-*Search as a pillar feature, not an afterthought.*
-
-- Full-text search across prompts and skills
-- Tag-based filtering
-- Typeahead suggestions
-- Recent/frequent access patterns
-
-### Features 5-6: Refinements & Ergonomics
-*Iterative, goal-directed, not rigidly scoped.*
-
-- Interface polish
-- AI utilities (parse documents, build skills, generate metadata)
-- Template refinement
-- Integration depth
+See [epics/README.md](./epics/README.md) for detailed development history.
 
 ---
 

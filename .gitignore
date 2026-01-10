@@ -20,5 +20,8 @@ _bmad/
 # OpenAI Apps SDK examples (cloned repo)
 docs/reference/openai-apps/openai-apps-sdk-examples/
 
+# Archived docs (local only)
+docs/.archive/
+
 # macOS
 .DS_Store

@@ -226,7 +226,7 @@ const healthWidgetHtml = `<!DOCTYPE html>
 
 export function createMcpServer(): McpServer {
 	const server = new McpServer({
-		name: "promptdb",
+		name: "liminaldb",
 		version: "1.0.0",
 	});
 

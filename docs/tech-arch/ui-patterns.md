@@ -1,6 +1,6 @@
 # UI Architecture, Patterns & Design
 
-> Source of truth for LiminalDB's UI architecture. Last updated: Phase 6a.
+> Source of truth for LiminalDB's UI architecture.
 
 ---
 
@@ -214,7 +214,7 @@ let stagingPrompts = [];  // Array of { tempId, data }
 - Form data is captured to staging array before switching entries
 - "Save All" posts all staged prompts in batch
 - "Discard All" clears staging and exits insert mode
-- Staging is in-memory only — refresh loses unsaved work (Redis persistence planned)
+- Staging is in-memory only — for persistent drafts, see Section 11 (Durable Drafts)
 
 ### Current Portlets
 
@@ -530,7 +530,7 @@ Layout classes that use theme tokens:
 
 ### UI Feedback Styles (base.css)
 
-Phase 6a added styles for user feedback patterns:
+Styles for user feedback patterns:
 
 | Class | Purpose |
 |-------|---------|
@@ -647,7 +647,7 @@ if (confirmed) {
 
 **Note:** Replaced native `confirm()` which blocked browser automation and looked ugly.
 
-**Location:** Currently defined in `prompts.html`. Planned extraction to `public/js/components/` for reuse by other portlets (see Phase 6b tech debt).
+**Location:** Currently defined in `prompts.html`. Future: extract to `public/js/components/` for reuse by other portlets.
 
 #### Inline Validation
 
@@ -708,7 +708,82 @@ if (typeof markdownit === 'undefined') {
 
 ---
 
-## 11. API Reference
+## 11. Durable Drafts
+
+Drafts persist in Redis (24h TTL) and survive browser refresh.
+
+### Shell Integration
+
+The shell header shows a draft indicator when unsaved drafts exist:
+
+```html
+<div id="draft-indicator" class="draft-indicator hidden">
+  <span class="draft-icon"></span>
+  <span id="draft-count">0</span> unsaved
+</div>
+```
+
+### Draft Polling
+
+Shell polls for drafts every 15 seconds:
+
+```javascript
+// Start on load
+startDraftPolling();
+
+async function fetchDraftSummary() {
+  const response = await fetch('/api/drafts/summary', { credentials: 'include' });
+  const summary = await response.json();
+  updateDraftIndicator(summary);
+}
+
+// Poll every 15s
+draftPollingInterval = setInterval(fetchDraftSummary, 15000);
+```
+
+### Draft Summary Response
+
+```typescript
+{
+  count: number;           // Total active drafts
+  latestDraftId: string;   // Most recent draft ID
+  hasExpiringSoon: boolean; // Any draft < 2h TTL remaining
+}
+```
+
+### Message Protocol (Drafts)
+
+| Message | Direction | Purpose | Payload |
+|---------|-----------|---------|---------|
+| `portlet:drafts` | Portlet → Shell | Draft count changed | `{ count, latestDraftId }` |
+| `shell:drafts:open` | Shell → Portlet | Open specific draft | `{ draftId }` |
+
+### Portlet Draft Behavior
+
+When editing a prompt:
+1. Each keystroke debounces and auto-saves to draft (POST `/api/drafts`)
+2. Draft ID is stable per prompt slug + user
+3. Save to Convex clears the draft (DELETE `/api/drafts/:id`)
+4. Discard clears the draft without saving
+
+### Cross-Tab Sync
+
+Drafts sync across tabs via:
+1. Redis as shared storage (any tab's save is visible to others)
+2. Shell polling picks up changes from other tabs
+3. Portlet can request fresh draft list on focus
+
+### Visual States
+
+| State | Indicator |
+|-------|-----------|
+| No drafts | Hidden |
+| 1+ drafts | Shows count badge |
+| Draft expiring soon (<2h) | Yellow/warning style via `.expiring-soon` class |
+
+---
+
+## 12. API Reference
 
 The UI fetches data from REST endpoints. Full API documentation is in the route handlers.
 
@@ -722,6 +797,11 @@ The UI fetches data from REST endpoints. Full API documentation is in the route 
 | `/api/prompts/:slug` | GET | Get single prompt | `Prompt` |
 | `/api/prompts/:slug` | DELETE | Delete prompt | `{ deleted: boolean }` |
 | `/api/prompts/:slug` | PUT | Update prompt | `{ prompt: Prompt }` |
+| `/api/drafts` | GET | List user's drafts | `Draft[]` |
+| `/api/drafts` | POST | Create/update draft | `{ id: string }` |
+| `/api/drafts/summary` | GET | Draft count and status | `{ count, latestDraftId, hasExpiringSoon }` |
+| `/api/drafts/:id` | GET | Get specific draft | `Draft` |
+| `/api/drafts/:id` | DELETE | Discard draft | `{ deleted: boolean }` |
 
 ### Prompt Shape
 
@@ -749,7 +829,7 @@ interface Prompt {
 
 ---
 
-## 12. Testing Patterns
+## 13. Testing Patterns
 
 ### Test Categories
 
@@ -816,9 +896,7 @@ async function loadTemplate(name: string) {
 | Prompt selection | Yes | DOM class changes |
 | prompt-editor component | Yes | Form rendering, validation, dirty state |
 
-### Phase 6b Test Additions (Planned)
-
-See `docs/epics/01-promptdb-insert-get/phase-6-insert-edit-modes.md` for full test case list:
+### Additional Test Coverage
 
 | Area | Test File | Coverage |
 |------|-----------|----------|
@@ -837,7 +915,7 @@ See `docs/epics/01-promptdb-insert-get/phase-6-insert-edit-modes.md` for full te
 
 ---
 
-## 13. Authentication
+## 14. Authentication
 
 ### Auth Context Injection
 
@@ -875,7 +953,7 @@ app.get('/_m/prompts', serveModule);
 
 ---
 
-## 14. Current Inventory
+## 15. Current Inventory
 
 ### Routes
 
@@ -890,6 +968,9 @@ app.get('/_m/prompts', serveModule);
 | `/api/prompts` | API | Yes | List/create prompts | Active |
 | `/api/prompts/tags` | API | Yes | List unique tags | Active |
 | `/api/prompts/:slug` | API | Yes | Get/delete/update prompt | Active |
+| `/api/drafts` | API | Yes | List/create drafts | Active |
+| `/api/drafts/summary` | API | Yes | Draft count and status | Active |
+| `/api/drafts/:id` | API | Yes | Get/delete draft | Active |
 
 ### Files
 
@@ -907,7 +988,7 @@ app.get('/_m/prompts', serveModule);
 
 ---
 
-## 15. Open Questions
+## 16. Open Questions
 
 ### Resolved
 
@@ -933,7 +1014,7 @@ app.get('/_m/prompts', serveModule);
 
 ---
 
-## 16. Widgets & Demos (Experimental)
+## 17. Widgets & Demos (Experimental)
 
 The following standalone demo UIs live under `public/widgets/` and are not part of the main shell/portlet system:
 
@@ -972,10 +1053,10 @@ public/
 tests/
 ├── service/ui/             # UI tests (jsdom)
 └── integration/ui/         # Route tests
-docs/
-└── ui-arch-patterns-design.md  # This document
+docs/tech-arch/
+└── ui-patterns.md              # This document
 ```
 
 ---
 
-*Version 1.1 - Phase 6a Complete*
+*Last updated: January 2025*
