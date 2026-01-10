@@ -47,7 +47,7 @@ function startDraftPolling() {
 async function fetchDraftSummary() {
   try {
     const response = await fetch('/api/drafts/summary', {
-      headers: { 'Authorization': `Bearer ${getToken()}` }
+      credentials: 'same-origin'
     });
 
     if (!response.ok) return;
@@ -121,6 +121,14 @@ let draftDebounceTimer = null;
 const DRAFT_DEBOUNCE_MS = 500;
 const EXPIRY_WARNING_MS = 2 * 60 * 60 * 1000; // 2 hours
 
+// Helper: fetch single draft by ID (API only has list endpoint)
+async function getDraftById(draftId) {
+  const response = await fetch('/api/drafts');
+  if (!response.ok) return null;
+  const drafts = await response.json();
+  return drafts.find(d => d.draftId === draftId) || null;
+}
+
 // Auto-save to draft on edit
 function handleEditModeChange(field, value) {
   clearTimeout(draftDebounceTimer);
@@ -148,7 +156,6 @@ async function saveToDraft() {
     const response = await fetch(`/api/drafts/${draftId}`, {
       method: 'PUT',
       headers: {
-        'Authorization': `Bearer ${getToken()}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(draftData)
@@ -212,18 +219,14 @@ async function handleSave() {
   }
 
   try {
-    // Get draft data
-    const response = await fetch(`/api/drafts/${currentDraftId}`, {
-      headers: { 'Authorization': `Bearer ${getToken()}` }
-    });
+    // Get draft data (fetch list and filter - no single-get endpoint)
+    const draft = await getDraftById(currentDraftId);
 
-    if (!response.ok) {
+    if (!draft) {
       // Draft not found, do normal save
       await savePrompt();
       return;
     }
-
-    const draft = await response.json();
 
     // Commit to Convex
     const saveSuccess = await savePromptFromDraft(draft.data);
@@ -232,16 +235,16 @@ async function handleSave() {
       // Delete the draft
       await fetch(`/api/drafts/${currentDraftId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${getToken()}` }
+        credentials: 'same-origin'
       });
 
       currentDraftId = null;
       notifyShellOfDrafts();
-      showToast('Prompt saved', 'success');
+      showToast('Prompt saved', { type: 'success' });
     }
   } catch (err) {
     console.error('Save failed:', err);
-    showToast('Save failed - draft preserved', 'error');
+    showToast('Save failed - draft preserved', { type: 'error' });
     // Draft is preserved on failure
   }
 }
@@ -253,7 +256,7 @@ async function handleDiscard() {
   try {
     await fetch(`/api/drafts/${currentDraftId}`, {
       method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${getToken()}` }
+      credentials: 'same-origin'
     });
 
     currentDraftId = null;
@@ -266,17 +269,17 @@ async function handleDiscard() {
       exitEditMode();
     }
 
-    showToast('Changes discarded', 'info');
+    showToast('Changes discarded', { type: 'info' });
   } catch (err) {
     console.error('Discard failed:', err);
-    showToast('Failed to discard', 'error');
+    showToast('Failed to discard', { type: 'error' });
   }
 }
 
 // Handle save failure - preserves draft
 function handleSaveFailure(error) {
   console.error('Save failed:', error);
-  showToast('Save failed - your changes are preserved as a draft', 'error');
+  showToast('Save failed - your changes are preserved as a draft', { type: 'error' });
   // currentDraftId remains set, draft stays in Redis
 }
 
@@ -304,7 +307,7 @@ function showDraftExpirationWarning(timeRemaining) {
 async function notifyShellOfDrafts() {
   try {
     const response = await fetch('/api/drafts/summary', {
-      headers: { 'Authorization': `Bearer ${getToken()}` }
+      credentials: 'same-origin'
     });
 
     if (response.ok) {
@@ -332,16 +335,14 @@ window.addEventListener('message', (event) => {
 
 async function openDraft(draftId) {
   try {
-    const response = await fetch(`/api/drafts/${draftId}`, {
-      headers: { 'Authorization': `Bearer ${getToken()}` }
-    });
+    // Fetch list and filter (no single-get endpoint)
+    const draft = await getDraftById(draftId);
 
-    if (!response.ok) {
-      showToast('Draft not found', 'error');
+    if (!draft) {
+      showToast('Draft not found', { type: 'error' });
       return;
     }
 
-    const draft = await response.json();
     currentDraftId = draftId;
 
     // Load draft data into editor
@@ -359,7 +360,7 @@ async function openDraft(draftId) {
     checkDraftExpiration(draft);
   } catch (err) {
     console.error('Failed to open draft:', err);
-    showToast('Failed to open draft', 'error');
+    showToast('Failed to open draft', { type: 'error' });
   }
 }
 ```
@@ -401,7 +402,7 @@ document.getElementById('discard-btn').addEventListener('click', handleDiscard);
 
 ```bash
 bun run typecheck   # Should pass
-bun run test        # All 333 tests should PASS
+bun run test        # All 341 tests should PASS
 ```
 
 ### Manual Verification
@@ -423,7 +424,7 @@ bun run test        # All 333 tests should PASS
 
 ## Done When
 
-- [ ] All 333 tests PASS (323 + 10)
+- [ ] All 341 tests PASS (331 + 10)
 - [ ] TypeScript compiles
 - [ ] Manual verification passes
 - [ ] Drafts persist across refreshes
@@ -438,5 +439,5 @@ After completion, summarize: which files were modified, how many tests now pass,
 After Story 5 green phase:
 - 50 ACs delivered
 - 48 TCs verified
-- 55 new tests (278 → 333)
+- 63 new tests (278 → 341)
 - Epic 02: Search & Select complete

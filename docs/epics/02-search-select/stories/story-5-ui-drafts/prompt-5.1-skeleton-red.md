@@ -13,7 +13,7 @@ Add draft indicator to shell, draft management to portlet, and write UI tests th
 Story 3 and Story 4 must be complete:
 - Draft API endpoints exist (`/api/drafts/*`)
 - Search/pin UI exists in shell and portlet
-- All 323 tests pass (278 + 20 + 9 + 4 + 12 from Stories 0-4)
+- All 331 tests pass (Stories 0-4 complete)
 
 ## Reference Documents
 
@@ -183,8 +183,8 @@ describe("UI Durable Drafts", () => {
 
   test("TC-27: edit mode change saves to draft", async () => {
     dom.window.fetch = mockFetch({
-      "/api/prompts": { data: mockPrompts },
-      "/api/drafts": { data: { draftId: "edit:code-review" } },
+      "/api/prompts": mockPrompts,
+      "/api/drafts/edit:code-review": { draftId: "edit:code-review" },
     });
 
     dom.window.loadPrompts();
@@ -217,8 +217,8 @@ describe("UI Durable Drafts", () => {
 
   test("TC-28: line edit saves to draft", async () => {
     dom.window.fetch = mockFetch({
-      "/api/prompts": { data: mockPrompts },
-      "/api/drafts": { data: { draftId: "edit:code-review" } },
+      "/api/prompts": mockPrompts,
+      "/api/drafts/edit:code-review": { draftId: "edit:code-review" },
     });
 
     dom.window.loadPrompts();
@@ -265,7 +265,7 @@ describe("UI Durable Drafts", () => {
           mockPrompts[1],
         ],
       },
-      "/api/drafts": { data: { draftId: "edit:code-review" } },
+      "/api/drafts/edit:code-review": { draftId: "edit:code-review" },
     });
 
     dom.window.loadPrompts();
@@ -307,8 +307,8 @@ describe("UI Durable Drafts", () => {
 
   test("TC-30: new prompt creates draft", async () => {
     dom.window.fetch = mockFetch({
-      "/api/prompts": { data: mockPrompts },
-      "/api/drafts": { data: { draftId: "new:abc123" } },
+      "/api/prompts": mockPrompts,
+      "/api/drafts/new:abc123": { draftId: "new:abc123" },
     });
 
     dom.window.loadPrompts();
@@ -336,8 +336,8 @@ describe("UI Durable Drafts", () => {
 
   test("TC-31: multiple +New creates multiple drafts", async () => {
     dom.window.fetch = mockFetch({
-      "/api/prompts": { data: mockPrompts },
-      "/api/drafts": { data: { draftId: "new:abc123" } },
+      "/api/prompts": mockPrompts,
+      "/api/drafts/new:abc123": { draftId: "new:abc123" },
     });
 
     dom.window.loadPrompts();
@@ -357,7 +357,7 @@ describe("UI Durable Drafts", () => {
 
   test("TC-35: clicking indicator navigates to draft", async () => {
     dom.window.fetch = mockFetch({
-      "/api/prompts": { data: mockPrompts },
+      "/api/prompts": mockPrompts,
       "/api/drafts/edit:code-review": { data: { draftId: "edit:code-review", data: mockPrompts[0] } },
     });
 
@@ -371,8 +371,8 @@ describe("UI Durable Drafts", () => {
 
   test("TC-38: save failure preserves draft", async () => {
     dom.window.fetch = mockFetch({
-      "/api/prompts": { data: mockPrompts },
-      "/api/drafts": { data: { draftId: "edit:code-review" } },
+      "/api/prompts": mockPrompts,
+      "/api/drafts/edit:code-review": { draftId: "edit:code-review" },
       "/api/prompts/code-review": { ok: false, status: 500, data: { error: "fail" } },
     });
 
@@ -503,7 +503,7 @@ New messages for shell/portlet communication:
 
 ```bash
 bun run typecheck   # Should pass
-bun run test        # 323 existing PASS, 10 new ERROR
+bun run test        # 331 existing PASS, 10 new ERROR
 ```
 
 ## Done When
@@ -515,10 +515,10 @@ bun run test        # 323 existing PASS, 10 new ERROR
 - [ ] 8 tests added to prompts-module.test.ts
 - [ ] 2 tests added to shell-history.test.ts
 - [ ] New tests ERROR with NotImplementedError
-- [ ] Existing 323 tests still PASS
+- [ ] Existing 331 tests still PASS
 - [ ] TypeScript compiles
 
-After completion, summarize: which files were created/modified, how many tests were added, and confirm the expected test state (323 PASS, 10 ERROR).
+After completion, summarize: which files were created/modified, how many tests were added, and confirm the expected test state (331 PASS, 10 ERROR).
 
 ---
 
@@ -527,5 +527,5 @@ After completion, summarize: which files were created/modified, how many tests w
 After Story 5 green phase:
 - 50 ACs delivered
 - 48 TCs verified
-- 55 new tests (278 → 333)
+- 63 new tests (278 → 341)
 - Epic 02: Search & Select complete

@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach } from "vitest";
+import { describe, test, expect, beforeEach, vi } from "vitest";
 import {
 	loadTemplate,
 	mockPrompts,
@@ -7,6 +7,7 @@ import {
 	waitForAsync,
 	click,
 	input,
+	blur,
 	postMessage,
 } from "./setup";
 import type { JSDOM } from "jsdom";
@@ -1023,6 +1024,351 @@ describe("Prompts Module", () => {
 			const favItem = dom.window.document.querySelector(".prompt-item");
 			if (!favItem) throw new Error("Prompt item not found");
 			expect(favItem.querySelector(".prompt-star")).not.toBeNull();
+		});
+	});
+
+	describe("UI Durable Drafts", () => {
+		test("TC-27: edit mode change saves to draft", async () => {
+			dom.window.fetch = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+				"/api/drafts/edit:code-review": {
+					data: { draftId: "edit:code-review" },
+				},
+			});
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const firstItem = dom.window.document.querySelector(".prompt-item");
+			if (!firstItem) throw new Error("Prompt item not found");
+			click(firstItem);
+			await waitForAsync(50);
+
+			const editBtn = dom.window.document.getElementById("edit-btn");
+			if (!editBtn) throw new Error("Edit button not found");
+			click(editBtn);
+			await waitForAsync(50);
+
+			const nameInput = dom.window.document.getElementById(
+				"editor-name",
+			) as HTMLInputElement | null;
+			if (!nameInput) throw new Error("Editor name input not found");
+			vi.useFakeTimers();
+			input(nameInput, "Updated Name");
+			vi.advanceTimersByTime(600);
+
+			const fetchCalls = (
+				dom.window.fetch as unknown as ReturnType<typeof vi.fn>
+			).mock.calls;
+			expect(
+				fetchCalls.some(
+					([url, opts]) =>
+						typeof url === "string" &&
+						url.includes("/api/drafts/edit:code-review") &&
+						(opts as RequestInit | undefined)?.method === "PUT",
+				),
+			).toBe(true);
+			vi.useRealTimers();
+		});
+
+		test("TC-28: line edit saves to draft", async () => {
+			dom.window.fetch = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+				"/api/prompts/code-review": { data: mockPrompts[0] }, // Mock the PUT endpoint
+				"/api/drafts/edit:code-review": {
+					data: { draftId: "edit:code-review" },
+				},
+			});
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const firstItem = dom.window.document.querySelector(".prompt-item");
+			if (!firstItem) throw new Error("Prompt item not found");
+			click(firstItem);
+			await waitForAsync(50);
+
+			// Switch to semantic view and enable line edit
+			const semanticBtn = dom.window.document.querySelector(
+				'[data-view="semantic"]',
+			);
+			if (!semanticBtn) throw new Error("Semantic view button not found");
+			click(semanticBtn as Element);
+			await waitForAsync(50);
+
+			const toggle = dom.window.document.getElementById("line-edit-toggle");
+			if (!toggle) throw new Error("Line edit toggle not found");
+			click(toggle);
+			await waitForAsync(50);
+
+			const editable = dom.window.document.querySelector(".editable-line");
+			if (!editable) throw new Error("Editable line not found");
+			click(editable);
+			await waitForAsync(50);
+
+			const inputEl = dom.window.document.querySelector(
+				".line-edit-input",
+			) as HTMLTextAreaElement | null;
+			if (!inputEl) throw new Error("Line edit input not found");
+			input(inputEl, "Updated line");
+			blur(inputEl);
+			// Wait for async saveLineEdit to complete (it makes a fetch call)
+			await waitForAsync(200);
+
+			const fetchCalls = (
+				dom.window.fetch as unknown as ReturnType<typeof vi.fn>
+			).mock.calls;
+			expect(
+				fetchCalls.some(
+					([url, opts]) =>
+						typeof url === "string" &&
+						url.includes("/api/drafts/edit:code-review") &&
+						(opts as RequestInit | undefined)?.method === "PUT",
+				),
+			).toBe(true);
+		});
+
+		test("TC-29: multiple line edits accumulate in same draft", async () => {
+			dom.window.fetch = mockFetch({
+				"/api/prompts": {
+					data: [
+						{ ...mockPrompts[0], content: "line one\nline two" },
+						mockPrompts[1],
+					],
+				},
+				"/api/prompts/code-review": { data: mockPrompts[0] }, // Mock the PUT endpoint
+				"/api/drafts/edit:code-review": {
+					data: { draftId: "edit:code-review" },
+				},
+			});
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const firstItem = dom.window.document.querySelector(".prompt-item");
+			if (!firstItem) throw new Error("Prompt item not found");
+			click(firstItem);
+			await waitForAsync(50);
+
+			const semanticBtn = dom.window.document.querySelector(
+				'[data-view="semantic"]',
+			);
+			if (!semanticBtn) throw new Error("Semantic view button not found");
+			click(semanticBtn as Element);
+			const toggle = dom.window.document.getElementById("line-edit-toggle");
+			if (!toggle) throw new Error("Line edit toggle not found");
+			click(toggle);
+			await waitForAsync(50);
+
+			const editableLines =
+				dom.window.document.querySelectorAll(".editable-line");
+			if (editableLines.length < 2)
+				throw new Error("Not enough editable lines");
+
+			click(editableLines[0] as Element);
+			await waitForAsync(50);
+			const input1 = dom.window.document.querySelector(
+				".line-edit-input",
+			) as HTMLTextAreaElement | null;
+			if (!input1) throw new Error("Line edit input not found");
+			input(input1, "Line one");
+			blur(input1);
+			await waitForAsync(200);
+
+			click(editableLines[1] as Element);
+			await waitForAsync(50);
+			const input2 = dom.window.document.querySelector(
+				".line-edit-input",
+			) as HTMLTextAreaElement | null;
+			if (!input2) throw new Error("Line edit input not found");
+			input(input2, "Line two");
+			blur(input2);
+			await waitForAsync(200);
+
+			const draftCalls = (
+				dom.window.fetch as unknown as ReturnType<typeof vi.fn>
+			).mock.calls.filter(
+				([url]) => typeof url === "string" && url.includes("/api/drafts/"),
+			);
+			const draftUrls = draftCalls.map(([url]) => url as string);
+			expect(new Set(draftUrls).size).toBe(1);
+		});
+
+		test("TC-30: new prompt creates draft", async () => {
+			dom.window.fetch = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+				"/api/drafts/new:abc123": { data: { draftId: "new:abc123" } },
+			});
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const newBtn = dom.window.document.getElementById("new-prompt-btn");
+			if (!newBtn) throw new Error("New prompt button not found");
+			click(newBtn);
+			await waitForAsync(50);
+
+			const slugInput = dom.window.document.getElementById(
+				"editor-slug",
+			) as HTMLInputElement | null;
+			if (!slugInput) throw new Error("Editor slug input not found");
+			vi.useFakeTimers();
+			input(slugInput, "new-draft");
+			vi.advanceTimersByTime(600);
+
+			const fetchCalls = (
+				dom.window.fetch as unknown as ReturnType<typeof vi.fn>
+			).mock.calls;
+			expect(
+				fetchCalls.some(
+					([url, opts]) =>
+						typeof url === "string" &&
+						url.includes("/api/drafts/new:") &&
+						(opts as RequestInit | undefined)?.method === "PUT",
+				),
+			).toBe(true);
+			vi.useRealTimers();
+		});
+
+		test("TC-31: multiple +New creates multiple drafts", async () => {
+			dom.window.fetch = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+				"/api/drafts/new:abc123": { data: { draftId: "new:abc123" } },
+			});
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const newBtn = dom.window.document.getElementById("new-prompt-btn");
+			if (!newBtn) throw new Error("New prompt button not found");
+			click(newBtn);
+			await waitForAsync(50);
+			click(newBtn);
+			await waitForAsync(50);
+
+			const draftCalls = (
+				dom.window.fetch as unknown as ReturnType<typeof vi.fn>
+			).mock.calls.filter(
+				([url]) => typeof url === "string" && url.includes("/api/drafts/new:"),
+			);
+			expect(draftCalls.length).toBeGreaterThanOrEqual(2);
+		});
+
+		test("TC-35: clicking indicator navigates to draft", async () => {
+			dom.window.fetch = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+				// openDraft fetches list and filters (no single-get endpoint)
+				"/api/drafts": {
+					data: [
+						{
+							draftId: "edit:code-review",
+							type: "edit",
+							promptSlug: "code-review",
+							data: mockPrompts[0],
+						},
+					],
+				},
+			});
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			// Simulate shell:drafts:open message and assert draft opens in portlet
+			postMessage(dom, {
+				type: "shell:drafts:open",
+				draftId: "edit:code-review",
+			});
+			await waitForAsync(100);
+
+			// In green phase, this should open the draft and show the slug
+			// For red phase, we expect it to fail (stub doesn't implement)
+			const slugEl = dom.window.document.getElementById("prompt-slug");
+			// Test will fail because openDraft() is a stub
+			expect(slugEl?.textContent).toBe("code-review");
+		});
+
+		test("TC-38: save failure preserves draft", async () => {
+			dom.window.fetch = mockFetch({
+				// Order matters: mockFetch picks the first matching substring.
+				"/api/prompts/code-review": {
+					ok: false,
+					status: 500,
+					data: { error: "fail" },
+				},
+				"/api/prompts": { data: mockPrompts },
+				"/api/drafts/edit:code-review": {
+					data: { draftId: "edit:code-review" },
+				},
+			});
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const firstItem = dom.window.document.querySelector(".prompt-item");
+			if (!firstItem) throw new Error("Prompt item not found");
+			click(firstItem);
+			await waitForAsync(50);
+
+			const editBtn = dom.window.document.getElementById("edit-btn");
+			if (!editBtn) throw new Error("Edit button not found");
+			click(editBtn);
+			await waitForAsync(50);
+
+			const nameInput = dom.window.document.getElementById(
+				"editor-name",
+			) as HTMLInputElement | null;
+			if (!nameInput) throw new Error("Editor name input not found");
+			input(nameInput, "Updated Name");
+
+			const saveBtn = dom.window.document.getElementById("btn-save");
+			if (!saveBtn) throw new Error("Save button not found");
+			click(saveBtn);
+			await waitForAsync(100);
+
+			const fetchCalls = (
+				dom.window.fetch as unknown as ReturnType<typeof vi.fn>
+			).mock.calls;
+			const deleteDraftCalls = fetchCalls.filter(
+				([url, opts]) =>
+					typeof url === "string" &&
+					url.includes("/api/drafts/") &&
+					(opts as RequestInit | undefined)?.method === "DELETE",
+			);
+			expect(deleteDraftCalls.length).toBe(0);
+		});
+
+		test("TC-40: warning shown near expiration", async () => {
+			dom.window.fetch = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+				// openDraft fetches list and filters (no single-get endpoint)
+				"/api/drafts": {
+					data: [
+						{
+							draftId: "edit:code-review",
+							type: "edit",
+							promptSlug: "code-review",
+							data: mockPrompts[0],
+							expiresAt: Date.now() + 60 * 60 * 1000, // 1 hour (within 2 hour warning window)
+						},
+					],
+				},
+			});
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			postMessage(dom, {
+				type: "shell:drafts:open",
+				draftId: "edit:code-review",
+			});
+			await waitForAsync(100);
+
+			// In green phase, checkDraftExpiration() should show the warning
+			// For red phase, we expect it to fail (stub doesn't implement)
+			const warning = dom.window.document.querySelector(
+				".draft-expiry-warning",
+			);
+			expect(warning).not.toBeNull();
 		});
 	});
 });

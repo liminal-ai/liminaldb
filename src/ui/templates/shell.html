@@ -19,6 +19,10 @@
       <div class="filter-tags" id="filter-tags"></div>
     </div>
     <div class="logo"><strong>LIMINAL</strong>DB</div>
+    <div id="draft-indicator" class="draft-indicator hidden">
+      <span class="draft-icon"></span>
+      <span id="draft-count">0</span> unsaved
+    </div>
     <div class="user-info">{{email}}</div>
   </header>
 
@@ -48,6 +52,8 @@
     let selectedTags = [];
     let debounceTimer;
     let portletDirty = false;
+    let draftPollingInterval = null;
+    let currentDraftSummary = { count: 0, latestDraftId: null, hasExpiringSoon: false };
 
     // ============================================
     // HISTORY / ROUTER
@@ -307,12 +313,94 @@
           // Track dirty state from portlet
           portletDirty = payload.dirty === true;
           break;
+
+        case 'portlet:drafts':
+          // Draft updates from portlet
+          updateDraftIndicator(payload);
+          break;
       }
     });
+
+    // ============================================
+    // DRAFT INDICATOR
+    // ============================================
+
+    /**
+     * Start polling for drafts
+     */
+    function startDraftPolling() {
+      // Initial fetch
+      fetchDraftSummary();
+
+      // Poll every 15 seconds
+      draftPollingInterval = setInterval(fetchDraftSummary, 15000);
+    }
+
+    async function fetchDraftSummary() {
+      try {
+        const response = await window.fetch('/api/drafts/summary', {
+          credentials: 'same-origin'
+        });
+        if (!response.ok) return;
+        const summary = await response.json();
+        updateDraftIndicator(summary);
+      } catch (e) {
+        console.error('Draft polling failed:', e);
+      }
+    }
+
+    /**
+     * Update draft indicator UI
+     * 
+     * Shows/hides indicator based on draft count.
+     * Updates count display and handles expiring soon state.
+     */
+    function updateDraftIndicator(summary) {
+      if (!summary || typeof summary.count !== 'number') return;
+      currentDraftSummary = {
+        count: summary.count ?? 0,
+        latestDraftId: summary.latestDraftId ?? null,
+        hasExpiringSoon: summary.hasExpiringSoon === true,
+      };
+
+      const indicator = document.getElementById('draft-indicator');
+      const countEl = document.getElementById('draft-count');
+      if (!indicator || !countEl) return;
+
+      if (currentDraftSummary.count > 0) {
+        indicator.classList.remove('hidden');
+        countEl.textContent = String(currentDraftSummary.count);
+        indicator.classList.toggle('expiring-soon', currentDraftSummary.hasExpiringSoon);
+      } else {
+        indicator.classList.add('hidden');
+        countEl.textContent = '0';
+        indicator.classList.remove('expiring-soon');
+      }
+    }
+
+    /**
+     * Handle click on draft indicator
+     * 
+     * Navigates to the latest draft or opens draft management UI.
+     */
+    const draftIndicator = document.getElementById('draft-indicator');
+    if (draftIndicator) {
+      draftIndicator.addEventListener('click', () => {
+        const draftId = currentDraftSummary?.latestDraftId;
+        if (!draftId) return;
+        if (moduleFrame && moduleFrame.contentWindow) {
+          moduleFrame.contentWindow.postMessage({
+            type: 'shell:drafts:open',
+            draftId
+          }, window.location.origin);
+        }
+      });
+    }
 
     // Initialize
     initHistoryState();
     loadTags();
+    startDraftPolling();
   </script>
 </body>
 </html>
