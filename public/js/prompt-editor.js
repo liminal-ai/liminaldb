@@ -23,6 +23,7 @@ const promptEditor = (() => {
 	let onSave = null;
 	let onDiscard = null;
 	let onDirtyChange = null;
+	let onChange = null;
 
 	/**
 	 * Initialize the editor in a container element
@@ -32,6 +33,7 @@ const promptEditor = (() => {
 	 * @param {Function} options.onSave - Called with form data on save
 	 * @param {Function} options.onDiscard - Called on discard
 	 * @param {Function} [options.onDirtyChange] - Called when dirty state changes
+	 * @param {Function} [options.onChange] - Called when field changes (field, value)
 	 */
 	function init(container, options = {}) {
 		containerEl = container;
@@ -45,6 +47,7 @@ const promptEditor = (() => {
 		onSave = options.onSave || (() => {});
 		onDiscard = options.onDiscard || (() => {});
 		onDirtyChange = options.onDirtyChange || (() => {});
+		onChange = options.onChange || (() => {});
 		isDirty = false;
 
 		render();
@@ -145,6 +148,9 @@ const promptEditor = (() => {
 		inputs.forEach((input) => {
 			input.addEventListener("input", () => {
 				setDirty(true);
+				// Call onChange callback with field name and value
+				const field = input.name || input.id.replace("editor-", "");
+				onChange(field, input.value);
 			});
 		});
 

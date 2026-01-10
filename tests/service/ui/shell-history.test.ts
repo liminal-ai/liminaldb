@@ -120,4 +120,50 @@ describe("Shell history (popstate)", () => {
 			vi.useRealTimers();
 		});
 	});
+
+	describe("Draft Indicator", () => {
+		test("TC-33: draft in other tab shows indicator", async () => {
+			// Important: enable fake timers before loading the shell so the polling interval
+			// is scheduled on the fake clock.
+			vi.useFakeTimers();
+			const dom = await loadShell();
+			dom.window.fetch = vi.fn(() =>
+				Promise.resolve({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							count: 1,
+							latestDraftId: "edit:code-review",
+							hasExpiringSoon: false,
+						}),
+				}),
+			) as unknown as typeof fetch;
+
+			// Run the interval and await async fetch/JSON resolution.
+			await vi.advanceTimersByTimeAsync(15000);
+
+			const indicator = dom.window.document.getElementById("draft-indicator");
+			expect(indicator?.classList.contains("hidden")).toBe(false);
+			vi.useRealTimers();
+		});
+
+		test("TC-34: draft exists shows unsaved indicator", async () => {
+			const dom = await loadShell();
+
+			dom.window.dispatchEvent(
+				new dom.window.MessageEvent("message", {
+					data: {
+						type: "portlet:drafts",
+						count: 2,
+						latestDraftId: "edit:code-review",
+						hasExpiringSoon: false,
+					},
+					origin: "http://localhost:5001",
+				}),
+			);
+
+			const indicator = dom.window.document.getElementById("draft-indicator");
+			expect(indicator?.classList.contains("hidden")).toBe(false);
+		});
+	});
 });

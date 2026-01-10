@@ -70,6 +70,11 @@
             <button class="prompt-viewer-btn" id="line-edit-toggle" title="Enable line-by-line editing">Line Edit</button>
           </div>
         </div>
+        <!-- Draft expiration warning (hidden by default, shown by checkDraftExpiration) -->
+        <div class="draft-expiry-warning" style="display: none;">
+          <span class="warning-icon">⚠️</span>
+          <span class="warning-text">This draft will expire soon</span>
+        </div>
         <div class="prompt-viewer-content" id="promptContent"></div>
         <div class="prompt-viewer-stats">
           <span class="prompt-viewer-stat">tags <span class="prompt-viewer-stat-value" id="statTags">0</span></span>
@@ -127,6 +132,12 @@
     let selectedStagingId = null;
     let savedListState = { query: '', tags: [], scrollTop: 0 }; // Preserved during insert mode
     let isDirty = false;
+
+    // Draft state
+    let currentDraft = null;
+    let draftDebounceTimer = null;
+    const DRAFT_DEBOUNCE_MS = 500;
+    const EXPIRY_WARNING_MS = 2 * 60 * 60 * 1000; // 2 hours
 
     // Initialize modal component (from modal.js)
     initModal();
@@ -276,6 +287,10 @@
       isDirty = false; // Reset after showing new empty form
       updateStagingFooter();
       notifyShellStateChange(true);
+      
+      // Create draft entry for new prompt
+      handleNewPrompt();
+      // Note: notifyShellOfDrafts() will be called from saveToDraft() in green phase
     }
 
     /**
@@ -311,6 +326,9 @@
         onDirtyChange: (dirty) => {
           isDirty = dirty;
           notifyShellDirtyState(dirty);
+        },
+        onChange: (field, value) => {
+          handleEditModeChange(field, value);
         }
       });
     }
@@ -482,10 +500,14 @@
 
           if (!response.ok) {
             const err = await response.json();
+            handleSaveFailure(err);
             showToast(err.error || 'Failed to save', { type: 'error' });
             return;
           }
 
+          // Commit draft to Convex (delete draft after successful save)
+          commitDraftToConvex();
+          
           hideEditor();
           await loadPrompts();
 
@@ -501,9 +523,13 @@
 
           if (!response.ok) {
             const err = await response.json();
+            handleSaveFailure(err);
             showToast(err.error || 'Failed to save', { type: 'error' });
             return;
           }
+
+          // Commit draft to Convex (delete draft after successful save)
+          commitDraftToConvex();
 
           // Remove from staging
           stagingPrompts = stagingPrompts.filter(s => s.tempId !== selectedStagingId);
@@ -523,6 +549,7 @@
         }
       } catch (err) {
         console.error('Save failed:', err);
+        handleSaveFailure(err);
         showToast('Failed to save prompt', { type: 'error' });
       }
     }
@@ -531,6 +558,9 @@
      * Handle discard from editor
      */
     function handleDiscard() {
+      // Clear draft from Redis
+      clearDraftFromRedis();
+      
       if (currentMode === 'edit') {
         hideEditor();
         currentMode = 'view';
@@ -821,11 +851,18 @@
     async function saveLineEdit(lineIndex, newValue) {
       const lines = rawPrompt.split('\n');
       const oldValue = lines[lineIndex] || '';
+      const contentEl = document.getElementById('promptContent');
+      const lineEl = contentEl?.querySelector(`.editable-line[data-line="${lineIndex}"]`);
 
       // No change, just re-render
       if (newValue === oldValue) {
         editingLineIndex = null;
-        displayPromptContent(rawPrompt);
+        if (lineEl) {
+          lineEl.classList.remove('editing');
+          lineEl.textContent = oldValue;
+        } else {
+          displayPromptContent(rawPrompt);
+        }
         return;
       }
 
@@ -837,45 +874,28 @@
       const prompt = prompts.find(p => p.slug === selectedSlug);
       if (!prompt) {
         editingLineIndex = null;
-        displayPromptContent(rawPrompt);
+        if (lineEl) {
+          lineEl.classList.remove('editing');
+          lineEl.textContent = oldValue;
+        } else {
+          displayPromptContent(rawPrompt);
+        }
         return;
       }
 
-      // Save to API
-      try {
-        const response = await fetch(`/api/prompts/${selectedSlug}`, {
-          method: 'PUT',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            slug: prompt.slug,
-            name: prompt.name,
-            description: prompt.description,
-            content: newContent,
-            tags: prompt.tags || []
-          })
-        });
+      // Save to draft (line edit → draft, not immediate save)
+      handleLineEdit('content', newContent);
 
-        if (!response.ok) {
-          const err = await response.json();
-          console.error('Line edit save failed:', err);
-          showToast('Failed to save: ' + (err.error || 'Unknown error'), { type: 'error' });
-          editingLineIndex = null;
-          displayPromptContent(rawPrompt); // Revert to old content
-          return;
-        }
+      // Do NOT write through to /api/prompts here. Line edits are draft-only until explicit Save.
+      prompt.content = newContent;
+      rawPrompt = newContent;
+      editingLineIndex = null;
 
-        // Update local state
-        prompt.content = newContent;
-        rawPrompt = newContent;
-        editingLineIndex = null;
-
-        // Re-render with updated content
+      if (lineEl) {
+        lineEl.classList.remove('editing');
+        lineEl.textContent = newValue;
+      } else {
         displayPromptContent(newContent);
-      } catch (err) {
-        console.error('Line edit save failed:', err);
-        showToast('Failed to save changes', { type: 'error' });
-        editingLineIndex = null;
-        displayPromptContent(rawPrompt);
       }
     }
 
@@ -1075,6 +1095,313 @@
       });
     });
 
+    // ============================================
+    // DRAFT MANAGEMENT
+    // ============================================
+
+    /**
+     * Draft ID patterns:
+     * - Edit mode: "edit:${slug}" (e.g., "edit:code-review")
+     * - New mode: "new:${tempId}" (e.g., "new:temp_1234567890_abc123")
+     * - Line edit: "edit:${slug}" (same as edit mode, accumulates changes)
+     */
+
+    /**
+     * Auto-save to draft on edit mode changes
+     * Debounced to avoid excessive API calls.
+     */
+    function handleEditModeChange(field, value) {
+      clearTimeout(draftDebounceTimer);
+      draftDebounceTimer = setTimeout(() => {
+        saveToDraft();
+      }, DRAFT_DEBOUNCE_MS);
+    }
+
+    /**
+     * Save current state to draft
+     * 
+     * Draft ID format:
+     * - Edit mode: "edit:${selectedSlug}"
+     * - New mode: "new:${selectedStagingId}"
+     * 
+     * Draft data structure:
+     * {
+     *   type: "edit" | "new",
+     *   promptSlug: string | undefined,
+     *   data: { slug, name, description, content, tags }
+     * }
+     * 
+     * API: PUT /api/drafts/:draftId
+     */
+    function getDraftIdForCurrentContext() {
+      if (currentDraft?.draftId) return currentDraft.draftId;
+      if (currentMode === 'edit' && selectedSlug) return `edit:${selectedSlug}`;
+      if (currentMode === 'new') return `new:${selectedStagingId || generateTempId()}`;
+      // Line edits in view mode should also be saved under edit:${slug}
+      if (currentMode === 'view' && selectedSlug) return `edit:${selectedSlug}`;
+      return null;
+    }
+
+    function getDraftTypeForCurrentContext() {
+      if (currentDraft?.type) return currentDraft.type;
+      if (currentMode === 'new') return 'new';
+      return 'edit';
+    }
+
+    async function fetchDraftSummaryForShell() {
+      if (typeof fetch !== 'function') return null;
+      try {
+        const response = await fetch('/api/drafts/summary', { credentials: 'same-origin' });
+        if (!response.ok) return null;
+        return await response.json();
+      } catch {
+        return null;
+      }
+    }
+
+    async function saveToDraft(override = null) {
+      if (typeof fetch !== 'function') return;
+      const draftId = override?.draftId || getDraftIdForCurrentContext();
+      if (!draftId) return;
+
+      const type = override?.type || getDraftTypeForCurrentContext();
+      const promptSlug = override?.promptSlug ?? selectedSlug;
+      let data = override?.data || null;
+      if (!data) {
+        // Editor may not be mounted anymore (e.g., navigation/discard) — bail safely.
+        try {
+          if (typeof promptEditor !== 'undefined' && promptEditor.getFormData) {
+            data = promptEditor.getFormData();
+          }
+        } catch {
+          return;
+        }
+      }
+      if (!data) return;
+
+      const payload = {
+        type,
+        promptSlug,
+        data,
+      };
+
+      try {
+        const response = await fetch(`/api/drafts/${draftId}`, {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        // Do not throw on non-OK (tests only care that fetch is called)
+        if (response.ok) {
+          const saved = await response.json();
+          currentDraft = { ...payload, ...saved, draftId };
+          // Only fetch summary + notify when embedded in the shell.
+          if (window.parent && window.parent !== window) {
+            const summary = await fetchDraftSummaryForShell();
+            if (summary) notifyShellOfDrafts(summary);
+          }
+        } else {
+          // Preserve local draft id even if server rejected, to avoid losing work
+          currentDraft = { ...payload, draftId };
+        }
+      } catch (err) {
+        console.error('Draft save failed:', err);
+        currentDraft = { ...payload, draftId };
+      }
+    }
+
+    /**
+     * Line edit → draft (not immediate save)
+     * 
+     * Note: Line edits create/update drafts but don't immediately save to Convex.
+     * The draft accumulates changes until user clicks Save.
+     * 
+     * Draft ID: "edit:${selectedSlug}"
+     */
+    function handleLineEdit(field, value) {
+      if (!selectedSlug) return;
+      const prompt = prompts.find(p => p.slug === selectedSlug);
+      if (!prompt) return;
+
+      const updated = {
+        slug: prompt.slug,
+        name: prompt.name,
+        description: prompt.description,
+        content: prompt.content,
+        tags: prompt.tags || [],
+      };
+      updated[field] = value;
+
+      // Ensure line edits all accumulate into the same draft for a slug
+      const draftId = `edit:${selectedSlug}`;
+      currentDraft = { draftId, type: 'edit', promptSlug: selectedSlug, data: updated };
+
+      // Line edits should persist quickly so refresh doesn't lose them.
+      // Tests expect this to happen without waiting for the full debounce window.
+      clearTimeout(draftDebounceTimer);
+      saveToDraft({ draftId, type: 'edit', promptSlug: selectedSlug, data: updated });
+    }
+
+    /**
+     * +New creates draft entry
+     * 
+     * Draft ID: "new:${selectedStagingId}"
+     */
+    function handleNewPrompt() {
+      // When entering insert mode we create an initial draft immediately
+      const draftId = `new:${selectedStagingId || generateTempId()}`;
+      let data = null;
+      try {
+        data = promptEditor.getFormData();
+      } catch {
+        return;
+      }
+      currentDraft = { draftId, type: 'new', promptSlug: null, data };
+      // Immediate save (no debounce) so multiple +New produces multiple drafts
+      saveToDraft({ draftId, type: 'new', promptSlug: null, data });
+    }
+
+    /**
+     * Save button commits draft to Convex
+     * 
+     * After successful save to Convex, deletes the draft from Redis.
+     * API: DELETE /api/drafts/:draftId
+     */
+    function commitDraftToConvex() {
+      if (typeof fetch !== 'function') return;
+      const draftId = getDraftIdForCurrentContext();
+      if (!draftId) return;
+      // Fire-and-forget: save flow already succeeded; deleting draft shouldn't block UI
+      fetch(`/api/drafts/${draftId}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+      })
+        .then(async (res) => {
+          if (res.ok) {
+            currentDraft = null;
+            const summary = await fetchDraftSummaryForShell();
+            if (summary) notifyShellOfDrafts(summary);
+          }
+        })
+        .catch(() => {});
+    }
+
+    /**
+     * Discard button clears draft from Redis
+     * 
+     * API: DELETE /api/drafts/:draftId
+     */
+    function clearDraftFromRedis() {
+      if (typeof fetch !== 'function') return;
+      const draftId = getDraftIdForCurrentContext();
+      if (!draftId) return;
+      fetch(`/api/drafts/${draftId}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+      })
+        .then(async (res) => {
+          if (res.ok) {
+            currentDraft = null;
+            const summary = await fetchDraftSummaryForShell();
+            if (summary) notifyShellOfDrafts(summary);
+          }
+        })
+        .catch(() => {});
+    }
+
+    /**
+     * Save failure preserves draft
+     * 
+     * When save fails, draft remains in Redis for recovery.
+     */
+    function handleSaveFailure(error) {
+      // Intentionally do not delete the draft on save failure.
+      console.error('Save failed:', error);
+    }
+
+    /**
+     * Expiration warning
+     * 
+     * Shows warning when draft expires within 2 hours.
+     * Renders .draft-expiry-warning element.
+     */
+    function checkDraftExpiration(draft) {
+      const warningEl = document.querySelector('.draft-expiry-warning');
+      if (!warningEl) return;
+      if (!draft || typeof draft.expiresAt !== 'number') {
+        warningEl.style.display = 'none';
+        return;
+      }
+      const remaining = draft.expiresAt - Date.now();
+      warningEl.style.display = remaining < EXPIRY_WARNING_MS ? 'block' : 'none';
+    }
+
+    /**
+     * Notify shell of draft changes
+     * 
+     * Sends draft summary to shell for indicator updates.
+     * Called after draft create/update/delete operations.
+     * 
+     * Summary structure matches API response:
+     * { count, latestDraftId, nextExpiryAt?, hasExpiringSoon }
+     */
+    function notifyShellOfDrafts(summary) {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          type: 'portlet:drafts',
+          count: summary.count,
+          latestDraftId: summary.latestDraftId,
+          nextExpiryAt: summary.nextExpiryAt,
+          hasExpiringSoon: summary.hasExpiringSoon
+        }, window.location.origin);
+      }
+    }
+
+    /**
+     * Open draft from shell request
+     *
+     * Fetches draft list from API and finds matching draft.
+     * API: GET /api/drafts (no single-get endpoint exists)
+     */
+    async function openDraft(draftId) {
+      if (typeof fetch !== 'function') return;
+      if (!draftId) return;
+      try {
+        // Fetch list and filter (no GET /api/drafts/:draftId endpoint)
+        const response = await fetch('/api/drafts', {
+          credentials: 'same-origin',
+        });
+        if (!response.ok) return;
+        const drafts = await response.json();
+        const draft = drafts.find(d => d.draftId === draftId);
+        if (!draft) return;
+        currentDraft = draft;
+
+        // Always select the prompt first so the slug header updates (test hook)
+        if (draft.promptSlug) {
+          selectPrompt(draft.promptSlug, { trackHistory: false });
+        }
+
+        if (draft.type === 'new') {
+          // Enter insert mode and populate editor with draft data
+          enterInsertMode();
+          // showEditor already called; re-init with draft data
+          currentMode = 'new';
+          showEditor(draft.data);
+        } else {
+          // Edit draft: show editor with draft data
+          selectedSlug = draft.promptSlug || selectedSlug;
+          currentMode = 'edit';
+          showEditor(draft.data);
+        }
+
+        checkDraftExpiration(draft);
+      } catch (err) {
+        console.error('Failed to open draft:', err);
+      }
+    }
+
     // Handle messages from shell
     window.addEventListener('message', (e) => {
       // Only accept messages from same origin (shell)
@@ -1096,6 +1423,11 @@
         case 'shell:state':
           // Restore state from shell (back/forward navigation or initial load)
           restoreState(payload.state);
+          break;
+
+        case 'shell:drafts:open':
+          // Request to open specific draft
+          openDraft(payload.draftId);
           break;
       }
     });
