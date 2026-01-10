@@ -53,6 +53,7 @@ This completes Epic 02.
 - Message protocol: `portlet:drafts`, `shell:drafts:open`
 
 **Out of scope:**
+- `/prompts/new` route (uses separate prompt-editor module — drafts only apply to prompts list)
 - Conflict resolution (explicit out-of-scope)
 - Version history (separate feature)
 
@@ -128,10 +129,10 @@ This completes Epic 02.
 - `shell-history.test.ts`: 2 new tests
 - **Total new tests: 10**
 
-**Running total:** 323 + 10 = 333 tests
+**Running total:** 331 + 10 = 341 tests
 
 **Verification:**
-- All 333 tests pass
+- All 341 tests pass
 - Manual: Edit prompt, refresh, draft preserved
 - Manual: Line edit, see draft indicator, save commits
 - Manual: Open second tab, see indicator from first tab's draft
@@ -145,5 +146,5 @@ This completes Epic 02.
 After Story 5, Epic 02 is complete:
 - 50 ACs delivered
 - 48 TCs verified
-- 55 new tests across all stories (278 → 333)
+- 63 new tests across all stories (278 → 341)
 - Search, ranking, pin/favorite, drafts, MCP parity all working
