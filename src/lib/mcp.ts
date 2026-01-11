@@ -8,6 +8,8 @@ import {
 	VALID_THEMES,
 	VALID_SURFACES,
 	DEFAULT_THEME,
+	type SurfaceId,
+	type ThemeId,
 } from "../schemas/preferences";
 import {
 	getCachedPreferences,
@@ -976,19 +978,18 @@ export function createMcpServer(): McpServer {
 			}
 
 			try {
-				const surface = args.surface ?? "webapp";
-				type SurfaceId = "webapp" | "chatgpt" | "vscode";
+				const surface: SurfaceId = args.surface ?? "webapp";
 
 				// Try Redis cache first (same as REST endpoint)
 				const cached = await getCachedPreferences(userId);
-				if (cached?.themes?.[surface as SurfaceId]) {
+				if (cached?.themes?.[surface]) {
 					return {
 						content: [
 							{
 								type: "text" as const,
 								text: JSON.stringify({
 									surface,
-									theme: cached.themes[surface as SurfaceId],
+									theme: cached.themes[surface],
 								}),
 							},
 						],
@@ -1015,7 +1016,7 @@ export function createMcpServer(): McpServer {
 					});
 				}
 
-				const theme = allPrefs?.themes?.[surface as SurfaceId];
+				const theme = allPrefs?.themes?.[surface];
 				return {
 					content: [
 						{
@@ -1075,14 +1076,8 @@ export function createMcpServer(): McpServer {
 				await convex.mutation(api.userPreferences.updateThemePreference, {
 					apiKey: config.convexApiKey,
 					userId,
-					surface: args.surface as "webapp" | "chatgpt" | "vscode",
-					theme: args.theme as
-						| "light-1"
-						| "light-2"
-						| "light-3"
-						| "dark-1"
-						| "dark-2"
-						| "dark-3",
+					surface: args.surface as SurfaceId,
+					theme: args.theme as ThemeId,
 				});
 
 				// Invalidate Redis cache

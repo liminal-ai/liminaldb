@@ -121,9 +121,7 @@ async function updatePreferencesHandler(
 			if (field === "theme") {
 				return reply.code(400).send({ error: "Invalid theme" });
 			}
-			return reply
-				.code(400)
-				.send({ error: firstIssue?.message ?? "Validation failed" });
+			return reply.code(400).send({ error: "Invalid request" });
 		}
 		return reply.code(400).send({ error: "Validation failed" });
 	}

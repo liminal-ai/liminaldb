@@ -106,7 +106,7 @@ describe("Redis Cache Versioning", () => {
 
 		const stored = mockStorage.get("liminal:prefs:user_789");
 		expect(stored).toBeDefined();
-		const parsed = JSON.parse(stored!);
+		const parsed = JSON.parse(stored as string);
 		expect(parsed._version).toBe(PREFERENCES_CACHE_VERSION);
 		expect(parsed.themes.webapp).toBe("light-2");
 	});

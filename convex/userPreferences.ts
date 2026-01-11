@@ -3,12 +3,14 @@ import { v } from "convex/values";
 import { validateApiKey, getApiKeyConfig } from "./auth/apiKey";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 
+// NOTE: Must match VALID_SURFACES in src/schemas/preferences.ts
 const surfaceSchema = v.union(
 	v.literal("webapp"),
 	v.literal("chatgpt"),
 	v.literal("vscode"),
 );
 
+// NOTE: Must match VALID_THEMES in src/schemas/preferences.ts
 const themeSchema = v.union(
 	v.literal("light-1"),
 	v.literal("light-2"),
