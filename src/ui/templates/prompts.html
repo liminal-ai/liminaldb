@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/shared/themes/base.css">
-  <link rel="stylesheet" href="/shared/themes/tokyo-night.css">
+  <link rel="stylesheet" href="/shared/themes/dark-1.css" id="theme-stylesheet">
   <link rel="stylesheet" href="/shared/prompt-viewer.css">
   <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js" integrity="sha384-wLhprpjsmjc/XYIcF+LpMxd8yS1gss6jhevOp6F6zhiIoFK6AmHtm4bGKtehTani" crossorigin="anonymous"></script>
 </head>
@@ -1484,8 +1484,32 @@
           // Request to open specific draft
           openDraft(payload.draftId);
           break;
+
+        case 'shell:theme':
+          // Theme change from shell - update portlet theme
+          applyTheme(payload.theme);
+          break;
       }
     });
+
+    // Injected from server - source of truth: src/schemas/preferences.ts
+    const VALID_THEMES = {{validThemes}};
+
+    /**
+     * Apply theme to portlet by updating CSS link.
+     * Called when shell broadcasts theme change.
+     */
+    function applyTheme(themeId) {
+      if (!VALID_THEMES.includes(themeId)) {
+        console.error('Invalid theme:', themeId);
+        return;
+      }
+
+      const themeStylesheet = document.getElementById('theme-stylesheet');
+      if (themeStylesheet) {
+        themeStylesheet.href = `/shared/themes/${themeId}.css`;
+      }
+    }
 
     // New prompt - enter insert mode
     document.getElementById('new-prompt-btn').addEventListener('click', () => {

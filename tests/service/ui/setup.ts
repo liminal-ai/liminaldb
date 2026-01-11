@@ -19,6 +19,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
+ * Template variables for UI tests.
+ * Must match src/schemas/preferences.ts - update both when themes change.
+ */
+export const VALID_THEMES = [
+	"light-1",
+	"light-2",
+	"light-3",
+	"dark-1",
+	"dark-2",
+	"dark-3",
+] as const;
+
+export const VALID_SURFACES = ["webapp", "chatgpt", "vscode"] as const;
+
+/**
  * Load shared utilities (escapeHtml, etc.) into jsdom window.
  * Called before template scripts run since external scripts aren't fetched.
  */
@@ -30,6 +45,7 @@ async function injectSharedUtils(dom: JSDOM): Promise<void> {
 
 /**
  * Load a template file into jsdom for testing.
+ * Performs the same template variable replacement as server-side rendering.
  * @param templateName - The template file name (e.g., "prompts.html")
  * @returns A JSDOM instance with the template loaded
  */
@@ -38,7 +54,12 @@ export async function loadTemplate(templateName: string): Promise<JSDOM> {
 		__dirname,
 		`../../../src/ui/templates/${templateName}`,
 	);
-	const html = await readFile(templatePath, "utf8");
+	let html = await readFile(templatePath, "utf8");
+
+	// Replace template variables (same as server-side rendering in app.ts/modules.ts)
+	html = html
+		.replace("{{validThemes}}", JSON.stringify(VALID_THEMES))
+		.replace("{{validSurfaces}}", JSON.stringify(VALID_SURFACES));
 
 	// Create DOM without running scripts first
 	const dom = new JSDOM(html, {

@@ -1,0 +1,35 @@
+/* Light 1 - Placeholder light theme */
+
+:root {
+  /* Backgrounds */
+  --bg-deep: #ffffff;
+  --bg-surface: #f5f5f5;
+  --bg-elevated: #e8e8e8;
+  --bg-hover: #d0d0d0;
+
+  /* Borders */
+  --border: #d0d0d0;
+  --border-subtle: #e8e8e8;
+
+  /* Typography */
+  --text-primary: #1a1a1a;
+  --text-secondary: #4a4a4a;
+  --text-muted: #808080;
+
+  /* Accent - Blue */
+  --accent: #0066cc;
+  --accent-bright: #0088ff;
+  --accent-dim: #004499;
+  --accent-glow: rgba(0, 102, 204, 0.15);
+
+  /* Secondary accent - Teal */
+  --accent-secondary: #00a3a3;
+  --accent-secondary-dim: rgba(0, 163, 163, 0.15);
+
+  /* Status */
+  --success: #22863a;
+  --error: #d73a49;
+  --error-dim: rgba(215, 58, 73, 0.1);
+  --warning: #b08800;
+  --info: #0366d6;
+}

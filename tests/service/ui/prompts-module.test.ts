@@ -1371,4 +1371,20 @@ describe("Prompts Module", () => {
 			expect(warning).not.toBeNull();
 		});
 	});
+
+	describe("Theme Handling", () => {
+		test("TC-15: shell:theme message updates portlet CSS", async () => {
+			// RED: applyTheme throws NotImplementedError, CSS stays dark-1
+			// GREEN: CSS link updates to match theme
+			postMessage(dom, { type: "shell:theme", theme: "light-1" });
+
+			await waitForAsync(50);
+
+			const themeStylesheet =
+				dom.window.document.getElementById("theme-stylesheet");
+			expect(themeStylesheet?.getAttribute("href")).toBe(
+				"/shared/themes/light-1.css",
+			);
+		});
+	});
 });

@@ -555,6 +555,76 @@ select {
 }
 
 /* ============================================
+   THEME PICKER DROPDOWN
+   ============================================ */
+
+.theme-picker {
+  position: relative;
+  display: inline-block;
+}
+
+.theme-picker-btn {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.theme-picker-btn:hover {
+  border-color: var(--text-muted);
+  color: var(--text-secondary);
+}
+
+.theme-picker-dropdown {
+  position: absolute;
+  top: calc(100% + var(--space-xs));
+  right: 0;
+  min-width: 120px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-dropdown);
+  display: none;
+}
+
+.theme-picker-dropdown.open {
+  display: block;
+}
+
+.theme-picker-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.theme-picker-item:hover {
+  background: var(--bg-elevated);
+}
+
+.theme-picker-item.selected {
+  color: var(--accent);
+}
+
+.theme-picker-item.selected::before {
+  content: '✓';
+  margin-right: var(--space-xs);
+  color: var(--accent);
+}
+
+/* ============================================
    EDITOR MODULE (Form Layout)
    ============================================ */
 

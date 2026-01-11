@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { authMiddleware } from "../middleware/auth";
+import { VALID_THEMES, VALID_SURFACES } from "../schemas/preferences";
 
 // ESM path resolution
 const __filename = fileURLToPath(import.meta.url);
@@ -60,7 +61,9 @@ async function promptsPageHandler(
 	const html = template
 		.replace("{{userId}}", user.id)
 		.replace("{{email}}", user.email ?? "")
-		.replace("{{modulePath}}", modulePath);
+		.replace("{{modulePath}}", modulePath)
+		.replace("{{validThemes}}", JSON.stringify(VALID_THEMES))
+		.replace("{{validSurfaces}}", JSON.stringify(VALID_SURFACES));
 
 	reply.type("text/html").send(html);
 }
@@ -84,7 +87,9 @@ async function newPromptPageHandler(
 	const html = template
 		.replace("{{userId}}", user.id)
 		.replace("{{email}}", user.email ?? "")
-		.replace("{{modulePath}}", modulePath);
+		.replace("{{modulePath}}", modulePath)
+		.replace("{{validThemes}}", JSON.stringify(VALID_THEMES))
+		.replace("{{validSurfaces}}", JSON.stringify(VALID_SURFACES));
 
 	reply.type("text/html").send(html);
 }
