@@ -359,3 +359,57 @@ Widget applies theme on load based on this + ChatGPT base theme.
 - [x] Auth mechanism → Widget JWT passed via `_meta`
 - [x] CORS → Allow `*.web-sandbox.oaiusercontent.com`
 - [x] Theme mapping → ChatGPT base + user preference
+
+---
+
+## Implementation Complete
+
+### Files Created
+| File | Purpose |
+|------|---------|
+| `src/lib/auth/widgetJwt.ts` | JWT sign/verify for widget auth |
+| `src/middleware/apiAuth.ts` | Combined API auth middleware (cookie + widget JWT) |
+| `src/lib/widgetLoader.ts` | Load widget HTML from file system |
+| `src/ui/templates/widgets/prompts-chatgpt.html` | Full widget HTML |
+| `public/js/adapters/chatgpt-adapter.js` | Platform adapter for ChatGPT |
+| `tests/service/auth/widgetJwt.test.ts` | Widget JWT tests |
+| `tests/service/auth/apiAuth.test.ts` | API auth middleware tests |
+| `tests/service/mcp/promptLibraryWidget.test.ts` | MCP widget tests |
+
+### Files Modified
+| File | Changes |
+|------|---------|
+| `src/lib/config.ts` | Added `publicApiUrl`, `widgetJwtSecret`, widget sandbox CORS |
+| `src/lib/mcp.ts` | Registered `prompt-library-widget` resource + `open_prompt_library` tool |
+| `src/lib/auth/index.ts` | Export widgetJwt module |
+| `src/routes/prompts.ts` | Switched to `apiAuthMiddleware` |
+| `src/routes/drafts.ts` | Switched to `apiAuthMiddleware` |
+| `src/routes/preferences.ts` | Switched to `apiAuthMiddleware` |
+| `public/shared/themes/base.css` | Added widget-mode CSS |
+| `.env.example` | Added new env vars |
+
+### Key Decisions
+- API routes now accept both cookie auth (web) and widget JWT auth (ChatGPT)
+- Widget reads initial data from `toolOutput`, auth token from `toolResponseMetadata`
+- `/api/prompts/tags` endpoint already existed, no changes needed
+- **Runtime asset inlining** - `widgetLoader.ts` inlines all local JS/CSS at request time
+- No build step required for widget - just edit and test
+- 397 tests passing
+
+### Runtime Asset Inlining
+
+ChatGPT widgets require all scripts/CSS inlined in HTML (external `<script src="...">` won't work in sandbox). Instead of a build step, we inline at runtime:
+
+- `widgetLoader.ts` reads widget HTML template
+- Finds local `<script src="/...">` tags and inlines file contents
+- Finds local `<link rel="stylesheet" href="/...">` tags and inlines CSS
+- Escapes `</script>` and `</style>` in content to prevent HTML parser issues
+- Skips external CDN scripts (keeps markdown-it from jsdelivr)
+- Skips theme CSS files (dynamically loaded based on user preference)
+- Caches result in production, fresh reads in development
+
+This approach:
+- Zero new dependencies
+- No build step to remember
+- Dev workflow: edit file → restart server → test
+- Extends existing `widgetLoader.ts` pattern
