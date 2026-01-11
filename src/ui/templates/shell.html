@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-surface="webapp">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LiminalDB</title>
   <link rel="stylesheet" href="/shared/themes/base.css">
-  <link rel="stylesheet" href="/shared/themes/tokyo-night.css">
+  <link rel="stylesheet" href="/shared/themes/dark-1.css" id="theme-stylesheet">
 </head>
 <body class="shell">
   <script src="/js/utils.js"></script>
@@ -22,6 +22,17 @@
     <div id="draft-indicator" class="draft-indicator hidden">
       <span class="draft-icon"></span>
       <span id="draft-count">0</span> unsaved
+    </div>
+    <div class="theme-picker hidden" id="theme-picker">
+      <button class="theme-picker-btn" id="theme-picker-btn" aria-haspopup="true" aria-expanded="false">Theme</button>
+      <div class="theme-picker-dropdown" id="theme-picker-dropdown" role="menu">
+        <div class="theme-picker-item" data-theme="light-1" role="menuitem">Light 1</div>
+        <div class="theme-picker-item" data-theme="light-2" role="menuitem">Light 2</div>
+        <div class="theme-picker-item" data-theme="light-3" role="menuitem">Light 3</div>
+        <div class="theme-picker-item" data-theme="dark-1" role="menuitem">Dark 1</div>
+        <div class="theme-picker-item" data-theme="dark-2" role="menuitem">Dark 2</div>
+        <div class="theme-picker-item" data-theme="dark-3" role="menuitem">Dark 3</div>
+      </div>
     </div>
     <div class="user-info">{{email}}</div>
   </header>
@@ -397,10 +408,179 @@
       });
     }
 
+    // ============================================
+    // THEME PICKER
+    // ============================================
+
+    const themePicker = document.getElementById('theme-picker');
+    const themePickerBtn = document.getElementById('theme-picker-btn');
+    const themePickerDropdown = document.getElementById('theme-picker-dropdown');
+    const themeStylesheet = document.getElementById('theme-stylesheet');
+    let currentTheme = 'dark-1'; // Default theme
+
+    // Injected from server - source of truth: src/schemas/preferences.ts
+    const VALID_THEMES = {{validThemes}};
+    const VALID_SURFACES = {{validSurfaces}};
+
+    /**
+     * Get the current surface from the data-surface attribute.
+     * Defaults to 'webapp' if not set or invalid.
+     */
+    function getCurrentSurface() {
+      const surface = document.documentElement.dataset.surface;
+      return VALID_SURFACES.includes(surface) ? surface : 'webapp';
+    }
+
+    /**
+     * Toggle theme dropdown visibility
+     */
+    function toggleThemeDropdown() {
+      const isOpen = themePickerDropdown.classList.toggle('open');
+      themePickerBtn.setAttribute('aria-expanded', String(isOpen));
+    }
+
+    /**
+     * Close theme dropdown
+     */
+    function closeThemeDropdown() {
+      themePickerDropdown.classList.remove('open');
+      themePickerBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    /**
+     * Update theme selection UI (checkmark on selected theme)
+     */
+    function updateThemeSelectionUI(themeId) {
+      themePickerDropdown.querySelectorAll('.theme-picker-item').forEach(item => {
+        item.classList.toggle('selected', item.dataset.theme === themeId);
+      });
+    }
+
+    /**
+     * Set the theme - updates CSS link and persists via API
+     */
+    async function setTheme(themeId) {
+      if (!VALID_THEMES.includes(themeId)) {
+        console.error('Invalid theme:', themeId);
+        return;
+      }
+
+      // Update CSS link immediately for responsive feel
+      if (themeStylesheet) {
+        themeStylesheet.href = `/shared/themes/${themeId}.css`;
+      }
+      currentTheme = themeId;
+      updateThemeSelectionUI(themeId);
+
+      // Broadcast to portlet
+      broadcastThemeToPortlet(themeId);
+
+      // Persist to server
+      const surface = getCurrentSurface();
+      try {
+        const response = await fetch('/api/preferences', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ surface, theme: themeId }),
+        });
+        if (!response.ok) {
+          console.error('Failed to save theme preference');
+        }
+      } catch (err) {
+        console.error('Failed to save theme preference:', err);
+      }
+    }
+
+    /**
+     * Load theme preference from API.
+     * Shows theme picker only if user is authenticated.
+     * Returns true if authenticated and theme loaded, false otherwise.
+     */
+    async function loadThemePreference() {
+      const surface = getCurrentSurface();
+      try {
+        const response = await fetch(`/api/preferences?surface=${surface}`, {
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.theme && VALID_THEMES.includes(data.theme)) {
+            currentTheme = data.theme;
+            if (themeStylesheet) {
+              themeStylesheet.href = `/shared/themes/${data.theme}.css`;
+            }
+            updateThemeSelectionUI(data.theme);
+            broadcastThemeToPortlet(data.theme);
+          }
+          // User is authenticated - show theme picker
+          if (themePicker) {
+            themePicker.classList.remove('hidden');
+          }
+          return true;
+        }
+        // 401 or other error - user not authenticated, keep picker hidden
+        return false;
+      } catch (err) {
+        console.error('Failed to load theme preference:', err);
+        return false;
+      }
+    }
+
+    /**
+     * Broadcast theme change to portlet iframe
+     */
+    function broadcastThemeToPortlet(themeId) {
+      if (moduleFrame && moduleFrame.contentWindow) {
+        moduleFrame.contentWindow.postMessage({
+          type: 'shell:theme',
+          theme: themeId
+        }, window.location.origin);
+      }
+    }
+
+    // Theme picker button click
+    if (themePickerBtn) {
+      themePickerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleThemeDropdown();
+      });
+    }
+
+    // Theme item click handlers
+    if (themePickerDropdown) {
+      themePickerDropdown.querySelectorAll('.theme-picker-item').forEach(item => {
+        item.addEventListener('click', async () => {
+          const themeId = item.dataset.theme;
+          if (VALID_THEMES.includes(themeId)) {
+            closeThemeDropdown();
+            try {
+              await setTheme(themeId);
+            } catch (err) {
+              console.error('Theme switch failed:', err);
+            }
+          }
+        });
+      });
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.theme-picker')) {
+        closeThemeDropdown();
+      }
+    });
+
     // Initialize
-    initHistoryState();
-    loadTags();
-    startDraftPolling();
+    (async function init() {
+      initHistoryState();
+      loadTags();
+      startDraftPolling();
+      await loadThemePreference();
+      updateThemeSelectionUI(currentTheme);
+    })();
   </script>
 </body>
 </html>

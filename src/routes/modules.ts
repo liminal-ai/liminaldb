@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { readFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { VALID_THEMES } from "../schemas/preferences";
 
 // ESM path resolution
 const __filename = fileURLToPath(import.meta.url);
@@ -37,7 +38,11 @@ async function promptsModuleHandler(
 		resolve(__dirname, "../ui/templates/prompts.html"),
 		"utf8",
 	);
-	reply.type("text/html").send(template);
+	const html = template.replace(
+		"{{validThemes}}",
+		JSON.stringify(VALID_THEMES),
+	);
+	reply.type("text/html").send(html);
 }
 
 async function promptEditorHandler(

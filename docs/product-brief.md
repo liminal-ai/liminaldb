@@ -13,7 +13,7 @@ date: '2025-12-31'
 
 # Product Brief: LiminalDB
 
-**Date:** 2025-12-31 | **Author:** Leemoore | **Version:** 0.2 (Pivot Update)
+**Date:** 2025-01-10 | **Author:** Leemoore | **Version:** 0.3 (Beta Prep Update)
 
 ---
 
@@ -45,7 +45,7 @@ User develops prompt patterns → Wisdom scatters across surfaces → Lost
 
 **Differentiators:** Chat-native | Cross-surface MCP | Model-assisted | Inference arbitrage
 
-**Current focus:** Feature 1 (Prompt CRUD) - backend complete, web frontend next
+**Current focus:** Beta Prep - production infrastructure, polish, import/export, OpenAI widgets
 
 ---
 
@@ -59,16 +59,13 @@ LiminalDB's primary distribution is via:
 
 Users don't wait for platform approvals. Configure the MCP, point it at your account, and your prompts are available.
 
-### Future: ChatGPT App Store (Deprioritized)
+### Secondary: OpenAI PIP Integration
 
-OpenAI opened app submissions Dec 2025, but with significant constraints:
+LiminalDB web UI can load as a PIP (picture-in-picture) form within ChatGPT via MCP tool call. Users who are already configuring MCP get this automatically - the same web app, just in a PIP viewport.
 
-**The monetization problem:**
-- Apps cannot charge for digital goods (subscriptions not allowed in-app)
-- Store is filled with subscription services (Canva, Zapier, Notion) that appear grandfathered
-- No timeline for when this will change
+**App Store status:** Not pursuing app store listing for now due to monetization constraints. The PIP integration works without app store approval since it's just the web app loading in a different context.
 
-**Current decision:** ChatGPT widgets are deprioritized (Feature 3). The core product ships via web + MCP first. If OpenAI's policies improve or the Skybridge/MCP UI standard gains traction, we'll revisit.
+**Current decision:** PIP integration ships with beta. If OpenAI's policies improve later, we can pursue native widget integration for tighter experience.
 
 ---
 
@@ -192,7 +189,7 @@ Uses AI daily across surfaces → Cares about prompt quality → Hates friction
 
 See the [main README](../README.md) for current roadmap and technical details.
 
-See [epics/README.md](./epics/README.md) for detailed development history.
+See [project/](./project/) for PRDs, features, and development history.
 
 ---
 

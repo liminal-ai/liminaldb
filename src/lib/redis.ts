@@ -1,5 +1,6 @@
 import { RedisClient } from "bun";
 import { config } from "./config";
+import { PREFERENCES_CACHE_VERSION } from "../schemas/preferences";
 
 export class NotImplementedError extends Error {
 	constructor(message: string) {
@@ -50,3 +51,85 @@ export const getRedis = (): RedisWrapper => {
 export const setRedisClient = (mockClient: RedisWrapper | null) => {
 	client = mockClient;
 };
+
+// Preference cache helpers
+const PREFERENCES_TTL_SECONDS = 24 * 60 * 60; // 24 hours
+
+function getPreferencesCacheKey(userId: string): string {
+	return `liminal:prefs:${userId}`;
+}
+
+export interface CachedPreferences {
+	themes: {
+		webapp?: string;
+		chatgpt?: string;
+		vscode?: string;
+	};
+}
+
+interface VersionedCachedPreferences extends CachedPreferences {
+	_version: number;
+}
+
+/**
+ * Get cached preferences for a user.
+ * Returns null if not cached or if cache version is stale.
+ */
+export async function getCachedPreferences(
+	userId: string,
+): Promise<CachedPreferences | null> {
+	try {
+		const redis = getRedis();
+		const cached = await redis.get(getPreferencesCacheKey(userId));
+		if (!cached) {
+			return null;
+		}
+		const parsed = JSON.parse(cached) as VersionedCachedPreferences;
+		// Check cache version - reject stale cache from before theme rename
+		if (parsed._version !== PREFERENCES_CACHE_VERSION) {
+			return null;
+		}
+		return { themes: parsed.themes };
+	} catch {
+		// Cache miss or error - return null to fall back to Convex
+		return null;
+	}
+}
+
+/**
+ * Cache preferences for a user.
+ * Includes version for cache invalidation on theme changes.
+ */
+export async function setCachedPreferences(
+	userId: string,
+	preferences: CachedPreferences,
+): Promise<void> {
+	try {
+		const redis = getRedis();
+		const versioned: VersionedCachedPreferences = {
+			...preferences,
+			_version: PREFERENCES_CACHE_VERSION,
+		};
+		await redis.set(
+			getPreferencesCacheKey(userId),
+			JSON.stringify(versioned),
+			PREFERENCES_TTL_SECONDS,
+		);
+	} catch {
+		// Silently fail - cache is optional optimization
+	}
+}
+
+/**
+ * Invalidate cached preferences for a user.
+ */
+export async function invalidateCachedPreferences(
+	userId: string,
+): Promise<void> {
+	try {
+		const redis = getRedis();
+		await redis.del(getPreferencesCacheKey(userId));
+	} catch {
+		// Silently fail - cache invalidation is best-effort
+	}
+}

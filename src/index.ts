@@ -11,6 +11,7 @@ import { registerPromptRoutes } from "./routes/prompts";
 import { registerAppRoutes } from "./routes/app";
 import { registerModuleRoutes } from "./routes/modules";
 import { registerDraftRoutes } from "./routes/drafts";
+import { registerPreferencesRoutes } from "./routes/preferences";
 import { config } from "./lib/config";
 import { NotImplementedError } from "./lib/redis";
 
@@ -56,6 +57,7 @@ registerPromptRoutes(fastify);
 registerAppRoutes(fastify);
 registerModuleRoutes(fastify);
 registerDraftRoutes(fastify);
+registerPreferencesRoutes(fastify);
 
 const start = async () => {
 	try {

@@ -7,6 +7,9 @@ dist/
 # BMAD workflows (installed per-machine)
 _bmad/
 
+# Verify workflow patterns (in development)
+.verify-workflow/
+
 # Claude Code local config
 .claude/audio/
 .claude/config/

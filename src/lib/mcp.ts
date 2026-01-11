@@ -4,6 +4,18 @@ import { convex } from "./convex";
 import { api } from "../../convex/_generated/api";
 import { config } from "./config";
 import { PromptInputSchema, SlugSchema } from "../schemas/prompts";
+import {
+	VALID_THEMES,
+	VALID_SURFACES,
+	DEFAULT_THEME,
+	type SurfaceId,
+	type ThemeId,
+} from "../schemas/preferences";
+import {
+	getCachedPreferences,
+	setCachedPreferences,
+	invalidateCachedPreferences,
+} from "./redis";
 
 /**
  * Logger interface matching Fastify's structured logger
@@ -928,6 +940,169 @@ export function createMcpServer(): McpServer {
 						{
 							type: "text" as const,
 							text: "Failed to track prompt use",
+						},
+					],
+					isError: true,
+				};
+			}
+		},
+	);
+
+	// get_preferences - Get theme preference for a surface
+	server.registerTool(
+		"get_preferences",
+		{
+			title: "Get Preferences",
+			description:
+				"Get theme preference for a specific surface (webapp, chatgpt, vscode)",
+			inputSchema: {
+				surface: z
+					.enum(VALID_SURFACES)
+					.optional()
+					.describe("Surface to get preference for (defaults to webapp)"),
+			},
+		},
+		async (args, extra) => {
+			const userId = extractMcpUserId(extra);
+
+			if (!userId) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Not authenticated",
+						},
+					],
+					isError: true,
+				};
+			}
+
+			try {
+				const surface: SurfaceId = args.surface ?? "webapp";
+
+				// Try Redis cache first (same as REST endpoint)
+				const cached = await getCachedPreferences(userId);
+				if (cached?.themes?.[surface]) {
+					return {
+						content: [
+							{
+								type: "text" as const,
+								text: JSON.stringify({
+									surface,
+									theme: cached.themes[surface],
+								}),
+							},
+						],
+					};
+				}
+
+				// Cache miss - fetch all preferences and warm cache
+				const allPrefs = await convex.query(
+					api.userPreferences.getAllPreferences,
+					{
+						apiKey: config.convexApiKey,
+						userId,
+					},
+				);
+
+				// Warm cache with all preferences
+				if (allPrefs) {
+					await setCachedPreferences(userId, {
+						themes: allPrefs.themes as {
+							webapp?: string;
+							chatgpt?: string;
+							vscode?: string;
+						},
+					});
+				}
+
+				const theme = allPrefs?.themes?.[surface];
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: JSON.stringify({
+								surface,
+								theme: theme ?? DEFAULT_THEME,
+							}),
+						},
+					],
+				};
+			} catch (error) {
+				const logger = extractMcpLogger(extra);
+				logger.error({ err: error, userId }, "[MCP] get_preferences error");
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Failed to get preferences",
+						},
+					],
+					isError: true,
+				};
+			}
+		},
+	);
+
+	// set_preferences - Set theme preference for a surface
+	server.registerTool(
+		"set_preferences",
+		{
+			title: "Set Preferences",
+			description: "Set theme preference for a specific surface",
+			inputSchema: {
+				surface: z
+					.enum(VALID_SURFACES)
+					.describe("Surface to set preference for"),
+				theme: z.enum(VALID_THEMES).describe("Theme ID to set"),
+			},
+		},
+		async (args, extra) => {
+			const userId = extractMcpUserId(extra);
+
+			if (!userId) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Not authenticated",
+						},
+					],
+					isError: true,
+				};
+			}
+
+			try {
+				await convex.mutation(api.userPreferences.updateThemePreference, {
+					apiKey: config.convexApiKey,
+					userId,
+					surface: args.surface as SurfaceId,
+					theme: args.theme as ThemeId,
+				});
+
+				// Invalidate Redis cache
+				await invalidateCachedPreferences(userId);
+
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: JSON.stringify({
+								updated: true,
+								surface: args.surface,
+								theme: args.theme,
+							}),
+						},
+					],
+				};
+			} catch (error) {
+				const logger = extractMcpLogger(extra);
+				logger.error({ err: error, userId }, "[MCP] set_preferences error");
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Failed to set preferences",
 						},
 					],
 					isError: true,

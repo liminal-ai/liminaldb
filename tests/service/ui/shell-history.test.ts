@@ -3,6 +3,7 @@ import { JSDOM } from "jsdom";
 import { readFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { VALID_THEMES, VALID_SURFACES } from "./setup";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -12,7 +13,12 @@ async function loadShell(): Promise<JSDOM> {
 		__dirname,
 		"../../../src/ui/templates/shell.html",
 	);
-	const html = await readFile(templatePath, "utf8");
+	let html = await readFile(templatePath, "utf8");
+
+	// Replace template variables (same as server-side rendering)
+	html = html
+		.replace("{{validThemes}}", JSON.stringify(VALID_THEMES))
+		.replace("{{validSurfaces}}", JSON.stringify(VALID_SURFACES));
 
 	const dom = new JSDOM(html, {
 		runScripts: "outside-only",

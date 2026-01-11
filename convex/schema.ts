@@ -71,4 +71,13 @@ export default defineSchema({
 		}),
 		searchRerankLimit: v.number(),
 	}).index("by_key", ["key"]),
+
+	userPreferences: defineTable({
+		userId: v.string(),
+		themes: v.object({
+			webapp: v.optional(v.string()),
+			chatgpt: v.optional(v.string()),
+			vscode: v.optional(v.string()),
+		}),
+	}).index("by_user", ["userId"]),
 });

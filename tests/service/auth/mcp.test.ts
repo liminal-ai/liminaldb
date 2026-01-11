@@ -24,6 +24,12 @@ vi.mock("../../../src/lib/config", () => ({
 	},
 }));
 
+vi.mock("../../../src/lib/redis", () => ({
+	getCachedPreferences: vi.fn().mockResolvedValue(null),
+	setCachedPreferences: vi.fn().mockResolvedValue(undefined),
+	invalidateCachedPreferences: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { registerMcpRoutes } from "../../../src/api/mcp";
 import { createTestJwt } from "../../fixtures";
 

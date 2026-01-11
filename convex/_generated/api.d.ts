@@ -23,6 +23,7 @@ import type * as model_ranking from "../model/ranking.js";
 import type * as model_tags from "../model/tags.js";
 import type * as prompts from "../prompts.js";
 import type * as triggers from "../triggers.js";
+import type * as userPreferences from "../userPreferences.js";
 
 import type {
   ApiFromModules,
@@ -46,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   "model/tags": typeof model_tags;
   prompts: typeof prompts;
   triggers: typeof triggers;
+  userPreferences: typeof userPreferences;
 }>;
 
 /**
