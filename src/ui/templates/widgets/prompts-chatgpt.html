@@ -1672,6 +1672,10 @@
     // [WIDGET CHANGE] Handle async data arrival - toolOutput might not be ready immediately
     let initialized = false;
 
+    console.log('[PromptDB Widget] Script loaded');
+    console.log('[PromptDB Widget] window.openai exists:', typeof window.openai !== 'undefined');
+    console.log('[PromptDB Widget] toolOutput:', JSON.stringify(window.openai?.toolOutput, null, 2));
+
     async function tryInit() {
       if (initialized) return;
 
@@ -1690,7 +1694,11 @@
       }
 
       // [WIDGET CHANGE] Listen for async data arrival (CRITICAL for Skybridge)
-      window.addEventListener('openai:set_globals', tryInit);
+      window.addEventListener('openai:set_globals', () => {
+        console.log('[PromptDB Widget] openai:set_globals event fired');
+        console.log('[PromptDB Widget] window.openai:', JSON.stringify(window.openai, null, 2));
+        tryInit();
+      });
     }
   </script>
 </body>

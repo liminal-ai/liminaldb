@@ -387,7 +387,9 @@
 			 * Get initial data from tool output
 			 */
 			getInitialData() {
-				return window.openai?.toolOutput || null;
+				const output = window.openai?.toolOutput || null;
+				console.log("[ChatGPT Adapter] getInitialData called, toolOutput:", JSON.stringify(output, null, 2));
+				return output;
 			},
 
 			/**
