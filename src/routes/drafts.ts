@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { ZodError } from "zod";
 import { getRedis } from "../lib/redis";
-import { authMiddleware } from "../middleware/auth";
+import { apiAuthMiddleware } from "../middleware/apiAuth";
 import {
 	DraftDTOSchema,
 	DraftUpsertRequestSchema,
@@ -28,20 +28,24 @@ function getDraftSetKey(userId: string): string {
  * @param fastify - The Fastify instance to register routes on
  */
 export function registerDraftRoutes(fastify: FastifyInstance): void {
-	fastify.get("/api/drafts", { preHandler: authMiddleware }, listDraftsHandler);
+	fastify.get(
+		"/api/drafts",
+		{ preHandler: apiAuthMiddleware },
+		listDraftsHandler,
+	);
 	fastify.get(
 		"/api/drafts/summary",
-		{ preHandler: authMiddleware },
+		{ preHandler: apiAuthMiddleware },
 		getDraftSummaryHandler,
 	);
 	fastify.put(
 		"/api/drafts/:draftId",
-		{ preHandler: authMiddleware },
+		{ preHandler: apiAuthMiddleware },
 		upsertDraftHandler,
 	);
 	fastify.delete(
 		"/api/drafts/:draftId",
-		{ preHandler: authMiddleware },
+		{ preHandler: apiAuthMiddleware },
 		deleteDraftHandler,
 	);
 }

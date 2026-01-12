@@ -1,6 +1,8 @@
 # UI Architecture, Patterns & Design
 
-> Source of truth for LiminalDB's UI architecture.
+> Source of truth for LiminalDB's web app UI architecture (shell/portlet pattern).
+
+For ChatGPT widget UI architecture, see **[ui-widgets.md](./ui-widgets.md)**.
 
 ---
 
@@ -134,7 +136,7 @@ A portlet is a complete HTML page designed to run inside an iframe. It:
 <html>
 <head>
   <link rel="stylesheet" href="/shared/themes/base.css">
-  <link rel="stylesheet" href="/shared/themes/tokyo-night.css">
+  <link rel="stylesheet" href="/shared/themes/dark-1.css" id="theme-stylesheet">
   <link rel="stylesheet" href="/shared/prompt-viewer.css">
 </head>
 <body>
@@ -485,16 +487,28 @@ selectPrompt(currentSlug, { trackHistory: false });
 
 ```
 /public/shared/themes/
-├── base.css          # Structural styles (layout, components)
-├── tokyo-night.css   # Default theme tokens
-├── teal.css          # Alternative theme tokens (not wired)
-└── modern-dark.css   # Alternative theme tokens (not wired)
+├── base.css          # Structural styles (layout, components, widget-mode)
+├── dark-1.css        # Dark theme variant 1 (default)
+├── dark-2.css        # Dark theme variant 2
+├── dark-3.css        # Dark theme variant 3
+├── light-1.css       # Light theme variant 1
+├── light-2.css       # Light theme variant 2
+└── light-3.css       # Light theme variant 3
 
 /public/shared/
 └── prompt-viewer.css # Component-specific styles
 ```
 
-### Theme Tokens (tokyo-night.css)
+### Theme Selection
+
+Users can select themes via a theme picker in the shell header. Theme preference is:
+- Stored per-surface in Convex (web app vs ChatGPT widget)
+- Persisted across sessions
+- Loaded dynamically without page reload
+
+### Theme Tokens
+
+Each theme file defines CSS custom properties:
 
 ```css
 :root {
@@ -528,6 +542,14 @@ Layout classes that use theme tokens:
 .btn-primary { background: var(--accent-gold); }
 ```
 
+### Widget Mode Styles (base.css)
+
+`.widget-mode` class provides adjustments for ChatGPT widget context:
+```css
+.widget-mode { /* Full viewport, no shell chrome */ }
+.widget-mode .sidebar { /* Adjusted for standalone operation */ }
+```
+
 ### UI Feedback Styles (base.css)
 
 Styles for user feedback patterns:
@@ -545,10 +567,10 @@ Styles for user feedback patterns:
 
 ### Adding Themes
 
-1. Create new token file: `themes/solarized.css`
+1. Create new token file: `themes/{name}.css`
 2. Define same CSS custom properties with different values
-3. Serve via query param: `/prompts?theme=solarized` (not yet implemented)
-4. Shell loads appropriate theme CSS (planned)
+3. Add to theme picker options in shell.html
+4. Theme loads dynamically when selected
 
 ---
 
@@ -978,13 +1000,16 @@ app.get('/_m/prompts', serveModule);
 |------|------|---------|--------|
 | `src/ui/templates/shell.html` | Shell | Outer chrome, history management | Active |
 | `src/ui/templates/prompts.html` | Portlet | Prompt list, viewer, editor, insert mode | Active |
-| `src/ui/templates/prompt-editor.html` | Portlet | Create form (standalone) | Legacy - superseded by prompts.html |
-| `public/shared/themes/base.css` | Styles | Structural CSS, modal, toast | Active |
-| `public/shared/themes/tokyo-night.css` | Theme | Color tokens | Active |
+| `src/ui/templates/prompt-editor.html` | Portlet | Create form (standalone) | Legacy |
+| `public/shared/themes/base.css` | Styles | Structural CSS, modal, toast, widget-mode | Active |
+| `public/shared/themes/dark-{1,2,3}.css` | Theme | Dark theme variants | Active |
+| `public/shared/themes/light-{1,2,3}.css` | Theme | Light theme variants | Active |
 | `public/shared/prompt-viewer.css` | Styles | Viewer component styles | Active |
 | `public/js/prompt-viewer.js` | Component | 3-mode prompt renderer, line edit | Active |
 | `public/js/prompt-editor.js` | Component | Create/edit form with validation | Active |
 | `public/js/utils.js` | Utility | Shared helpers (escapeHtml) | Active |
+| `public/js/components/modal.js` | Component | Confirmation modal | Active |
+| `public/js/components/toast.js` | Component | Toast notifications | Active |
 
 ---
 
@@ -1009,14 +1034,25 @@ app.get('/_m/prompts', serveModule);
 
 - [ ] Multi-portlet layouts (side-by-side)
 - [ ] Cross-portlet workflows (drag prompt to context)
-- [ ] External embedding (ChatGPT widgets, VS Code webviews)
-- [ ] Theme switching at runtime (currently requires reload)
+- [x] External embedding - ChatGPT widgets implemented (see [ui-widgets.md](./ui-widgets.md))
+- [x] Theme switching at runtime - implemented via theme picker
 
 ---
 
-## 17. Widgets & Demos (Experimental)
+## 17. Widgets
 
-The following standalone demo UIs live under `public/widgets/` and are not part of the main shell/portlet system:
+### Production Widgets
+
+ChatGPT MCP widgets are documented in **[ui-widgets.md](./ui-widgets.md)**. These are production widgets that run in ChatGPT's iframe sandbox:
+
+| Widget | Location | Purpose |
+|--------|----------|---------|
+| `prompts-chatgpt.html` | `src/ui/templates/widgets/` | Full prompt library |
+| Health widget | Inline in `src/lib/mcp.ts` | System health status |
+
+### Demo/Experimental Widgets
+
+The following standalone demo UIs live under `public/widgets/` and are **not** part of the production system:
 
 - `prompt-picker.html`
 - `prompt-picker-pip.html`
@@ -1032,29 +1068,50 @@ The following standalone demo UIs live under `public/widgets/` and are not part 
 src/
 ├── routes/
 │   ├── app.ts              # App routes (shell serving)
-│   └── prompts.ts          # API routes
+│   ├── prompts.ts          # API routes
+│   └── drafts.ts           # Draft API routes
+├── middleware/
+│   ├── auth.ts             # Browser/MCP auth middleware
+│   └── apiAuth.ts          # API auth (cookie + widget JWT)
+├── lib/
+│   ├── auth/
+│   │   ├── widgetJwt.ts    # Widget JWT sign/verify
+│   │   └── ...
+│   └── widgetLoader.ts     # Runtime asset inlining
 ├── ui/
 │   └── templates/
 │       ├── shell.html      # Shell
-│       ├── prompts.html    # Prompts portlet
-│       └── prompt-editor.html
+│       ├── prompts.html    # Prompts portlet (web app)
+│       ├── prompt-editor.html  # Legacy
+│       └── widgets/
+│           └── prompts-chatgpt.html  # ChatGPT widget
 public/
 ├── js/
 │   ├── prompt-viewer.js    # Viewer component
 │   ├── prompt-editor.js    # Editor component
-│   └── utils.js            # Shared utilities
+│   ├── utils.js            # Shared utilities
+│   ├── components/
+│   │   ├── modal.js        # Modal component
+│   │   └── toast.js        # Toast component
+│   └── adapters/
+│       └── chatgpt-adapter.js  # ChatGPT platform adapter
 ├── shared/
 │   ├── themes/
 │   │   ├── base.css        # Structural styles
-│   │   ├── tokyo-night.css # Default theme tokens
-│   │   ├── teal.css        # Alternative theme tokens (not wired)
-│   │   └── modern-dark.css # Alternative theme tokens (not wired)
+│   │   ├── dark-1.css      # Dark theme variant 1
+│   │   ├── dark-2.css      # Dark theme variant 2
+│   │   ├── dark-3.css      # Dark theme variant 3
+│   │   ├── light-1.css     # Light theme variant 1
+│   │   ├── light-2.css     # Light theme variant 2
+│   │   └── light-3.css     # Light theme variant 3
 │   └── prompt-viewer.css   # Component styles
 tests/
 ├── service/ui/             # UI tests (jsdom)
-└── integration/ui/         # Route tests
+├── service/auth/           # Auth tests (including widget JWT)
+└── integration/            # Route tests
 docs/tech-arch/
-└── ui-patterns.md              # This document
+├── ui-patterns.md          # This document (web app UI)
+└── ui-widgets.md           # ChatGPT widget UI
 ```
 
 ---

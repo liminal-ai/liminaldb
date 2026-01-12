@@ -17,10 +17,17 @@ function optionalEnv(name: string): string | undefined {
 }
 
 /**
+ * Widget sandbox origin pattern for ChatGPT widgets.
+ * Widgets run on *.web-sandbox.oaiusercontent.com
+ */
+export const WIDGET_SANDBOX_ORIGIN_PATTERN =
+	/^https:\/\/[a-z0-9-]+\.web-sandbox\.oaiusercontent\.com$/;
+
+/**
  * Parse CORS origins from environment variable.
  * Expects comma-separated list of origins (e.g., "https://app.example.com,https://admin.example.com")
  */
-function parseCorsOrigins(): string[] | true {
+function parseCorsOrigins(): (string | RegExp)[] | true {
 	const isProduction = process.env.NODE_ENV === "production";
 
 	if (!isProduction) {
@@ -30,12 +37,16 @@ function parseCorsOrigins(): string[] | true {
 
 	const originsEnv = process.env.CORS_ALLOWED_ORIGINS;
 	if (!originsEnv) {
-		// Production without explicit origins: fail safe by allowing none
-		// This will cause CORS errors, forcing explicit configuration
-		return [];
+		// Production without explicit origins: only allow widget sandbox
+		// This ensures widgets still work while forcing explicit config for web app
+		return [WIDGET_SANDBOX_ORIGIN_PATTERN];
 	}
 
-	return originsEnv.split(",").map((origin) => origin.trim());
+	// Include configured origins plus widget sandbox pattern
+	const configuredOrigins = originsEnv
+		.split(",")
+		.map((origin) => origin.trim());
+	return [...configuredOrigins, WIDGET_SANDBOX_ORIGIN_PATTERN];
 }
 
 /**
@@ -85,4 +96,10 @@ export const config = {
 
 	/** Redis URL for durable drafts */
 	redisUrl: optionalEnv("REDIS_URL"),
+
+	/** Public API URL for widget CORS and API calls (defaults to localhost for dev) */
+	publicApiUrl: optionalEnv("PUBLIC_API_URL") ?? "http://localhost:5001",
+
+	/** Secret for signing widget JWT tokens (optional - only required when using widgets) */
+	widgetJwtSecret: optionalEnv("WIDGET_JWT_SECRET"),
 } as const;

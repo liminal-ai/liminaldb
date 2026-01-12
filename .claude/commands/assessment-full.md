@@ -1,16 +1,45 @@
 $ARGUMENTS
 
-Run three assessment passes in sequence on the work you have done. Keep each pass focused and distinct.
+Run three assessment passes in sequence. Re-read the work you produced before each pass.
 
-**Pass 1 - Quality & Readiness:**
-What was done well, not so well, and what do you recommend for the next phase?
+---
 
-**Pass 2 - Patterns & Consistency:**
-Is this consistent with existing codebase patterns and conventions? What would make it feel more native to the project?
+**Pass 1 - Quality & Readiness**
 
-**Pass 3 - Adversarial Review:**
-What assumptions could be wrong? What edge cases or failure modes haven't been considered? What would confuse another developer picking this up?
+Evaluate against:
+- **Correctness**: Accurate? Does what it should?
+- **Completeness**: Anything missing?
+- **Clarity**: Easy to understand? Unambiguous?
+- **Consistency**: Follows established conventions?
 
-After all three passes, provide a brief summary of the most critical items to address.
+Categorize findings as Critical / Important / Minor.
 
-Keep your responses clear, high signal, direct.
+---
+
+**Pass 2 - Patterns & Consistency**
+
+Find 2-3 similar existing artifacts in this project and compare.
+
+- **Naming**: Follows project conventions?
+- **Structure**: Organization matches similar artifacts?
+- **Style**: Tone/format feels native to project?
+- **Interfaces**: Boundaries and connections follow established patterns?
+
+What feels foreign? What would improve fit?
+
+---
+
+**Pass 3 - Adversarial Review**
+
+Review as a skeptical new team member who will inherit this.
+
+- What assumptions are implicit that should be explicit?
+- How could this be misunderstood or misused?
+- What edge cases or scenarios are unhandled?
+- What would confuse someone picking this up?
+
+What's the biggest risk if we proceed as-is?
+
+---
+
+**Summary**: List the top 3-5 most critical items to address before proceeding.

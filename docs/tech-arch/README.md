@@ -11,6 +11,7 @@ Detailed system architecture for LiminalDB. For project overview and setup, see 
 - [Key Trade-offs](#key-trade-offs)
 - **[Authentication](./auth.md)** - Auth flows, WorkOS integration, JWT validation
 - **[UI Patterns](./ui-patterns.md)** - Shell/portlet architecture, components, messaging
+- **[Widget UI](./ui-widgets.md)** - ChatGPT widget architecture, platform adapter, MCP integration
 
 ---
 
@@ -159,12 +160,18 @@ Model Context Protocol (MCP) enables AI chat surfaces to access LiminalDB tools.
 | `delete_prompt` | Delete prompt | Write |
 | `list_tags` | Get user's tags | Read |
 | `track_prompt_use` | Record usage | Write |
+| `open_prompt_library` | Open full prompt library widget | Read |
+| `set_preferences` | Set user preferences (e.g., theme) | Write |
+| `get_preferences` | Get user preferences | Read |
 
 ### MCP Resources
 
 | Resource | URI | Purpose |
 |----------|-----|---------|
 | `health-widget` | `ui://widget/health` | ChatGPT Skybridge widget for health status |
+| `prompt-library-widget` | `ui://widget/prompt-library` | ChatGPT Skybridge widget for full prompt library |
+
+See [ui-widgets.md](./ui-widgets.md) for widget architecture details.
 
 ### MCP Transport
 

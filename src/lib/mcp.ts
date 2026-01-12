@@ -16,6 +16,8 @@ import {
 	setCachedPreferences,
 	invalidateCachedPreferences,
 } from "./redis";
+import { loadPromptWidgetHtml } from "./widgetLoader";
+import { createWidgetToken } from "./auth/widgetJwt";
 
 /**
  * Logger interface matching Fastify's structured logger
@@ -1103,6 +1105,130 @@ export function createMcpServer(): McpServer {
 						{
 							type: "text" as const,
 							text: "Failed to set preferences",
+						},
+					],
+					isError: true,
+				};
+			}
+		},
+	);
+
+	// Register prompt library widget as MCP resource for ChatGPT
+	// This is the full prompt management UI widget
+	server.registerResource(
+		"prompt-library-widget",
+		"ui://widget/prompt-library",
+		{ description: "Full prompt library management widget for ChatGPT" },
+		async () => ({
+			contents: [
+				{
+					uri: "ui://widget/prompt-library",
+					mimeType: "text/html+skybridge",
+					text: await loadPromptWidgetHtml(),
+					_meta: {
+						"openai/widgetPrefersBorder": false,
+						"openai/widgetDomain": "https://chatgpt.com",
+						"openai/widgetCSP": {
+							// Allow API calls to our backend
+							connect_domains: [config.publicApiUrl],
+							// Allow loading fonts, CDN scripts, and theme CSS
+							resource_domains: [
+								"https://fonts.googleapis.com",
+								"https://fonts.gstatic.com",
+								"https://cdn.jsdelivr.net",
+								config.publicApiUrl, // For theme CSS files
+							],
+						},
+					},
+				},
+			],
+		}),
+	);
+
+	// Register open_prompt_library tool
+	// Opens the full prompt library widget for browsing, searching, and editing prompts
+	server.registerTool(
+		"open_prompt_library",
+		{
+			title: "Open Prompt Library",
+			description:
+				"Open the full prompt library for browsing, searching, and editing prompts",
+			_meta: {
+				"openai/outputTemplate": "ui://widget/prompt-library",
+				"openai/toolInvocation/invoking": "Opening prompt library...",
+				"openai/toolInvocation/invoked": "Prompt library ready.",
+			},
+		},
+		async (extra) => {
+			try {
+				const userId = extractMcpUserId(extra);
+
+				if (!userId) {
+					return {
+						content: [
+							{
+								type: "text" as const,
+								text: "Not authenticated",
+							},
+						],
+						isError: true,
+					};
+				}
+
+				// Get initial prompts for the widget
+				const prompts = await convex.query(api.prompts.listPromptsRanked, {
+					apiKey: config.convexApiKey,
+					userId,
+					limit: 50,
+				});
+
+				// Get user's theme preference for the chatgpt surface
+				let userTheme: string = DEFAULT_THEME;
+				try {
+					const prefs = await convex.query(
+						api.userPreferences.getAllPreferences,
+						{
+							apiKey: config.convexApiKey,
+							userId,
+						},
+					);
+					if (prefs?.themes?.chatgpt) {
+						userTheme = prefs.themes.chatgpt;
+					}
+				} catch {
+					// Use default theme if preferences not found
+				}
+
+				// Create widget token for API authentication
+				const widgetToken = await createWidgetToken(userId);
+
+				return {
+					structuredContent: {
+						prompts,
+						userTheme,
+						userId,
+					},
+					_meta: {
+						widgetToken,
+						apiUrl: config.publicApiUrl,
+					},
+					content: [
+						{
+							type: "text" as const,
+							text: `Opened prompt library with ${prompts.length} prompts.`,
+						},
+					],
+				};
+			} catch (error) {
+				const logger = extractMcpLogger(extra);
+				const errorMessage =
+					error instanceof Error ? error.message : "Unknown error";
+				logger.error({ err: error }, "[MCP] open_prompt_library error");
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: `Failed to open prompt library: ${errorMessage}`,
 						},
 					],
 					isError: true,

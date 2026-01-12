@@ -1,5 +1,16 @@
 $ARGUMENTS
 
-Before reviewing, re-read the work you produced and any reference materials or source files you used to create it.
+Re-read the work you produced and any reference materials used. Read as if seeing it for the first time.
 
-Then do a critical review and give me a thorough readiness assessment for the next phase. What was done well, not so well, and what do you recommend. Keep your responses clear, high signal, direct.
+Evaluate against:
+- **Correctness**: Accurate? Does what it should?
+- **Completeness**: Anything missing?
+- **Clarity**: Easy to understand? Unambiguous?
+- **Consistency**: Follows established conventions?
+
+Readiness assessment for next phase:
+1. **Critical** (must fix before proceeding)
+2. **Important** (should address)
+3. **Minor** (nice to have)
+
+Be specific and actionable.
