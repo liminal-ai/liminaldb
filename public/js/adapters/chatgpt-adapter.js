@@ -127,6 +127,19 @@
 				);
 			}
 
+			// Provide specific error messages for common HTTP status codes
+			if (response.status === 403) {
+				throw new Error(
+					"Access denied. You don't have permission for this action.",
+				);
+			}
+			if (response.status === 404) {
+				throw new Error("Not found. The requested resource doesn't exist.");
+			}
+			if (response.status >= 500) {
+				throw new Error("Server error. Please try again in a moment.");
+			}
+
 			const error = await response
 				.json()
 				.catch(() => ({ error: "Request failed" }));
