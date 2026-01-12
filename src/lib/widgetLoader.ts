@@ -29,7 +29,8 @@ function getBaseDirs() {
  */
 async function inlineLocalScripts(html: string): Promise<string> {
 	// Match local script tags (paths starting with /)
-	const scriptRegex = /<script\s+src="(\/[^"]+\.js)"[^>]*><\/script>/g;
+	// Uses [^>]+ to allow attributes before src (e.g., type="module")
+	const scriptRegex = /<script[^>]+src="(\/[^"]+\.js)"[^>]*><\/script>/g;
 	const matches = [...html.matchAll(scriptRegex)];
 
 	for (const match of matches) {
