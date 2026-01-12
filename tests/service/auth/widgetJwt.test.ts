@@ -49,7 +49,7 @@ describe("Widget JWT", () => {
 			expect(payload.iss).toBe("promptdb:widget");
 		});
 
-		test("sets expiration to 1 hour", async () => {
+		test("sets expiration to 4 hours", async () => {
 			const before = Math.floor(Date.now() / 1000);
 			const token = await createWidgetToken("user_123");
 			const after = Math.floor(Date.now() / 1000);

@@ -1631,12 +1631,31 @@
     window.clearSelection = clearSelection;
 
     async function init() {
+      // Validate platform adapter and authentication
+      if (!platform) {
+        const emptyState = document.getElementById('empty-state');
+        if (emptyState) {
+          emptyState.innerHTML = '<div class="empty-state-content"><p>Widget error: Platform adapter not loaded.</p></div>';
+          emptyState.style.display = 'flex';
+        }
+        return;
+      }
+
+      const initialData = platform.widget.getInitialData();
+      if (!initialData?.userId) {
+        const emptyState = document.getElementById('empty-state');
+        if (emptyState) {
+          emptyState.innerHTML = '<div class="empty-state-content"><p>Authentication error: Please close and reopen this widget.</p></div>';
+          emptyState.style.display = 'flex';
+        }
+        return;
+      }
+
       // Initialize search/filter UI
       initSearchInput();
       await initTagPicker();
 
-      // Get initial data from tool output if available
-      const initialData = platform.widget.getInitialData();
+      // Use initial data from tool output if available
       if (initialData?.prompts) {
         prompts = initialData.prompts;
         renderPromptList(prompts);

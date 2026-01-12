@@ -36,7 +36,12 @@
 		try {
 			const parts = token.split(".");
 			if (parts.length !== 3) return null;
-			const payload = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
+			// Normalize base64url to base64 and add padding
+			let base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+			while (base64.length % 4) {
+				base64 += "=";
+			}
+			const payload = atob(base64);
 			return JSON.parse(payload);
 		} catch {
 			return null;
