@@ -18,9 +18,15 @@ export interface WidgetJwtResult {
 }
 
 /**
- * Get the secret as a Uint8Array for jose operations
+ * Get the secret as a Uint8Array for jose operations.
+ * Throws if WIDGET_JWT_SECRET is not configured.
  */
 function getSecretKey(): Uint8Array {
+	if (!config.widgetJwtSecret) {
+		throw new Error(
+			"WIDGET_JWT_SECRET environment variable is required for widget authentication",
+		);
+	}
 	return new TextEncoder().encode(config.widgetJwtSecret);
 }
 

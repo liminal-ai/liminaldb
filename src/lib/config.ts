@@ -100,6 +100,6 @@ export const config = {
 	/** Public API URL for widget CORS and API calls (defaults to localhost for dev) */
 	publicApiUrl: optionalEnv("PUBLIC_API_URL") ?? "http://localhost:5001",
 
-	/** Secret for signing widget JWT tokens */
-	widgetJwtSecret: requireEnv("WIDGET_JWT_SECRET"),
+	/** Secret for signing widget JWT tokens (optional - only required when using widgets) */
+	widgetJwtSecret: optionalEnv("WIDGET_JWT_SECRET"),
 } as const;

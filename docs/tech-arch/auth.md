@@ -487,7 +487,7 @@ This allows API routes to serve both web app and ChatGPT widget.
 ### Security Considerations
 
 - Widget JWTs are **not WorkOS tokens** - they're signed by our server
-- Short expiry (1h) limits window if token leaked
+- Short expiry (4h) limits window if token leaked
 - Token only contains userId, no sensitive data
 - Widget sandbox prevents token access from other origins
 
