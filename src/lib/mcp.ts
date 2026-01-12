@@ -1212,6 +1212,12 @@ export function createMcpServer(): McpServer {
 						widgetToken,
 						apiUrl: config.publicApiUrl,
 					},
+					content: [
+						{
+							type: "text" as const,
+							text: `Prompt library opened with ${prompts.length} prompts.`,
+						},
+					],
 				};
 			} catch (error) {
 				const logger = extractMcpLogger(extra);
