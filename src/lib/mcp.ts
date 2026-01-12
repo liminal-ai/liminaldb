@@ -1202,11 +1202,11 @@ export function createMcpServer(): McpServer {
 				// Create widget token for API authentication
 				const widgetToken = await createWidgetToken(userId);
 
+				// TEST: Return minimal structuredContent to see if size is the issue
 				return {
 					structuredContent: {
-						prompts,
-						userTheme,
 						userId,
+						promptCount: prompts.length,
 					},
 					_meta: {
 						widgetToken,
