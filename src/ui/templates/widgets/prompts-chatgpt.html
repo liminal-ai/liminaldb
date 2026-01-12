@@ -1631,25 +1631,9 @@
     window.clearSelection = clearSelection;
 
     async function init() {
-      // Validate platform adapter and authentication
-      if (!platform) {
-        const emptyState = document.getElementById('empty-state');
-        if (emptyState) {
-          emptyState.innerHTML = '<div class="empty-state-content"><p>Widget error: Platform adapter not loaded.</p></div>';
-          emptyState.style.display = 'flex';
-        }
-        return;
-      }
-
+      // [WIDGET CHANGE] Auth validation moved to tryInit() wrapper
+      // This function is only called after userId is confirmed available
       const initialData = platform.widget.getInitialData();
-      if (!initialData?.userId) {
-        const emptyState = document.getElementById('empty-state');
-        if (emptyState) {
-          emptyState.innerHTML = '<div class="empty-state-content"><p>Authentication error: Please close and reopen this widget.</p></div>';
-          emptyState.style.display = 'flex';
-        }
-        return;
-      }
 
       // Initialize search/filter UI
       initSearchInput();
@@ -1685,12 +1669,28 @@
       notifyShellReady();
     }
 
+    // [WIDGET CHANGE] Handle async data arrival - toolOutput might not be ready immediately
+    let initialized = false;
+
+    async function tryInit() {
+      if (initialized) return;
+
+      const initialData = platform?.widget?.getInitialData();
+      if (initialData?.userId) {
+        initialized = true;
+        await init();
+      }
+    }
+
     if (!navigator.userAgent.includes("jsdom")) {
       if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", init);
+        document.addEventListener("DOMContentLoaded", tryInit);
       } else {
-        init();
+        tryInit();
       }
+
+      // [WIDGET CHANGE] Listen for async data arrival (CRITICAL for Skybridge)
+      window.addEventListener('openai:set_globals', tryInit);
     }
   </script>
 </body>
