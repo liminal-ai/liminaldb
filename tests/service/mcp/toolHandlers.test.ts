@@ -238,8 +238,7 @@ describe("MCP Tool Handlers - get_prompt", () => {
 			}),
 		);
 
-		const parsed = JSON.parse(result.content[0]?.text ?? "{}");
-		expect(parsed).toEqual(promptData);
+		expect(result.structuredContent).toEqual({ prompt: promptData });
 	});
 
 	test("returns not found error when prompt does not exist", async () => {

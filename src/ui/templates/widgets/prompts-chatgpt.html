@@ -1631,65 +1631,82 @@
     window.clearSelection = clearSelection;
 
     async function init() {
-      // Validate platform adapter and authentication
-      if (!platform) {
-        const emptyState = document.getElementById('empty-state');
-        if (emptyState) {
-          emptyState.innerHTML = '<div class="empty-state-content"><p>Widget error: Platform adapter not loaded.</p></div>';
-          emptyState.style.display = 'flex';
-        }
-        return;
-      }
+      // [WIDGET CHANGE] Use initial data from toolOutput, fall back to callTool
 
-      const initialData = platform.widget.getInitialData();
-      if (!initialData?.userId) {
-        const emptyState = document.getElementById('empty-state');
-        if (emptyState) {
-          emptyState.innerHTML = '<div class="empty-state-content"><p>Authentication error: Please close and reopen this widget.</p></div>';
-          emptyState.style.display = 'flex';
-        }
-        return;
-      }
+      // DEBUG: Show display mode info
+      const debugInfo = document.createElement('div');
+      debugInfo.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#333;color:#0f0;padding:8px;font-size:11px;font-family:monospace;z-index:99999;';
+      debugInfo.textContent = `displayMode: ${window.openai?.displayMode || 'N/A'} | requestDisplayMode: ${!!window.openai?.requestDisplayMode}`;
+      document.body.appendChild(debugInfo);
+
+      // Request fullscreen mode first
+      const fsResult = await platform.widget.requestFullscreen();
+      debugInfo.textContent += ` | fsResult: ${JSON.stringify(fsResult)} | afterMode: ${window.openai?.displayMode}`;
 
       // Initialize search/filter UI
       initSearchInput();
       await initTagPicker();
 
-      // Use initial data from tool output if available
-      if (initialData?.prompts) {
+      // Use initial data from open_prompt_library tool if available
+      const initialData = platform.widget.getInitialData();
+      if (initialData?.prompts && initialData.prompts.length > 0) {
+        console.log('[PromptDB Widget] Using initial data from toolOutput:', initialData.prompts.length, 'prompts');
         prompts = initialData.prompts;
         renderPromptList(prompts);
       } else {
+        console.log('[PromptDB Widget] No initial data, fetching via callTool');
         await loadPrompts();
       }
 
-      // Apply theme from environment
+      // Apply theme from ChatGPT
       const theme = platform.env.getTheme();
       applyTheme(theme);
 
       // Listen for theme changes
       platform.env.onThemeChange(applyTheme);
 
-      // Request fullscreen mode
-      await platform.widget.requestFullscreen();
-
-      // If we already have a slug (from initial data), select it
-      if (selectedSlug && prompts.length > 0) {
-        const prompt = prompts.find(p => p.slug === selectedSlug);
-        if (prompt) {
-          selectPrompt(selectedSlug, { trackHistory: false });
-        }
-      }
-
       // Tell host we're ready
       notifyShellReady();
     }
 
+    // [WIDGET CHANGE] Initialize when DOM ready
+    // Auth is now handled by callTool() - we don't need userId from toolOutput
+    let initialized = false;
+
+    async function tryInit() {
+      if (initialized) return;
+
+      // Check platform adapter is available
+      if (!platform) {
+        console.error('[PromptDB Widget] Platform adapter not loaded');
+        showError('Widget initialization failed. Please reload.');
+        return;
+      }
+
+      // Check we're in widget context (window.openai exists)
+      if (!platform.widget.isWidgetContext()) {
+        console.error('[PromptDB Widget] Not running in ChatGPT widget context');
+        showError('This widget must run inside ChatGPT.');
+        return;
+      }
+
+      initialized = true;
+      console.log('[PromptDB Widget] Initializing...');
+
+      try {
+        await init();
+        console.log('[PromptDB Widget] Initialized successfully');
+      } catch (err) {
+        console.error('[PromptDB Widget] Init error:', err);
+        showError('Failed to load prompts. Please try again.');
+      }
+    }
+
     if (!navigator.userAgent.includes("jsdom")) {
       if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", init);
+        document.addEventListener("DOMContentLoaded", tryInit);
       } else {
-        init();
+        tryInit();
       }
     }
   </script>

@@ -91,12 +91,22 @@ function readToolResult(response: Awaited<ReturnType<typeof callTool>>) {
 					.map((line) => line.replace(/^data:\s?/, ""))
 					.join("\n");
 				return JSON.parse(jsonText) as {
-					result?: { content?: Array<{ text?: string }> };
+					result?: {
+						structuredContent?: unknown;
+						content?: Array<{ text?: string }>;
+					};
 				};
 			})()
 		: (JSON.parse(rawBody) as {
-				result?: { content?: Array<{ text?: string }> };
+				result?: {
+					structuredContent?: unknown;
+					content?: Array<{ text?: string }>;
+				};
 			});
+	// Prefer structuredContent if available, fall back to parsing content text
+	if (body?.result?.structuredContent) {
+		return body.result.structuredContent;
+	}
 	const text = body?.result?.content?.[0]?.text;
 	return text ? JSON.parse(text) : null;
 }
@@ -224,8 +234,8 @@ describe("MCP Tools - get_prompt", () => {
 			expect.objectContaining({ userId: "user_123", slug: "test-slug" }),
 		);
 
-		const result = readToolResult(response) as { slug?: string } | null;
-		expect(result?.slug).toBe("test-slug");
+		const result = readToolResult(response) as { prompt?: { slug?: string } } | null;
+		expect(result?.prompt?.slug).toBe("test-slug");
 	});
 });
 

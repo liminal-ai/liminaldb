@@ -501,10 +501,11 @@ export function createMcpServer(): McpServer {
 				}
 
 				return {
+					structuredContent: { prompt },
 					content: [
 						{
 							type: "text" as const,
-							text: JSON.stringify(prompt),
+							text: `Prompt: ${prompt.name}`,
 						},
 					],
 				};
@@ -624,10 +625,11 @@ export function createMcpServer(): McpServer {
 				});
 
 				return {
+					structuredContent: { prompts },
 					content: [
 						{
 							type: "text" as const,
-							text: JSON.stringify({ prompts }),
+							text: `Found ${prompts.length} prompts`,
 						},
 					],
 				};
@@ -742,10 +744,11 @@ export function createMcpServer(): McpServer {
 				});
 
 				return {
+					structuredContent: { tags },
 					content: [
 						{
 							type: "text" as const,
-							text: JSON.stringify({ tags }),
+							text: `Found ${tags.length} tags`,
 						},
 					],
 				};
@@ -1202,20 +1205,20 @@ export function createMcpServer(): McpServer {
 				// Create widget token for API authentication
 				const widgetToken = await createWidgetToken(userId);
 
+				// Return prompts and auth data in structuredContent
+				// Note: widgetToken is visible to model but needed for widget API calls
 				return {
 					structuredContent: {
+						userId,
 						prompts,
 						userTheme,
-						userId,
-					},
-					_meta: {
 						widgetToken,
 						apiUrl: config.publicApiUrl,
 					},
 					content: [
 						{
 							type: "text" as const,
-							text: `Opened prompt library with ${prompts.length} prompts.`,
+							text: `Prompt library opened with ${prompts.length} prompts.`,
 						},
 					],
 				};
