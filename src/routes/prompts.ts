@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { ZodError } from "zod";
-import { apiAuthMiddleware } from "../middleware/apiAuth";
+import { authMiddleware } from "../middleware/auth";
 import {
 	CreatePromptsRequestSchema,
 	type CreatePromptsRequest,
@@ -41,42 +41,42 @@ export function registerPromptRoutes(fastify: FastifyInstance): void {
 	// All routes require authentication (inline preHandler matches existing patterns)
 	fastify.get(
 		"/api/prompts",
-		{ preHandler: apiAuthMiddleware },
+		{ preHandler: authMiddleware },
 		listPromptsHandler,
 	);
 	fastify.get(
 		"/api/prompts/tags",
-		{ preHandler: apiAuthMiddleware },
+		{ preHandler: authMiddleware },
 		listTagsHandler,
 	);
 	fastify.post(
 		"/api/prompts",
-		{ preHandler: apiAuthMiddleware },
+		{ preHandler: authMiddleware },
 		createPromptsHandler,
 	);
 	fastify.get(
 		"/api/prompts/:slug",
-		{ preHandler: apiAuthMiddleware },
+		{ preHandler: authMiddleware },
 		getPromptHandler,
 	);
 	fastify.patch(
 		"/api/prompts/:slug/flags",
-		{ preHandler: apiAuthMiddleware },
+		{ preHandler: authMiddleware },
 		patchPromptFlagsHandler,
 	);
 	fastify.post(
 		"/api/prompts/:slug/usage",
-		{ preHandler: apiAuthMiddleware },
+		{ preHandler: authMiddleware },
 		trackUsageHandler,
 	);
 	fastify.put(
 		"/api/prompts/:slug",
-		{ preHandler: apiAuthMiddleware },
+		{ preHandler: authMiddleware },
 		updatePromptHandler,
 	);
 	fastify.delete(
 		"/api/prompts/:slug",
-		{ preHandler: apiAuthMiddleware },
+		{ preHandler: authMiddleware },
 		deletePromptHandler,
 	);
 }

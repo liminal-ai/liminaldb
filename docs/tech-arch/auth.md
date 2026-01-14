@@ -14,11 +14,10 @@ Complete authentication architecture and implementation for LiminalDB.
 6. [Token Flows](#token-flows)
 7. [Implementation](#implementation)
 8. [MCP OAuth Discovery](#mcp-oauth-discovery)
-9. [Widget JWT](#widget-jwt)
-10. [Testing Strategy](#testing-strategy)
-11. [Trade-offs](#trade-offs)
-12. [Future Considerations](#future-considerations)
-13. [Appendices](#appendices)
+9. [Testing Strategy](#testing-strategy)
+10. [Trade-offs](#trade-offs)
+11. [Future Considerations](#future-considerations)
+12. [Appendices](#appendices)
 
 ---
 
@@ -31,12 +30,9 @@ LiminalDB uses WorkOS AuthKit for authentication across all entry points:
 | Web Browser | HttpOnly Cookie | Fastify (jose) | API Key + userId |
 | MCP Client | Bearer Header | Fastify (jose) | API Key + userId |
 | API Client | Bearer Header | Fastify (jose) | API Key + userId |
-| ChatGPT Widget | Bearer Header (Widget JWT) | Fastify (jose) | API Key + userId |
 | Tests | Bearer Header | Fastify (jose) | API Key + userId |
 
 **Key design:** Fastify is the auth boundary. It validates JWTs and passes userId to Convex. Convex trusts Fastify (via API key) and scopes all queries by userId.
-
-ChatGPT widgets use a separate JWT (widget JWT) for API authentication. See [Widget JWT](#widget-jwt) section.
 
 ---
 
@@ -204,12 +200,10 @@ src/
 │       ├── index.ts           # Re-exports
 │       ├── types.ts           # Auth types
 │       ├── tokenExtractor.ts  # Extract JWT from request
-│       ├── jwtValidator.ts    # Validate via jose (WorkOS JWTs)
-│       ├── jwtDecoder.ts      # Decode JWT claims
-│       └── widgetJwt.ts       # Widget JWT sign/verify (HS256)
+│       ├── jwtValidator.ts    # Validate via jose
+│       └── jwtDecoder.ts      # Decode JWT claims
 ├── middleware/
-│   ├── auth.ts                # Browser/MCP auth middleware
-│   └── apiAuth.ts             # API auth (cookie + widget JWT)
+│   └── auth.ts                # Auth middleware
 ├── routes/
 │   ├── auth.ts                # OAuth routes (login, callback, logout)
 │   └── well-known.ts          # MCP OAuth discovery
@@ -421,77 +415,6 @@ WWW-Authenticate: Bearer resource_metadata="https://example.com/.well-known/oaut
 Enable in WorkOS Dashboard → Connect → Configuration:
 - **Dynamic Client Registration (DCR)** - For clients without stable URLs
 - **Client ID Metadata Document (CIMD)** - For web clients with stable HTTPS URLs
-
----
-
-## Widget JWT
-
-ChatGPT widgets run in a sandboxed iframe and cannot access cookies. They authenticate API calls using a short-lived JWT (widget JWT) passed via MCP tool response.
-
-### Why Separate JWT
-
-- **Cross-origin**: Widgets run on `*.web-sandbox.oaiusercontent.com`, not same origin
-- **No cookies**: Cross-origin requests don't include cookies
-- **MCP context**: OAuth token is only on MCP requests, not available to widget JS
-- **Short-lived**: 4-hour expiry limits exposure if token is leaked
-
-### Flow
-
-```
-1. User invokes MCP tool in ChatGPT
-2. MCP receives OAuth-authenticated request (ChatGPT handles this)
-3. MCP tool extracts userId from OAuth token
-4. MCP tool creates widget JWT (4h expiry) with userId
-5. MCP returns JWT in _meta.widgetToken (only widget sees, not model)
-6. Widget reads token from window.openai.toolResponseMetadata.widgetToken
-7. Widget includes token in API calls: Authorization: Bearer <token>
-8. apiAuthMiddleware validates widget JWT, extracts userId
-```
-
-### Implementation
-
-**Creating tokens** (`src/lib/auth/widgetJwt.ts`):
-```typescript
-const token = await createWidgetToken(userId);
-// Returns signed JWT with 4h expiry
-```
-
-**Verifying tokens**:
-```typescript
-const result = await verifyWidgetToken(token);
-// result: { valid: boolean, payload?: { userId }, error?: string }
-```
-
-**Token claims**:
-- `userId` - Authenticated user ID
-- `iss` - `"promptdb:widget"`
-- `exp` - 4 hours from creation
-- `iat` - Creation timestamp
-
-### API Auth Middleware
-
-`src/middleware/apiAuth.ts` provides `apiAuthMiddleware` that accepts:
-
-1. **Widget JWT** in `Authorization: Bearer` header (checked first)
-2. **Cookie JWT** from WorkOS (fallback)
-
-This allows API routes to serve both web app and ChatGPT widget.
-
-### Environment Variables
-
-| Variable | Purpose |
-|----------|---------|
-| `WIDGET_JWT_SECRET` | Secret for signing widget JWTs (HS256) |
-| `PUBLIC_API_URL` | API URL for widget CSP `connect_domains` |
-
-### Security Considerations
-
-- Widget JWTs are **not WorkOS tokens** - they're signed by our server
-- Short expiry (4h) limits window if token leaked
-- Token only contains userId, no sensitive data
-- Widget sandbox prevents token access from other origins
-
-See [ui-widgets.md](./ui-widgets.md) for full widget architecture.
 
 ---
 

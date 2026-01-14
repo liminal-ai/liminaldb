@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { ZodError } from "zod";
-import { apiAuthMiddleware } from "../middleware/apiAuth";
+import { authMiddleware } from "../middleware/auth";
 import {
 	DEFAULT_THEME,
 	GetPreferencesQuerySchema,
@@ -24,12 +24,12 @@ import { config } from "../lib/config";
 export function registerPreferencesRoutes(fastify: FastifyInstance): void {
 	fastify.get(
 		"/api/preferences",
-		{ preHandler: apiAuthMiddleware },
+		{ preHandler: authMiddleware },
 		getPreferencesHandler,
 	);
 	fastify.put(
 		"/api/preferences",
-		{ preHandler: apiAuthMiddleware },
+		{ preHandler: authMiddleware },
 		updatePreferencesHandler,
 	);
 }

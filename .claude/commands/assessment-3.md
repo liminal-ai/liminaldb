@@ -1,17 +1,5 @@
 $ARGUMENTS
 
-Re-read the work and the requirements or context it was based on. Review as a skeptical new team member who will inherit this.
+Before reviewing, re-read the work you produced and any requirements or specifications it was based on.
 
-**Assumptions audit:**
-- What's implicit that should be explicit?
-- What context exists in your head that isn't captured?
-
-**Failure modes:**
-- How could this be misunderstood or misused?
-- What edge cases or scenarios are unhandled?
-
-**Handoff test:**
-- What questions would someone new have?
-- What would cause confusion?
-
-What's the biggest risk if we proceed as-is?
+Then put on a skeptical reviewer hat. What assumptions are we making that could be wrong? What edge cases or failure modes haven't been considered? If another developer had to pick this up tomorrow, what would confuse them or cause problems? Keep your responses clear, high signal, direct.
