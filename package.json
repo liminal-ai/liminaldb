@@ -17,6 +17,7 @@
 		"test:integration": "vitest --project integration",
 		"test:smoke": "vitest tests/service/auth/*.test.ts tests/integration/prompts-api.test.ts",
 		"check": "bun run format && bun run lint:fix && bun run typecheck && bun run test",
+		"check:local": "bun run check && (curl -sf http://localhost:5001/health > /dev/null && bun run test:integration || echo '\\n⚠️  Local server not running. Start with: bun run dev\\n   Integration tests skipped.\\n')",
 		"quick-clean": "curl -s -X POST http://localhost:4010/api/v2/clone -H 'Content-Type: application/json' -d '{\"sessionId\":\"'\"$1\"'\",\"toolRemoval\":\"100\",\"thinkingRemoval\":\"100\"}' | node -e \"const d=JSON.parse(require('fs').readFileSync(0,'utf8')); if(d.success){const id=d.outputPath.split('/').pop().replace('.jsonl',''); console.log('claude --dangerously-skip-permissions --resume '+id)}else{console.log('Error: '+(d.error||'unknown'))}\""
 	},
 	"devDependencies": {

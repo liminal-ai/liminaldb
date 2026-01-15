@@ -74,7 +74,7 @@ describe("UI Prompts Integration", () => {
 							name: "UI Test Prompt",
 							description: "Created for UI test",
 							content: "Test content",
-							tags: ["ui-test"],
+							tags: ["code"],
 						},
 					],
 				}),
@@ -93,36 +93,21 @@ describe("UI Prompts Integration", () => {
 			expect(found).toBeDefined();
 		});
 
-		test("GET /api/prompts/tags returns unique tags array", async () => {
-			// Create a prompt with tags
-			const slug = trackSlug(`tags-test-${Date.now()}`);
-			await fetch(`${baseUrl}/api/prompts`, {
-				method: "POST",
-				headers: {
-					Authorization: `Bearer ${auth.accessToken}`,
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					prompts: [
-						{
-							slug,
-							name: "Tags Test",
-							description: "Test tags endpoint",
-							content: "Content",
-							tags: ["unique-tag-test"],
-						},
-					],
-				}),
-			});
-
+		test("GET /api/prompts/tags returns global tags grouped by dimension", async () => {
 			const response = await fetch(`${baseUrl}/api/prompts/tags`, {
 				headers: { Authorization: `Bearer ${auth.accessToken}` },
 			});
 
 			expect(response.status).toBe(200);
-			const tags = await response.json();
-			expect(Array.isArray(tags)).toBe(true);
-			expect(tags).toContain("unique-tag-test");
+			const tags = (await response.json()) as {
+				purpose: string[];
+				domain: string[];
+				task: string[];
+			};
+			// Global tags are returned grouped by dimension
+			expect(tags.purpose).toContain("instruction");
+			expect(tags.domain).toContain("code");
+			expect(tags.task).toContain("review");
 		});
 
 		test("GET /api/prompts with tags filter returns filtered results", async () => {

@@ -57,10 +57,39 @@ docs/
 ```bash
 bun run dev            # Start server (watch mode)
 bun run convex:dev     # Start local Convex
-bun run test           # All tests
+bun run test           # Unit/service tests
+bun run test:integration  # Integration tests (requires local server)
 bun run check          # Format + lint + typecheck + test
+bun run check:local    # Full check + integration tests
 bun run test:smoke     # Quick auth + API smoke tests
 ```
+
+## Local Development & Verification
+
+**Local development expects the local server running.** Keep `bun run dev` running in a terminal.
+
+### Before Pushing to PR / Creating PR
+
+Always run full local verification:
+```bash
+bun run check:local
+```
+
+This runs:
+1. Format, lint, typecheck
+2. Unit/service tests
+3. Integration tests (against local server)
+
+If local server isn't running, you'll see a warning. Start it with `bun run dev`.
+
+### Why Integration Tests Matter
+
+Integration tests run against the real server and catch issues that mocked tests miss:
+- Schema validation (e.g., tag enums)
+- API contract changes
+- End-to-end flows
+
+**Never skip integration tests before pushing.** CI runs them against staging after deploy - catching issues there means a broken deploy.
 
 ## Task Tracking (bd/beads)
 

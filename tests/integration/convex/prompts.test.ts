@@ -74,7 +74,7 @@ describe("Convex Prompts Integration", () => {
 						name: "Integration Test Prompt",
 						description: "Created by integration test",
 						content: "Test content",
-						tags: ["integration-test"],
+						tags: ["code"],
 					},
 				],
 			});
@@ -91,7 +91,7 @@ describe("Convex Prompts Integration", () => {
 			expect(prompt).not.toBeNull();
 			expect(prompt?.slug).toBe(testSlug);
 			expect(prompt?.name).toBe("Integration Test Prompt");
-			expect(prompt?.tags).toContain("integration-test");
+			expect(prompt?.tags).toContain("code");
 		});
 
 		test("insert prompt with parameters", async () => {
@@ -262,7 +262,7 @@ describe("Convex Prompts Integration", () => {
 				name: `Batch Prompt ${i}`,
 				description: `Description ${i}`,
 				content: `Content ${i}`,
-				tags: ["batch-test"],
+				tags: ["code"],
 			}));
 
 			const ids = await client.mutation(api.prompts.insertPrompts, {
@@ -284,22 +284,22 @@ describe("Convex Prompts Integration", () => {
 			}
 		});
 
-		test("shared tags in batch are deduplicated", async () => {
-			const sharedTag = `shared-${Date.now()}`;
+		test("shared tags in batch work correctly", async () => {
+			const sharedTag = "code"; // Global tag shared by both
 			const prompts = [
 				{
 					slug: trackSlug(`batch-shared-a-${Date.now()}`),
 					name: "A",
 					description: "...",
 					content: "...",
-					tags: [sharedTag, "unique-a"],
+					tags: [sharedTag, "review"],
 				},
 				{
 					slug: trackSlug(`batch-shared-b-${Date.now()}`),
 					name: "B",
 					description: "...",
 					content: "...",
-					tags: [sharedTag, "unique-b"],
+					tags: [sharedTag, "debug"],
 				},
 			];
 

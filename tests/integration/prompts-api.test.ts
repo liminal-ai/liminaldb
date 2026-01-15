@@ -64,7 +64,7 @@ describe("Prompts API Integration", () => {
 							name: "API Integration Test",
 							description: "Created via HTTP API",
 							content: "Test content",
-							tags: ["api-test"],
+							tags: ["code"],
 						},
 					],
 				}),
@@ -87,7 +87,7 @@ describe("Prompts API Integration", () => {
 			};
 			expect(prompt.slug).toBe(slug);
 			expect(prompt.name).toBe("API Integration Test");
-			expect(prompt.tags).toContain("api-test");
+			expect(prompt.tags).toContain("code");
 		});
 
 		test("create prompt with tags and verify tags returned", async () => {
@@ -106,7 +106,7 @@ describe("Prompts API Integration", () => {
 							name: "Tags Test",
 							description: "Multiple tags",
 							content: "Content",
-							tags: ["tag-a", "tag-b", "tag-c"],
+							tags: ["code", "review", "debug"],
 						},
 					],
 				}),
@@ -118,9 +118,9 @@ describe("Prompts API Integration", () => {
 			});
 
 			const prompt = (await getRes.json()) as { tags: string[] };
-			expect(prompt.tags).toContain("tag-a");
-			expect(prompt.tags).toContain("tag-b");
-			expect(prompt.tags).toContain("tag-c");
+			expect(prompt.tags).toContain("code");
+			expect(prompt.tags).toContain("review");
+			expect(prompt.tags).toContain("debug");
 		});
 	});
 
