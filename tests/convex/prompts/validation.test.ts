@@ -42,37 +42,29 @@ describe("validateSlug", () => {
 });
 
 describe("validateTagName", () => {
-	test("accepts valid tag names", () => {
+	test("accepts valid global tags", () => {
 		expect(() => validateTagName("debug")).not.toThrow();
-		expect(() => validateTagName("work/projects/active")).not.toThrow();
-		expect(() => validateTagName("my-tag")).not.toThrow();
-		expect(() => validateTagName("my_tag")).not.toThrow();
-		expect(() => validateTagName("Tag123")).not.toThrow();
+		expect(() => validateTagName("code")).not.toThrow();
+		expect(() => validateTagName("instruction")).not.toThrow();
+	});
+
+	test("is case-insensitive", () => {
+		expect(() => validateTagName("DEBUG")).not.toThrow();
+		expect(() => validateTagName("Code")).not.toThrow();
 	});
 
 	test("rejects empty tag name", () => {
-		expect(() => validateTagName("")).toThrow("required and cannot be empty");
+		expect(() => validateTagName("")).toThrow("empty");
 	});
 
 	test("rejects whitespace-only tag name", () => {
-		expect(() => validateTagName("   ")).toThrow(
-			"required and cannot be empty",
-		);
+		expect(() => validateTagName("   ")).toThrow("empty");
 	});
 
-	test("rejects tag name over max length", () => {
-		const longTag = "a".repeat(101);
-		expect(() => validateTagName(longTag)).toThrow("too long");
-	});
-
-	test("rejects tag names starting with special character", () => {
-		expect(() => validateTagName("-invalid")).toThrow("Invalid tag name");
-		expect(() => validateTagName("/invalid")).toThrow("Invalid tag name");
-		expect(() => validateTagName("_invalid")).toThrow("Invalid tag name");
-	});
-
-	test("rejects tag names with spaces", () => {
-		expect(() => validateTagName("hello world")).toThrow("Invalid tag name");
+	test("rejects invalid tag names", () => {
+		expect(() => validateTagName("my-custom-tag")).toThrow("Invalid tag");
+		expect(() => validateTagName("work/projects")).toThrow("Invalid tag");
+		expect(() => validateTagName("foobar")).toThrow("Invalid tag");
 	});
 });
 
@@ -82,7 +74,7 @@ describe("validatePromptInput", () => {
 		name: "Test Prompt",
 		description: "A test prompt",
 		content: "The actual prompt content",
-		tags: ["debug", "test"],
+		tags: ["debug", "code"],
 	};
 
 	test("accepts valid prompt input", () => {
@@ -135,16 +127,21 @@ describe("validatePromptInput", () => {
 	});
 
 	test("rejects too many tags", () => {
-		const manyTags = Array.from({ length: 51 }, (_, i) => `tag${i}`);
+		// Create 51 tags by repeating valid tags
+		const validTags = ["code", "debug", "review"];
+		const manyTags = Array.from({ length: 51 }, (_, i) => validTags[i % 3]);
 		expect(() =>
-			validatePromptInput({ ...validPrompt, tags: manyTags }),
+			validatePromptInput({ ...validPrompt, tags: manyTags as string[] }),
 		).toThrow("Too many tags");
 	});
 
 	test("rejects invalid tag names in array", () => {
 		expect(() =>
-			validatePromptInput({ ...validPrompt, tags: ["valid", "invalid tag"] }),
-		).toThrow("Invalid tag name");
+			validatePromptInput({
+				...validPrompt,
+				tags: ["code", "not-a-valid-tag"],
+			}),
+		).toThrow("Invalid tag");
 	});
 
 	test("rejects invalid slug format", () => {

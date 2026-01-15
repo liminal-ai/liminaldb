@@ -9,6 +9,7 @@
 </head>
 <body class="shell">
   <script src="/js/utils.js"></script>
+  <script src="/js/components/tag-selector.js"></script>
   <header class="shell-header">
     <div class="search-group">
       <input type="search" id="search-input" class="search-input" placeholder="Search prompts..." />
@@ -184,25 +185,10 @@
       }
     }
 
-    // Render tag picker dropdown
+    // Render tag picker dropdown (grouped by dimension)
     function renderTagPicker() {
-      tagPickerDropdown.innerHTML = allTags.map(tag => {
-        const isSelected = selectedTags.includes(tag);
-        return `
-          <div class="tag-picker-item ${isSelected ? 'selected' : ''}" data-tag="${escapeHtml(tag)}">
-            <span class="check">✓</span>
-            <span>${escapeHtml(tag)}</span>
-          </div>
-        `;
-      }).join('');
-
-      // Add click handlers
-      tagPickerDropdown.querySelectorAll('.tag-picker-item').forEach(item => {
-        item.addEventListener('click', () => {
-          const tag = item.dataset.tag;
-          toggleTag(tag);
-        });
-      });
+      tagPickerDropdown.innerHTML = tagSelector.render(allTags, selectedTags, { style: 'list' });
+      tagSelector.attachHandlers(tagPickerDropdown, (tag) => toggleTag(tag), { style: 'list' });
     }
 
     // Toggle tag selection

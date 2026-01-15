@@ -264,7 +264,11 @@ export const listTags = query({
 		apiKey: v.string(),
 		userId: v.string(),
 	},
-	returns: v.array(v.string()),
+	returns: v.object({
+		purpose: v.array(v.string()),
+		domain: v.array(v.string()),
+		task: v.array(v.string()),
+	}),
 	handler: async (ctx, { apiKey, userId }) => {
 		await assertValidApiKey(ctx, apiKey, "listTags");
 		return Prompts.listTags(ctx, userId);

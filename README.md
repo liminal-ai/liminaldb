@@ -36,17 +36,24 @@ Personal prompt library that follows you across AI surfaces.
 
 | Phase | Description |
 |-------|-------------|
-| Skills Build | Prompts with attachments (markdown, code, reference docs) |
+| Product Iteration | Shared tags system, AI-assisted prompt creation |
 
 ### Upcoming
 
 | Phase | Description |
 |-------|-------------|
-| Refinement Pass 1 | API/MCP/UI polish for prompts + skills |
-| Playwright + LLM Testing | E2E test skeleton, critical path coverage, LLM browser testing |
+| Refinement Pass 1 | API/MCP/UI polish for prompts |
+| Playwright + LLM Testing | E2E test skeleton, critical path coverage |
 | Preview & Prod Deploy | Fly.io environments, CI/CD for preview branches |
-| Refinement Pass 2 | Edge cases, error handling, UX improvements |
 | Closed Beta | Ship to small group of testers |
+
+### Backlogged
+
+| Phase | Description |
+|-------|-------------|
+| Skills Build | Prompts with attachments (markdown, code, reference docs) |
+| Templates | Variable detection, substitution, model-native runtime |
+| ChatGPT Widget UI | Full-screen prompt library widget (branches: `widget-ui/v1-direct-api`, `widget-ui/v2-calltool`) |
 
 ## Functional Overview
 
@@ -58,14 +65,17 @@ Personal prompt library that follows you across AI surfaces.
 - **Delete** prompts
 - **Organize** with tags (flat, not hierarchical)
 
-### Skills Management (Building)
+### Tags & Organization
 
-Skills are prompts with attachments - bundled reference materials that give context.
+- **19 shared tags** across three dimensions: purpose, domain, task
+- **AI-assisted tagging** suggests tags from shared vocabulary
+- **No custom tags** (simplified model, shared vocabulary enables future network effects)
+- **Pin** prompts to always appear at top
+- **Favorite** prompts to boost ranking
 
-- **Create** skills with main prompt content plus attachments
-- **Attachments** can be markdown docs, code files, CSVs, reference materials
-- **Retrieve** skill with all attachments expanded or as file list
-- **Use cases:** Code review checklists with style guides, writing prompts with tone examples, analysis prompts with schema definitions
+### Skills Management (Backlogged)
+
+Skills are prompts with attachments - bundled reference materials that give context. Deferred until core prompt experience is validated.
 
 ### Search & Discovery
 
@@ -353,7 +363,7 @@ bun run check         # Format + lint + typecheck + test
 
 ## Status
 
-**341 tests passing** across service, integration, UI, and Convex layers.
+**365 tests passing** across service, integration, UI, and Convex layers.
 
 ## Staging
 

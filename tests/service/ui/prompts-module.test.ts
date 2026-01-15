@@ -1387,4 +1387,301 @@ describe("Prompts Module", () => {
 			);
 		});
 	});
+
+	describe("Tag Selector in Editor", () => {
+		const mockTagsResponse = {
+			purpose: ["instruction", "reference", "persona", "workflow", "snippet"],
+			domain: [
+				"code",
+				"writing",
+				"analysis",
+				"planning",
+				"design",
+				"data",
+				"communication",
+			],
+			task: [
+				"review",
+				"summarize",
+				"explain",
+				"debug",
+				"transform",
+				"extract",
+				"translate",
+			],
+		};
+
+		test("editor fetches tags from /api/prompts/tags on init", async () => {
+			const fetchMock = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+				"/api/prompts/tags": { data: mockTagsResponse },
+			});
+			dom.window.fetch = fetchMock;
+
+			// Load prompts and enter new mode
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			// Call enterInsertMode directly and await it
+			await dom.window.enterInsertMode();
+
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.stringContaining("/api/prompts/tags"),
+				expect.any(Object),
+			);
+		});
+
+		test("editor renders tag selector with 3 sections", async () => {
+			dom.window.fetch = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+				"/api/prompts/tags": { data: mockTagsResponse },
+			});
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			await dom.window.enterInsertMode();
+
+			const tagSections = dom.window.document.querySelectorAll(".tag-section");
+			expect(tagSections.length).toBe(3);
+		});
+
+		test("tag selector renders all 19 tag chips", async () => {
+			dom.window.fetch = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+				"/api/prompts/tags": { data: mockTagsResponse },
+			});
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			await dom.window.enterInsertMode();
+
+			const tagChips = dom.window.document.querySelectorAll(".tag-chip");
+			expect(tagChips.length).toBe(19);
+		});
+
+		test("clicking tag chip toggles selection", async () => {
+			dom.window.fetch = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+				"/api/prompts/tags": { data: mockTagsResponse },
+			});
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			await dom.window.enterInsertMode();
+
+			const codeChip = dom.window.document.querySelector(
+				'.tag-chip[data-tag="code"]',
+			);
+			if (!codeChip) throw new Error("Code tag chip not found");
+
+			expect(codeChip.classList.contains("selected")).toBe(false);
+			click(codeChip);
+			expect(codeChip.classList.contains("selected")).toBe(true);
+		});
+
+		test("selected tags included in form submission", async () => {
+			const fetchMock = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+				"/api/prompts/tags": { data: mockTagsResponse },
+			});
+			dom.window.fetch = fetchMock;
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			await dom.window.enterInsertMode();
+
+			// Fill required fields
+			input(
+				dom.window.document.getElementById("editor-slug") as HTMLInputElement,
+				"test-prompt",
+			);
+			input(
+				dom.window.document.getElementById("editor-name") as HTMLInputElement,
+				"Test Prompt",
+			);
+			input(
+				dom.window.document.getElementById(
+					"editor-description",
+				) as HTMLInputElement,
+				"Test description",
+			);
+			input(
+				dom.window.document.getElementById(
+					"editor-content",
+				) as HTMLTextAreaElement,
+				"Test content",
+			);
+
+			// Select tags
+			const codeChip = dom.window.document.querySelector(
+				'.tag-chip[data-tag="code"]',
+			);
+			const reviewChip = dom.window.document.querySelector(
+				'.tag-chip[data-tag="review"]',
+			);
+			if (!codeChip || !reviewChip) throw new Error("Tag chips not found");
+			click(codeChip);
+			click(reviewChip);
+
+			fetchMock.mockClear();
+
+			// Save
+			const saveBtn = dom.window.document.getElementById("btn-save");
+			if (!saveBtn) throw new Error("Save button not found");
+			click(saveBtn);
+			await waitForAsync(100);
+
+			// Check that tags were included in the POST body
+			const postCall = fetchMock.mock.calls.find((call) => {
+				const [url, opts] = call as [string, RequestInit | undefined];
+				return (
+					url.includes("/api/prompts") &&
+					opts?.method === "POST" &&
+					!url.includes("/tags")
+				);
+			});
+			expect(postCall).toBeDefined();
+			const body = JSON.parse(
+				(postCall as [string, RequestInit])[1].body as string,
+			);
+			expect(body.prompts[0].tags).toContain("code");
+			expect(body.prompts[0].tags).toContain("review");
+		});
+
+		test("edit mode pre-selects existing tags", async () => {
+			// Mock prompt with tags
+			const promptWithTags = [
+				{
+					...mockPrompts[0],
+					tags: ["code", "review"],
+				},
+			];
+
+			dom.window.fetch = mockFetch({
+				"/api/prompts": { data: promptWithTags },
+				"/api/prompts/tags": { data: mockTagsResponse },
+			});
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			// Select prompt first
+			const firstItem = dom.window.document.querySelector(".prompt-item");
+			if (!firstItem) throw new Error("Prompt item not found");
+			click(firstItem);
+			await waitForAsync(50);
+
+			// Call enterEditMode directly and await it
+			await dom.window.enterEditMode();
+
+			const codeChip = dom.window.document.querySelector(
+				'.tag-chip[data-tag="code"]',
+			);
+			const reviewChip = dom.window.document.querySelector(
+				'.tag-chip[data-tag="review"]',
+			);
+			const debugChip = dom.window.document.querySelector(
+				'.tag-chip[data-tag="debug"]',
+			);
+
+			expect(codeChip?.classList.contains("selected")).toBe(true);
+			expect(reviewChip?.classList.contains("selected")).toBe(true);
+			expect(debugChip?.classList.contains("selected")).toBe(false);
+		});
+
+		describe("tag response validation edge cases", () => {
+			test("handles null response gracefully", async () => {
+				dom.window.fetch = mockFetch({
+					"/api/prompts": { data: mockPrompts },
+					"/api/prompts/tags": { data: null },
+				});
+
+				dom.window.loadPrompts();
+				await waitForAsync(100);
+				await dom.window.enterInsertMode();
+
+				// Should render 0 chips when response is null
+				const tagChips = dom.window.document.querySelectorAll(".tag-chip");
+				expect(tagChips.length).toBe(0);
+			});
+
+			test("handles malformed response (wrong type)", async () => {
+				dom.window.fetch = mockFetch({
+					"/api/prompts": { data: mockPrompts },
+					"/api/prompts/tags": { data: "not an object" },
+				});
+
+				dom.window.loadPrompts();
+				await waitForAsync(100);
+				await dom.window.enterInsertMode();
+
+				const tagChips = dom.window.document.querySelectorAll(".tag-chip");
+				expect(tagChips.length).toBe(0);
+			});
+
+			test("handles partial response (missing dimensions)", async () => {
+				dom.window.fetch = mockFetch({
+					"/api/prompts": { data: mockPrompts },
+					"/api/prompts/tags": { data: { purpose: ["instruction"] } },
+				});
+
+				dom.window.loadPrompts();
+				await waitForAsync(100);
+				await dom.window.enterInsertMode();
+
+				// Should render only the provided tags
+				const tagChips = dom.window.document.querySelectorAll(".tag-chip");
+				expect(tagChips.length).toBe(1);
+
+				// Only non-empty sections are rendered
+				const sections = dom.window.document.querySelectorAll(".tag-section");
+				expect(sections.length).toBe(1);
+			});
+
+			test("filters non-string values from tag arrays", async () => {
+				dom.window.fetch = mockFetch({
+					"/api/prompts": { data: mockPrompts },
+					"/api/prompts/tags": {
+						data: {
+							purpose: ["instruction", 123, null, "reference"],
+							domain: [{ invalid: true }, "code"],
+							task: ["review"],
+						},
+					},
+				});
+
+				dom.window.loadPrompts();
+				await waitForAsync(100);
+				await dom.window.enterInsertMode();
+
+				// Should only render valid string tags
+				const tagChips = dom.window.document.querySelectorAll(".tag-chip");
+				expect(tagChips.length).toBe(4); // instruction, reference, code, review
+			});
+
+			test("handles empty arrays gracefully", async () => {
+				dom.window.fetch = mockFetch({
+					"/api/prompts": { data: mockPrompts },
+					"/api/prompts/tags": {
+						data: { purpose: [], domain: [], task: [] },
+					},
+				});
+
+				dom.window.loadPrompts();
+				await waitForAsync(100);
+				await dom.window.enterInsertMode();
+
+				const tagChips = dom.window.document.querySelectorAll(".tag-chip");
+				expect(tagChips.length).toBe(0);
+
+				// Empty sections are not rendered (better UX)
+				const sections = dom.window.document.querySelectorAll(".tag-section");
+				expect(sections.length).toBe(0);
+			});
+		});
+	});
 });

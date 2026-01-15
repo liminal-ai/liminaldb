@@ -8,9 +8,11 @@ export default defineSchema({
 	}).index("by_userId", ["userId"]),
 
 	tags: defineTable({
-		userId: v.string(), // External auth ID
 		name: v.string(),
-	}).index("by_user_name", ["userId", "name"]),
+		dimension: v.string(), // 'purpose' | 'domain' | 'task'
+	})
+		.index("by_name", ["name"])
+		.index("by_dimension", ["dimension"]),
 
 	promptTags: defineTable({
 		promptId: v.id("prompts"),

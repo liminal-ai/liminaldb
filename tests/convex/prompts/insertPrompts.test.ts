@@ -52,46 +52,48 @@ describe("insertPrompts", () => {
 		});
 	});
 
-	describe("single prompt with new tags", () => {
-		test("creates tags that don't exist", async () => {
+	describe("single prompt with global tags", () => {
+		test("looks up pre-seeded tags and creates junction records", async () => {
 			const ctx = createMockCtx();
 			const userId = "user_123";
 
-			// No existing tags
-			getQueryBuilder(ctx, "tags").unique.mockResolvedValue(null);
+			// Tags are pre-seeded (global tags)
+			getQueryBuilder(ctx, "tags").unique.mockImplementation(
+				async (_options: unknown) => {
+					// Return a mock tag for any valid tag name
+					return { _id: "seeded_tag", name: "code", dimension: "domain" };
+				},
+			);
 			// No existing prompt with this slug
 			getQueryBuilder(ctx, "prompts").unique.mockResolvedValue(null);
 
-			// Sequence: tag1, tag2, prompt, promptTag1, promptTag2
-			mockInsertSequence(ctx, ["tag_1", "tag_2", "prompt_1", "pt_1", "pt_2"]);
+			// Sequence: prompt, promptTag1, promptTag2 (no tag inserts - tags are seeded)
+			mockInsertSequence(ctx, ["prompt_1", "pt_1", "pt_2"]);
 
 			const input: Prompts.PromptInput[] = [
 				{
-					slug: "ai-meta-check",
-					name: "Meta Cognitive Check",
-					description: "Use when you want AI to introspect",
-					content: "As you process this...",
-					tags: ["introspection", "claude"],
+					slug: "code-review-helper",
+					name: "Code Review Helper",
+					description: "Reviews code for issues",
+					content: "Review this code...",
+					tags: ["code", "debug"], // Valid global tags
 				},
 			];
 
 			const result = await Prompts.insertMany(asConvexCtx(ctx), userId, input);
 
-			// Should create 2 tags
-			expect(ctx.db.insert).toHaveBeenCalledWith("tags", {
-				userId,
-				name: "introspection",
-			});
-			expect(ctx.db.insert).toHaveBeenCalledWith("tags", {
-				userId,
-				name: "claude",
-			});
+			// Should NOT insert new tags (they are pre-seeded)
+			const insertCalls = ctx.db.insert.mock.calls;
+			const tagInserts = insertCalls.filter(
+				(call: unknown[]) => call[0] === "tags",
+			);
+			expect(tagInserts).toHaveLength(0);
 
 			// Should create prompt with empty tagNames (trigger syncs in real runtime)
 			expect(ctx.db.insert).toHaveBeenCalledWith(
 				"prompts",
 				expect.objectContaining({
-					slug: "ai-meta-check",
+					slug: "code-review-helper",
 					tagNames: [], // Synced by trigger on promptTags insert
 				}),
 			);
@@ -101,14 +103,6 @@ describe("insertPrompts", () => {
 				"promptTags",
 				expect.objectContaining({
 					promptId: "prompt_1",
-					tagId: "tag_1",
-				}),
-			);
-			expect(ctx.db.insert).toHaveBeenCalledWith(
-				"promptTags",
-				expect.objectContaining({
-					promptId: "prompt_1",
-					tagId: "tag_2",
 				}),
 			);
 
@@ -116,16 +110,16 @@ describe("insertPrompts", () => {
 		});
 	});
 
-	describe("single prompt with existing tags", () => {
-		test("reuses existing tags without creating duplicates", async () => {
+	describe("single prompt with seeded tags", () => {
+		test("uses seeded tag without creating new ones", async () => {
 			const ctx = createMockCtx();
 			const userId = "user_123";
 
-			// Tag already exists
+			// Tag already seeded (global tags)
 			getQueryBuilder(ctx, "tags").unique.mockResolvedValue({
-				_id: "existing_tag",
-				userId,
-				name: "claude",
+				_id: "seeded_review_tag",
+				name: "review",
+				dimension: "task",
 			});
 			// No existing prompt with this slug
 			getQueryBuilder(ctx, "prompts").unique.mockResolvedValue(null);
@@ -138,7 +132,7 @@ describe("insertPrompts", () => {
 					name: "Debug Helper",
 					description: "...",
 					content: "...",
-					tags: ["claude"],
+					tags: ["review"], // Valid global tag
 				},
 			];
 
@@ -151,11 +145,11 @@ describe("insertPrompts", () => {
 			);
 			expect(tagInserts).toHaveLength(0);
 
-			// Should create junction with existing tag
+			// Should create junction with seeded tag
 			expect(ctx.db.insert).toHaveBeenCalledWith(
 				"promptTags",
 				expect.objectContaining({
-					tagId: "existing_tag",
+					tagId: "seeded_review_tag",
 				}),
 			);
 
@@ -164,26 +158,27 @@ describe("insertPrompts", () => {
 	});
 
 	describe("batch insert", () => {
-		test("creates shared tag only once across batch", async () => {
+		test("uses seeded tags across batch without creating duplicates", async () => {
 			const ctx = createMockCtx();
 			const userId = "user_123";
 
-			getQueryBuilder(ctx, "tags").unique.mockImplementation(() => {
-				// This mock doesn't know which tag was queried, so we need different approach
-				// The implementation should track tags it creates during the batch
-				return Promise.resolve(null);
+			// Mock tag lookups returning seeded tags
+			const tagMocks: Record<
+				string,
+				{ _id: string; name: string; dimension: string }
+			> = {
+				code: { _id: "seeded_code", name: "code", dimension: "domain" },
+				debug: { _id: "seeded_debug", name: "debug", dimension: "task" },
+			};
+
+			getQueryBuilder(ctx, "tags").unique.mockImplementation(async () => {
+				// Return a seeded tag for any valid tag
+				return tagMocks.code;
 			});
 
 			getQueryBuilder(ctx, "prompts").unique.mockResolvedValue(null);
-			mockInsertSequence(ctx, [
-				"shared_tag",
-				"unique_tag",
-				"prompt_a",
-				"prompt_b",
-				"pt_1",
-				"pt_2",
-				"pt_3",
-			]);
+			// No tag inserts - tags are seeded. Just prompts and junctions.
+			mockInsertSequence(ctx, ["prompt_a", "prompt_b", "pt_1", "pt_2", "pt_3"]);
 
 			const input: Prompts.PromptInput[] = [
 				{
@@ -191,28 +186,25 @@ describe("insertPrompts", () => {
 					name: "A",
 					description: "...",
 					content: "...",
-					tags: ["shared"],
+					tags: ["code"], // Valid global tag
 				},
 				{
 					slug: "prompt-b",
 					name: "B",
 					description: "...",
 					content: "...",
-					tags: ["shared", "unique"],
+					tags: ["code", "debug"], // Valid global tags
 				},
 			];
 
 			const result = await Prompts.insertMany(asConvexCtx(ctx), userId, input);
 
-			// Count tag inserts - "shared" should only be inserted once
+			// No tag inserts - tags are pre-seeded
 			const insertCalls = ctx.db.insert.mock.calls;
 			const tagInserts = insertCalls.filter(
 				(call: unknown[]) => call[0] === "tags",
 			);
-			const sharedTagInserts = tagInserts.filter(
-				(call: unknown[]) => (call[1] as { name: string }).name === "shared",
-			);
-			expect(sharedTagInserts).toHaveLength(1);
+			expect(tagInserts).toHaveLength(0);
 
 			expect(result).toHaveLength(2);
 		});
