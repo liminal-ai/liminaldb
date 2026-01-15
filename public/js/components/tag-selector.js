@@ -6,6 +6,8 @@
  * - 'chip' (default): Button chips for inline selection (editor)
  * - 'list': List items with checkmarks for dropdown (shell)
  *
+ * Dependencies: Requires utils.js (for escapeHtml function)
+ *
  * @example
  * // Chip style (editor)
  * const html = tagSelector.render(tags, selectedTags);
@@ -17,6 +19,11 @@
  * container.innerHTML = html;
  * tagSelector.attachHandlers(container, onToggle, { style: 'list' });
  */
+
+// Guard: escapeHtml must be available (from utils.js)
+if (typeof escapeHtml !== "function") {
+	throw new Error("tag-selector.js requires escapeHtml from utils.js");
+}
 
 const tagSelector = (() => {
 	const dimensionLabels = {

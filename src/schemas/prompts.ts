@@ -3,8 +3,33 @@ import { z } from "zod";
 // Slug: lowercase, numbers, dashes. No colons (reserved for namespacing).
 export const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-// Tag name: alphanumeric, dashes, underscores, forward slashes
-const TAG_NAME_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9\-_/]*$/;
+// Global shared tags - must match convex/model/tagConstants.ts
+export const GLOBAL_TAG_NAMES = [
+	// Purpose
+	"instruction",
+	"reference",
+	"persona",
+	"workflow",
+	"snippet",
+	// Domain
+	"code",
+	"writing",
+	"analysis",
+	"planning",
+	"design",
+	"data",
+	"communication",
+	// Task
+	"review",
+	"summarize",
+	"explain",
+	"debug",
+	"transform",
+	"extract",
+	"translate",
+] as const;
+
+export type GlobalTagName = (typeof GLOBAL_TAG_NAMES)[number];
 
 // Validation limits
 export const LIMITS = {
@@ -62,19 +87,7 @@ export const PromptInputSchema = z.object({
 			`Content max ${LIMITS.CONTENT_MAX_LENGTH} chars`,
 		),
 	tags: z
-		.array(
-			z
-				.string()
-				.min(1, "Tag name required")
-				.max(
-					LIMITS.TAG_NAME_MAX_LENGTH,
-					`Tag max ${LIMITS.TAG_NAME_MAX_LENGTH} chars`,
-				)
-				.regex(
-					TAG_NAME_REGEX,
-					"Tag must be alphanumeric with dashes, underscores, or slashes",
-				),
-		)
+		.array(z.enum(GLOBAL_TAG_NAMES))
 		.max(LIMITS.MAX_TAGS_PER_PROMPT, `Max ${LIMITS.MAX_TAGS_PER_PROMPT} tags`)
 		// Silently deduplicate tags - ["foo", "foo"] becomes ["foo"]
 		.transform((tags) => [...new Set(tags)]),

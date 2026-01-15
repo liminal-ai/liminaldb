@@ -273,12 +273,30 @@ describe("POST /api/prompts - Edge Cases", () => {
 			expect(response.statusCode).toBe(201);
 		});
 
-		test("accepts maximum number of tags", async () => {
+		test("accepts all 19 global tags", async () => {
 			mockConvex.mutation.mockResolvedValue(["id_1"]);
-			const maxTags = Array.from(
-				{ length: LIMITS.MAX_TAGS_PER_PROMPT },
-				(_, i) => `tag${i}`,
-			);
+			// All 19 global tags
+			const allTags = [
+				"instruction",
+				"reference",
+				"persona",
+				"workflow",
+				"snippet",
+				"code",
+				"writing",
+				"analysis",
+				"planning",
+				"design",
+				"data",
+				"communication",
+				"review",
+				"summarize",
+				"explain",
+				"debug",
+				"transform",
+				"extract",
+				"translate",
+			];
 
 			const response = await app.inject({
 				method: "POST",
@@ -287,11 +305,11 @@ describe("POST /api/prompts - Edge Cases", () => {
 				payload: {
 					prompts: [
 						{
-							slug: "max-tags",
+							slug: "all-tags",
 							name: "Test",
 							description: "Test",
 							content: "Test",
-							tags: maxTags,
+							tags: allTags,
 						},
 					],
 				},
@@ -300,12 +318,7 @@ describe("POST /api/prompts - Edge Cases", () => {
 			expect(response.statusCode).toBe(201);
 		});
 
-		test("rejects exceeding maximum tags", async () => {
-			const tooManyTags = Array.from(
-				{ length: LIMITS.MAX_TAGS_PER_PROMPT + 1 },
-				(_, i) => `tag${i}`,
-			);
-
+		test("rejects invalid tag names", async () => {
 			const response = await app.inject({
 				method: "POST",
 				url: "/api/prompts",
@@ -313,11 +326,11 @@ describe("POST /api/prompts - Edge Cases", () => {
 				payload: {
 					prompts: [
 						{
-							slug: "too-many-tags",
+							slug: "invalid-tags",
 							name: "Test",
 							description: "Test",
 							content: "Test",
-							tags: tooManyTags,
+							tags: ["invalid-tag-name"],
 						},
 					],
 				},
@@ -340,7 +353,7 @@ describe("POST /api/prompts - Edge Cases", () => {
 							name: "Test",
 							description: "Test",
 							content: "Test",
-							tags: ["foo", "foo", "bar", "foo"],
+							tags: ["code", "code", "review", "code"],
 						},
 					],
 				},
@@ -350,7 +363,7 @@ describe("POST /api/prompts - Edge Cases", () => {
 			const callArgs = mockConvex.mutation.mock.calls[0]?.[1] as
 				| { prompts: Array<{ tags: string[] }> }
 				| undefined;
-			expect(callArgs?.prompts[0]?.tags).toEqual(["foo", "bar"]);
+			expect(callArgs?.prompts[0]?.tags).toEqual(["code", "review"]);
 		});
 	});
 

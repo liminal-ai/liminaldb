@@ -131,7 +131,7 @@ describe("MCP Tools - save_prompts", () => {
 						name: "Test",
 						description: "A test prompt",
 						content: "Content here",
-						tags: ["test"],
+						tags: ["code"],
 					},
 				],
 			},
@@ -379,7 +379,7 @@ describe("MCP Tools - search_prompts", () => {
 		const response = await callTool(
 			app,
 			"search_prompts",
-			{ query: "test", tags: ["sql", "database"] },
+			{ query: "test", tags: ["code", "data"] },
 			createTestJwt({ sub: "user_123" }),
 		);
 
@@ -390,7 +390,7 @@ describe("MCP Tools - search_prompts", () => {
 				apiKey: "test_api_key",
 				userId: "user_123",
 				query: "test",
-				tags: ["sql", "database"],
+				tags: ["code", "data"],
 			}),
 		);
 

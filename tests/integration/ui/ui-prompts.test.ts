@@ -140,18 +140,15 @@ describe("UI Prompts Integration", () => {
 							name: "Filter Test",
 							description: "Test tag filtering",
 							content: "Content",
-							tags: ["filter-test-tag"],
+							tags: ["code"],
 						},
 					],
 				}),
 			});
 
-			const response = await fetch(
-				`${baseUrl}/api/prompts?tags=filter-test-tag`,
-				{
-					headers: { Authorization: `Bearer ${auth.accessToken}` },
-				},
-			);
+			const response = await fetch(`${baseUrl}/api/prompts?tags=code`, {
+				headers: { Authorization: `Bearer ${auth.accessToken}` },
+			});
 
 			expect(response.status).toBe(200);
 			const prompts = (await response.json()) as Array<{ slug: string }>;

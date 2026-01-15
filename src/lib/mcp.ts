@@ -3,7 +3,11 @@ import { z } from "zod";
 import { convex } from "./convex";
 import { api } from "../../convex/_generated/api";
 import { config } from "./config";
-import { PromptInputSchema, SlugSchema } from "../schemas/prompts";
+import {
+	PromptInputSchema,
+	SlugSchema,
+	GLOBAL_TAG_NAMES,
+} from "../schemas/prompts";
 import {
 	VALID_THEMES,
 	VALID_SURFACES,
@@ -656,7 +660,7 @@ export function createMcpServer(): McpServer {
 					.string()
 					.describe("Search query to match against prompt content"),
 				tags: z
-					.array(z.string())
+					.array(z.enum(GLOBAL_TAG_NAMES))
 					.optional()
 					.describe("Filter by tags (ANY-of)"),
 				limit: z.number().optional().describe("Maximum number of results"),
@@ -774,7 +778,7 @@ export function createMcpServer(): McpServer {
 				name: z.string().optional().describe("New name"),
 				description: z.string().optional().describe("New description"),
 				content: z.string().optional().describe("New content"),
-				tags: z.array(z.string()).optional().describe("New tags"),
+				tags: z.array(z.enum(GLOBAL_TAG_NAMES)).optional().describe("New tags"),
 				pinned: z.boolean().optional().describe("Pin/unpin the prompt"),
 				favorited: z
 					.boolean()

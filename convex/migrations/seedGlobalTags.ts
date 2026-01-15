@@ -10,22 +10,33 @@ import { GLOBAL_TAGS, TAG_DIMENSIONS } from "../model/tagConstants";
 export const seedGlobalTags = internalMutation({
 	args: {},
 	handler: async (ctx) => {
-		// Check if already seeded by looking for any tag
-		const existing = await ctx.db.query("tags").first();
-		if (existing) {
-			return { seeded: false, message: "Tags already seeded" };
-		}
+		// Check if all 19 tags exist (handles partial seed from interrupted runs)
+		const existingTags = await ctx.db.query("tags").collect();
+		const existingNames = new Set(existingTags.map((t) => t.name));
 
-		// Insert all 19 tags with their dimensions
-		let count = 0;
+		// Collect tags that need to be inserted
+		const tagsToInsert: {
+			name: string;
+			dimension: "purpose" | "domain" | "task";
+		}[] = [];
 		for (const dimension of TAG_DIMENSIONS) {
 			const tags = GLOBAL_TAGS[dimension];
 			for (const name of tags) {
-				await ctx.db.insert("tags", { name, dimension });
-				count++;
+				if (!existingNames.has(name)) {
+					tagsToInsert.push({ name, dimension });
+				}
 			}
 		}
 
-		return { seeded: true, count };
+		if (tagsToInsert.length === 0) {
+			return { seeded: false, message: "All 19 tags already seeded" };
+		}
+
+		// Insert missing tags
+		for (const tag of tagsToInsert) {
+			await ctx.db.insert("tags", tag);
+		}
+
+		return { seeded: true, count: tagsToInsert.length, total: 19 };
 	},
 });

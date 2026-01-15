@@ -247,3 +247,98 @@ describe("tagSelector.attachHandlers", () => {
 		expect(codeChip.getAttribute("aria-pressed")).toBe("false");
 	});
 });
+
+describe("tagSelector list style", () => {
+	let dom: JSDOM;
+
+	beforeEach(async () => {
+		dom = await createTagSelectorTestEnv();
+	});
+
+	test("renders list items instead of chips when style is list", () => {
+		const container = assertElement(
+			dom.window.document.getElementById("container"),
+		);
+		const html = dom.window.tagSelector.render(mockTags, [], { style: "list" });
+		container.innerHTML = html;
+
+		const items = container.querySelectorAll(".tag-picker-item");
+		expect(items.length).toBe(19);
+
+		const chips = container.querySelectorAll(".tag-chip");
+		expect(chips.length).toBe(0);
+	});
+
+	test("renders section headers for list style", () => {
+		const container = assertElement(
+			dom.window.document.getElementById("container"),
+		);
+		const html = dom.window.tagSelector.render(mockTags, [], { style: "list" });
+		container.innerHTML = html;
+
+		const headers = container.querySelectorAll(".tag-picker-section-header");
+		expect(headers.length).toBe(3);
+
+		const headerTexts = Array.from(headers).map((h) =>
+			h.textContent?.toLowerCase(),
+		);
+		expect(headerTexts).toContain("purpose");
+		expect(headerTexts).toContain("domain");
+		expect(headerTexts).toContain("task");
+	});
+
+	test("selected items have .selected class in list style", () => {
+		const container = assertElement(
+			dom.window.document.getElementById("container"),
+		);
+		const html = dom.window.tagSelector.render(mockTags, ["code", "review"], {
+			style: "list",
+		});
+		container.innerHTML = html;
+
+		const selectedItems = container.querySelectorAll(
+			".tag-picker-item.selected",
+		);
+		expect(selectedItems.length).toBe(2);
+	});
+
+	test("clicking list item calls onToggle", () => {
+		const container = assertElement(
+			dom.window.document.getElementById("container"),
+		);
+		const html = dom.window.tagSelector.render(mockTags, [], { style: "list" });
+		container.innerHTML = html;
+
+		const onToggle = vi.fn();
+		dom.window.tagSelector.attachHandlers(container, onToggle, {
+			style: "list",
+		});
+
+		const codeItem = assertElement(
+			container.querySelector('[data-tag="code"]'),
+		);
+		click(codeItem);
+
+		expect(onToggle).toHaveBeenCalledWith("code", true);
+	});
+
+	test("list style does not update aria-pressed (no aria-pressed on list items)", () => {
+		const container = assertElement(
+			dom.window.document.getElementById("container"),
+		);
+		const html = dom.window.tagSelector.render(mockTags, [], { style: "list" });
+		container.innerHTML = html;
+
+		dom.window.tagSelector.attachHandlers(container, vi.fn(), {
+			style: "list",
+		});
+
+		const codeItem = assertElement(
+			container.querySelector('[data-tag="code"]'),
+		);
+		expect(codeItem.hasAttribute("aria-pressed")).toBe(false);
+
+		click(codeItem);
+		expect(codeItem.hasAttribute("aria-pressed")).toBe(false);
+	});
+});

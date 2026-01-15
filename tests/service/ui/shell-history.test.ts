@@ -30,6 +30,14 @@ async function loadShell(): Promise<JSDOM> {
 	const utilsContent = await readFile(utilsPath, "utf8");
 	dom.window.eval(utilsContent);
 
+	// Inject tag-selector (used by shell for tag filtering)
+	const tagSelectorPath = resolve(
+		__dirname,
+		"../../../public/js/components/tag-selector.js",
+	);
+	const tagSelectorContent = await readFile(tagSelectorPath, "utf8");
+	dom.window.eval(tagSelectorContent);
+
 	dom.window.fetch = vi.fn(() =>
 		Promise.resolve({
 			ok: true,

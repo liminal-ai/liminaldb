@@ -24,15 +24,14 @@ prompts
 ├── lastUsedAt (number, optional)
 └── createdAt/updatedAt (number)
 
-tags
-├── userId (string, indexed)
-├── name (string) - unique per user
-└── createdAt (number)
+tags (global shared tags - seeded on deployment)
+├── name (string, indexed) - one of 19 fixed tag names
+├── dimension (string, indexed) - 'purpose' | 'domain' | 'task'
+└── Note: No userId - tags are global, not per-user
 
 promptTags (junction table)
 ├── promptId (reference)
-├── tagId (reference)
-└── userId (string, indexed)
+└── tagId (reference)
 
 rankingConfig
 ├── userId (string, indexed)

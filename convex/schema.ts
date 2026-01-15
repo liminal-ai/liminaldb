@@ -9,7 +9,11 @@ export default defineSchema({
 
 	tags: defineTable({
 		name: v.string(),
-		dimension: v.string(), // 'purpose' | 'domain' | 'task'
+		dimension: v.union(
+			v.literal("purpose"),
+			v.literal("domain"),
+			v.literal("task"),
+		),
 	})
 		.index("by_name", ["name"])
 		.index("by_dimension", ["dimension"]),

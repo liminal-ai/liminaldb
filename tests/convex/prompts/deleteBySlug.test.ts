@@ -96,7 +96,7 @@ describe("deleteBySlug", () => {
 			expect(ctx.db.delete).toHaveBeenCalledTimes(3);
 		});
 
-		test("deletes orphaned tags when no other prompts reference them", async () => {
+		test("does not delete global tags even when no prompts reference them", async () => {
 			const ctx = createMockCtx();
 			const userId = "user_123";
 
@@ -108,24 +108,20 @@ describe("deleteBySlug", () => {
 				name: "Orphan Test",
 				description: "...",
 				content: "...",
-				tagNames: ["orphan-tag"],
+				tagNames: ["code"],
 			});
 
 			// Has junction records
 			getQueryBuilder(ctx, "promptTags").collect.mockResolvedValue([
-				{ _id: "pt_1", promptId: "prompt_1", tagId: "tag_orphan" },
+				{ _id: "pt_1", promptId: "prompt_1", tagId: "tag_code" },
 			]);
-
-			// Tag is NOT referenced by other prompts (orphan check returns null)
-			getQueryBuilder(ctx, "promptTags").first.mockResolvedValue(null);
 
 			await Prompts.deleteBySlug(asConvexCtx(ctx), userId, "orphan-test");
 
-			// Should delete: junction record, prompt, and orphaned tag
+			// Should only delete: junction record and prompt (NOT the global tag)
 			expect(ctx.db.delete).toHaveBeenCalledWith("pt_1");
 			expect(ctx.db.delete).toHaveBeenCalledWith("prompt_1");
-			expect(ctx.db.delete).toHaveBeenCalledWith("tag_orphan");
-			expect(ctx.db.delete).toHaveBeenCalledTimes(3);
+			expect(ctx.db.delete).toHaveBeenCalledTimes(2);
 		});
 	});
 

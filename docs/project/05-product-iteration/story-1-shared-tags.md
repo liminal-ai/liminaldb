@@ -23,7 +23,7 @@ Replace custom tags with 19 fixed shared tags across three dimensions: purpose (
 
 ## Tags
 
-**Purpose (6):** instruction, reference, persona, workflow, snippet
+**Purpose (5):** instruction, reference, persona, workflow, snippet
 
 **Domain (7):** code, writing, analysis, planning, design, data, communication
 

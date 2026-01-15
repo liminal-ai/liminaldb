@@ -1,6 +1,6 @@
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
-import { validateGlobalTag, getTagId } from "./tags";
+import { validateGlobalTag, getTagId, getTagsByDimension } from "./tags";
 import { getRankingConfig, rerank } from "./ranking";
 
 // Slug validation: lowercase, numbers, dashes only. No colons (reserved for namespacing).
@@ -417,17 +417,7 @@ export async function updateBySlug(
 		});
 	}
 
-	// Clean up orphaned tags
-	for (const tagId of tagIdsToRemove) {
-		const remainingRefs = await ctx.db
-			.query("promptTags")
-			.withIndex("by_tag", (q) => q.eq("tagId", tagId))
-			.first();
-
-		if (!remainingRefs) {
-			await ctx.db.delete(tagId);
-		}
-	}
+	// Note: No orphan cleanup - tags are global shared tags, never deleted
 
 	// Update prompt fields (tagNames synced by trigger)
 	await ctx.db.patch(prompt._id, {
@@ -445,8 +435,7 @@ export async function updateBySlug(
 
 /**
  * Delete prompt by slug for user.
- * Cleans up junction records and orphaned tags (tags no longer referenced by any prompt).
- * Note: tagNames trigger fires on junction deletes but is a no-op since prompt is deleted.
+ * Cleans up junction records. Tags are global shared tags and are never deleted.
  * Returns true if deleted, false if not found.
  */
 export async function deleteBySlug(
@@ -464,14 +453,11 @@ export async function deleteBySlug(
 		return false;
 	}
 
-	// Get all junction records for this prompt (we'll need the tagIds for orphan check)
+	// Get all junction records for this prompt
 	const junctions = await ctx.db
 		.query("promptTags")
 		.withIndex("by_prompt", (q) => q.eq("promptId", prompt._id))
 		.collect();
-
-	// Collect tag IDs before deleting junctions
-	const tagIdsToCheck = junctions.map((j) => j.tagId);
 
 	// Delete all junction records for this prompt
 	for (const junction of junctions) {
@@ -481,18 +467,7 @@ export async function deleteBySlug(
 	// Delete the prompt
 	await ctx.db.delete(prompt._id);
 
-	// Clean up orphaned tags: delete tags that have no remaining junction records
-	for (const tagId of tagIdsToCheck) {
-		const remainingRefs = await ctx.db
-			.query("promptTags")
-			.withIndex("by_tag", (q) => q.eq("tagId", tagId))
-			.first();
-
-		if (!remainingRefs) {
-			// No other prompts reference this tag, delete it
-			await ctx.db.delete(tagId);
-		}
-	}
+	// Note: No orphan cleanup - tags are global shared tags, never deleted
 
 	return true;
 }
@@ -630,11 +605,8 @@ export async function trackPromptUse(
 
 export async function listTags(
 	ctx: QueryCtx,
-	_userId: string,
 ): Promise<{ purpose: string[]; domain: string[]; task: string[] }> {
-	// Global tags - userId is ignored
-	// Delegates to getTagsByDimension from tags model
-	const { getTagsByDimension } = await import("./tags");
+	// Global tags - no userId needed
 	const grouped = await getTagsByDimension(ctx);
 	return {
 		purpose: grouped.purpose || [],

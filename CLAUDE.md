@@ -2,6 +2,16 @@
 
 Personal prompt library accessible via web UI and MCP from any AI chat surface. Save prompts via natural language, retrieve from any MCP-enabled surface (Claude Code, Cursor, ChatGPT, VS Code).
 
+## Core Operating Principles
+
+### Context-Aware Assessment
+
+When reviewing code or evaluating issues, do NOT use severity-based triage that dumps small items into "non-blocking / nice-to-have / later" buckets. That heuristic assumes future effort is cheap; with context loss between sessions, it's not.
+
+Instead: If we have context and a fix is easy (<15 min), it goes on the "do now" list. Reserve "later" only for genuinely extensive work (significant rework, major effort that can't fit in this session).
+
+Present the full list for user review before executing. The user validates what's actually worth doing and catches suggestions that seem reasonable but aren't. Don't self-filter small improvements into a "later" bucket.
+
 ## Project Overview
 
 - **Stack:** Bun + Fastify + Convex + Redis + WorkOS

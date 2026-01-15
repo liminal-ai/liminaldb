@@ -130,7 +130,7 @@ describe("POST /api/prompts", () => {
 							description:
 								"Use when you want AI to introspect on its processing",
 							content: "As you process this, note any shifts...",
-							tags: ["introspection", "claude", "esoteric"],
+							tags: ["instruction", "code", "review"],
 							parameters: [
 								{
 									name: "target_section",
@@ -152,7 +152,7 @@ describe("POST /api/prompts", () => {
 					prompts: expect.arrayContaining([
 						expect.objectContaining({
 							slug: "ai-meta-cognitive-check",
-							tags: ["introspection", "claude", "esoteric"],
+							tags: ["instruction", "code", "review"],
 						}),
 					]),
 				}),
@@ -204,7 +204,7 @@ describe("POST /api/prompts", () => {
 							name: "Multi Tag",
 							description: "Has many tags",
 							content: "Content here",
-							tags: ["tag-a", "tag-b", "tag-c"],
+							tags: ["code", "review", "debug"],
 						},
 					],
 				},
@@ -215,7 +215,7 @@ describe("POST /api/prompts", () => {
 				expect.objectContaining({
 					prompts: expect.arrayContaining([
 						expect.objectContaining({
-							tags: ["tag-a", "tag-b", "tag-c"],
+							tags: ["code", "review", "debug"],
 						}),
 					]),
 				}),
@@ -236,14 +236,14 @@ describe("POST /api/prompts", () => {
 							name: "A",
 							description: "...",
 							content: "...",
-							tags: ["shared", "unique-a"],
+							tags: ["code", "review"],
 						},
 						{
 							slug: "prompt-b",
 							name: "B",
 							description: "...",
 							content: "...",
-							tags: ["shared", "unique-b"],
+							tags: ["code", "debug"],
 						},
 					],
 				},
@@ -253,8 +253,8 @@ describe("POST /api/prompts", () => {
 			const payload = call?.[1] as
 				| { prompts: Array<{ tags: string[] }> }
 				| undefined;
-			expect(payload?.prompts[0]?.tags).toContain("shared");
-			expect(payload?.prompts[1]?.tags).toContain("shared");
+			expect(payload?.prompts[0]?.tags).toContain("code");
+			expect(payload?.prompts[1]?.tags).toContain("code");
 		});
 	});
 
