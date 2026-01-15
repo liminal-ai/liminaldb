@@ -78,9 +78,28 @@ export async function loadTemplate(templateName: string): Promise<JSDOM> {
 	if (templateName === "prompts.html") {
 		await injectModal(dom);
 		await injectToast(dom);
+		await injectTagSelector(dom);
 		await injectPromptViewer(dom);
 		await injectPromptEditor(dom);
 	}
+
+	// Provide a default fetch mock that returns empty data
+	// Tests can override this with mockFetch() for specific responses
+	dom.window.fetch = vi.fn((url: string) => {
+		// Default responses for common endpoints
+		if (url.includes("/api/prompts/tags")) {
+			return Promise.resolve({
+				ok: true,
+				status: 200,
+				json: () => Promise.resolve({ purpose: [], domain: [], task: [] }),
+			} as Response);
+		}
+		return Promise.resolve({
+			ok: true,
+			status: 200,
+			json: () => Promise.resolve({}),
+		} as Response);
+	}) as unknown as typeof fetch;
 
 	// Now execute the inline scripts
 	const scripts = dom.window.document.querySelectorAll("script:not([src])");
@@ -143,10 +162,10 @@ export function mockFetch(
 ): MockFetch {
 	const fn = vi.fn((url: string | URL | Request, _options?: RequestInit) => {
 		const urlString = typeof url === "string" ? url : url.toString();
-		// Find matching response
-		const matchingUrl = Object.keys(responses).find((key) =>
-			urlString.includes(key),
-		);
+		// Find matching response - prefer longest match to avoid /api/prompts matching /api/prompts/tags
+		const matchingUrl = Object.keys(responses)
+			.filter((key) => urlString.includes(key))
+			.sort((a, b) => b.length - a.length)[0];
 
 		if (!matchingUrl) {
 			return Promise.resolve({
@@ -330,9 +349,25 @@ export async function injectToast(dom: JSDOM): Promise<void> {
  * @param dom - The JSDOM instance
  */
 export async function injectPromptViewer(dom: JSDOM): Promise<void> {
-	const viewerPath = resolve(__dirname, "../../../public/js/prompt-viewer.js");
+	const viewerPath = resolve(
+		__dirname,
+		"../../../public/js/components/prompt-viewer.js",
+	);
 	const viewerContent = await readFile(viewerPath, "utf8");
 	dom.window.eval(viewerContent);
+}
+
+/**
+ * Load tag-selector.js into jsdom for testing.
+ * @param dom - The JSDOM instance
+ */
+export async function injectTagSelector(dom: JSDOM): Promise<void> {
+	const selectorPath = resolve(
+		__dirname,
+		"../../../public/js/components/tag-selector.js",
+	);
+	const selectorContent = await readFile(selectorPath, "utf8");
+	dom.window.eval(selectorContent);
 }
 
 /**
@@ -340,7 +375,10 @@ export async function injectPromptViewer(dom: JSDOM): Promise<void> {
  * @param dom - The JSDOM instance
  */
 export async function injectPromptEditor(dom: JSDOM): Promise<void> {
-	const editorPath = resolve(__dirname, "../../../public/js/prompt-editor.js");
+	const editorPath = resolve(
+		__dirname,
+		"../../../public/js/components/prompt-editor.js",
+	);
 	const editorContent = await readFile(editorPath, "utf8");
 	dom.window.eval(editorContent);
 }

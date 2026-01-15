@@ -365,6 +365,79 @@ onDirtyChange: (isDirty) => {
 }
 ```
 
+### tag-selector.js
+
+Multi-select for the 19 shared tags, grouped by dimension. Supports two styles:
+- **chip**: Button chips for inline selection (editor)
+- **list**: List items with checkmarks for dropdown (shell)
+
+**Pattern:** Functional (returns HTML string, separate handler attachment)
+
+**Interface:**
+```javascript
+// Chip style (default) - for inline selection
+const html = tagSelector.render(tags, selectedTags);
+container.innerHTML = html;
+tagSelector.attachHandlers(container, (tagName, isSelected) => { ... });
+
+// List style - for dropdown menus
+const html = tagSelector.render(tags, selectedTags, { style: 'list' });
+container.innerHTML = html;
+tagSelector.attachHandlers(container, onToggle, { style: 'list' });
+```
+
+**Parameters:**
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `tags` | `{ purpose: string[], domain: string[], task: string[] }` | Available tags grouped by dimension |
+| `selectedTags` | `string[]` | Currently selected tag names |
+| `options.style` | `'chip' \| 'list'` | Render style (default: 'chip') |
+| `onToggle` | `(tagName, isSelected) => void` | Callback when item is clicked |
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Grouped display | Three sections: Purpose, Domain, Task |
+| Multi-select | Click toggles `.selected` class |
+| Accessibility | `aria-pressed` attribute (chip style) |
+| XSS protection | Tag names escaped via `escapeHtml()` |
+| Two render styles | Chips for editor, list items for shell dropdown |
+
+**CSS Classes (chip style):**
+
+| Class | Element | Purpose |
+|-------|---------|---------|
+| `.tag-section` | Container | Groups chips by dimension |
+| `.tag-section-header` | Label | Dimension name |
+| `.tag-chips` | Container | Flex container for chip buttons |
+| `.tag-chip` | Button | Individual selectable tag |
+| `.tag-chip.selected` | Button | Selected state styling |
+
+**CSS Classes (list style):**
+
+| Class | Element | Purpose |
+|-------|---------|---------|
+| `.tag-picker-section` | Container | Groups items by dimension |
+| `.tag-picker-section-header` | Label | Dimension name |
+| `.tag-picker-item` | Div | Individual selectable item |
+| `.tag-picker-item.selected` | Div | Selected state (shows checkmark) |
+
+**Usage in Editor:**
+
+```javascript
+tagSelectorEl.innerHTML = tagSelector.render(allTags, existingTags);
+tagSelector.attachHandlers(tagSelectorEl, () => setDirty(true));
+```
+
+**Usage in Shell:**
+
+```javascript
+tagPickerDropdown.innerHTML = tagSelector.render(allTags, selectedTags, { style: 'list' });
+tagSelector.attachHandlers(tagPickerDropdown, (tag) => toggleTag(tag), { style: 'list' });
+```
+
 ### Future Components
 
 | Component | Purpose | Used By |
@@ -982,8 +1055,9 @@ app.get('/_m/prompts', serveModule);
 | `public/shared/themes/base.css` | Styles | Structural CSS, modal, toast | Active |
 | `public/shared/themes/tokyo-night.css` | Theme | Color tokens | Active |
 | `public/shared/prompt-viewer.css` | Styles | Viewer component styles | Active |
-| `public/js/prompt-viewer.js` | Component | 3-mode prompt renderer, line edit | Active |
-| `public/js/prompt-editor.js` | Component | Create/edit form with validation | Active |
+| `public/js/components/prompt-viewer.js` | Component | 3-mode prompt renderer, line edit | Active |
+| `public/js/components/prompt-editor.js` | Component | Create/edit form with validation | Active |
+| `public/js/components/tag-selector.js` | Component | Chip-based tag multi-select | Active |
 | `public/js/utils.js` | Utility | Shared helpers (escapeHtml) | Active |
 
 ---
@@ -1040,9 +1114,11 @@ src/
 │       └── prompt-editor.html
 public/
 ├── js/
-│   ├── prompt-viewer.js    # Viewer component
-│   ├── prompt-editor.js    # Editor component
-│   └── utils.js            # Shared utilities
+│   ├── components/
+│   │   ├── tag-selector.js   # Tag chip multi-select
+│   │   ├── prompt-viewer.js  # Viewer component
+│   │   └── prompt-editor.js  # Editor component
+│   └── utils.js              # Shared utilities
 ├── shared/
 │   ├── themes/
 │   │   ├── base.css        # Structural styles

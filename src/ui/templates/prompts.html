@@ -102,8 +102,9 @@
   <script src="/js/utils.js"></script>
   <script src="/js/components/modal.js"></script>
   <script src="/js/components/toast.js"></script>
-  <script src="/js/prompt-viewer.js"></script>
-  <script src="/js/prompt-editor.js"></script>
+  <script src="/js/components/tag-selector.js"></script>
+  <script src="/js/components/prompt-viewer.js"></script>
+  <script src="/js/components/prompt-editor.js"></script>
   <script>
     /**
      * @typedef {Object} DraftData
@@ -267,7 +268,7 @@
     /**
      * Enter insert mode - add a new prompt to staging
      */
-    function enterInsertMode() {
+    async function enterInsertMode() {
       // Capture current form data before creating new entry
       if (selectedStagingId) {
         const current = stagingPrompts.find(s => s.tempId === selectedStagingId);
@@ -303,7 +304,7 @@
       currentMode = 'new';
 
       renderStagingList();
-      showEditor(newPrompt.data);
+      await showEditor(newPrompt.data);
       isDirty = false; // Reset after showing new empty form
       updateStagingFooter();
       notifyShellStateChange(true);
@@ -316,21 +317,21 @@
     /**
      * Enter edit mode for an existing prompt
      */
-    function enterEditMode() {
+    async function enterEditMode() {
       if (!selectedSlug) return;
 
       const prompt = prompts.find(p => p.slug === selectedSlug);
       if (!prompt) return;
 
       currentMode = 'edit';
-      showEditor(prompt);
+      await showEditor(prompt);
       notifyShellStateChange(true);
     }
 
     /**
      * Show the editor with given data
      */
-    function showEditor(data) {
+    async function showEditor(data) {
       const emptyState = document.getElementById('empty-state');
       const promptView = document.getElementById('prompt-view');
       const promptEdit = document.getElementById('prompt-edit');
@@ -339,7 +340,7 @@
       if (promptView) promptView.style.display = 'none';
       if (promptEdit) promptEdit.style.display = 'block';
 
-      promptEditor.init(promptEdit, {
+      await promptEditor.init(promptEdit, {
         data,
         onSave: handleSave,
         onDiscard: handleDiscard,
@@ -440,7 +441,7 @@
       selectedStagingId = tempId;
       const staging = stagingPrompts.find(s => s.tempId === tempId);
       if (staging) {
-        showEditor(staging.data);
+        await showEditor(staging.data);
       }
 
       renderStagingList();
@@ -461,7 +462,7 @@
       } else if (selectedStagingId === tempId) {
         // Select the first remaining
         selectedStagingId = stagingPrompts[0].tempId;
-        showEditor(stagingPrompts[0].data);
+        await showEditor(stagingPrompts[0].data);
         renderStagingList();
       } else {
         renderStagingList();
@@ -562,7 +563,7 @@
           } else {
             // More to save - select next
             selectedStagingId = stagingPrompts[0].tempId;
-            showEditor(stagingPrompts[0].data);
+            await showEditor(stagingPrompts[0].data);
             renderStagingList();
             updateStagingFooter();
           }
@@ -1441,14 +1442,14 @@
           currentMode = 'new';
 
           renderStagingList();
-          showEditor(draft.data);
+          await showEditor(draft.data);
           isDirty = false;
           updateStagingFooter();
         } else {
           // Edit draft: show editor with draft data
           selectedSlug = draft.promptSlug || selectedSlug;
           currentMode = 'edit';
-          showEditor(draft.data);
+          await showEditor(draft.data);
         }
 
         checkDraftExpiration(draft);
@@ -1681,6 +1682,8 @@
     window.selectPrompt = selectPrompt;
     window.clearSelection = clearSelection;
     window.restoreState = restoreState;
+    window.enterInsertMode = enterInsertMode;
+    window.enterEditMode = enterEditMode;
 
     async function init() {
       await loadPrompts();

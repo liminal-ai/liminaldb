@@ -1,13 +1,10 @@
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
-import { findOrCreateTag } from "./tags";
+import { validateGlobalTag, getTagId, getTagsByDimension } from "./tags";
 import { getRankingConfig, rerank } from "./ranking";
 
 // Slug validation: lowercase, numbers, dashes only. No colons (reserved for namespacing).
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
-// Tag name validation: alphanumeric, dashes, underscores, forward slashes (for hierarchy)
-const TAG_NAME_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9\-_/]*$/;
 
 // Validation limits
 const LIMITS = {
@@ -88,23 +85,11 @@ export function validateSlug(slug: string): void {
 }
 
 /**
- * Validate tag name format.
+ * Validate tag name against the 19 fixed global tags.
  * Throws if invalid.
  */
 export function validateTagName(tagName: string): void {
-	if (!tagName || !tagName.trim()) {
-		throw new Error("Tag name is required and cannot be empty");
-	}
-	if (tagName.length > LIMITS.TAG_NAME_MAX_LENGTH) {
-		throw new Error(
-			`Tag name too long: "${tagName}" is ${tagName.length} chars (max ${LIMITS.TAG_NAME_MAX_LENGTH})`,
-		);
-	}
-	if (!TAG_NAME_REGEX.test(tagName)) {
-		throw new Error(
-			`Invalid tag name: "${tagName}". Use letters, numbers, dashes, underscores, or forward slashes.`,
-		);
-	}
+	validateGlobalTag(tagName);
 }
 
 /**
@@ -204,17 +189,17 @@ export async function insertMany(
 		}
 	}
 
-	// Phase 2: Collect all unique tag names across all prompts and create/find tags
-	// Track tags we've created during this batch to avoid duplicate lookups
+	// Phase 2: Look up tag IDs (tags are pre-seeded, no creation needed)
+	// Cache to avoid duplicate lookups within batch
 	const tagIdCache = new Map<string, Id<"tags">>();
 
-	async function getOrCreateTagId(tagName: string): Promise<Id<"tags">> {
+	async function getTagIdCached(tagName: string): Promise<Id<"tags">> {
 		const cached = tagIdCache.get(tagName);
 		if (cached) {
 			return cached;
 		}
 
-		const tagId = await findOrCreateTag(ctx, userId, tagName);
+		const tagId = await getTagId(ctx, tagName);
 		tagIdCache.set(tagName, tagId);
 		return tagId;
 	}
@@ -223,10 +208,10 @@ export async function insertMany(
 	const promptIds: Id<"prompts">[] = [];
 
 	for (const prompt of prompts) {
-		// Get or create all tags for this prompt
+		// Look up tag IDs for this prompt
 		const tagIds: Id<"tags">[] = [];
 		for (const tagName of prompt.tags) {
-			const tagId = await getOrCreateTagId(tagName);
+			const tagId = await getTagIdCached(tagName);
 			tagIds.push(tagId);
 		}
 
@@ -396,12 +381,12 @@ export async function updateBySlug(
 		junctionByTagId.set(junction.tagId, junction._id);
 	}
 
-	// Get or create tag IDs for new tags
+	// Look up tag IDs for new tags
 	const newTagIds = new Set<string>();
 	const tagIdsToAdd: Id<"tags">[] = [];
 
 	for (const tagName of updates.tags) {
-		const tagId = await findOrCreateTag(ctx, userId, tagName);
+		const tagId = await getTagId(ctx, tagName);
 		newTagIds.add(tagId);
 		if (!currentTagIds.has(tagId)) {
 			tagIdsToAdd.push(tagId);
@@ -432,17 +417,7 @@ export async function updateBySlug(
 		});
 	}
 
-	// Clean up orphaned tags
-	for (const tagId of tagIdsToRemove) {
-		const remainingRefs = await ctx.db
-			.query("promptTags")
-			.withIndex("by_tag", (q) => q.eq("tagId", tagId))
-			.first();
-
-		if (!remainingRefs) {
-			await ctx.db.delete(tagId);
-		}
-	}
+	// Note: No orphan cleanup - tags are global shared tags, never deleted
 
 	// Update prompt fields (tagNames synced by trigger)
 	await ctx.db.patch(prompt._id, {
@@ -460,8 +435,7 @@ export async function updateBySlug(
 
 /**
  * Delete prompt by slug for user.
- * Cleans up junction records and orphaned tags (tags no longer referenced by any prompt).
- * Note: tagNames trigger fires on junction deletes but is a no-op since prompt is deleted.
+ * Cleans up junction records. Tags are global shared tags and are never deleted.
  * Returns true if deleted, false if not found.
  */
 export async function deleteBySlug(
@@ -479,14 +453,11 @@ export async function deleteBySlug(
 		return false;
 	}
 
-	// Get all junction records for this prompt (we'll need the tagIds for orphan check)
+	// Get all junction records for this prompt
 	const junctions = await ctx.db
 		.query("promptTags")
 		.withIndex("by_prompt", (q) => q.eq("promptId", prompt._id))
 		.collect();
-
-	// Collect tag IDs before deleting junctions
-	const tagIdsToCheck = junctions.map((j) => j.tagId);
 
 	// Delete all junction records for this prompt
 	for (const junction of junctions) {
@@ -496,18 +467,7 @@ export async function deleteBySlug(
 	// Delete the prompt
 	await ctx.db.delete(prompt._id);
 
-	// Clean up orphaned tags: delete tags that have no remaining junction records
-	for (const tagId of tagIdsToCheck) {
-		const remainingRefs = await ctx.db
-			.query("promptTags")
-			.withIndex("by_tag", (q) => q.eq("tagId", tagId))
-			.first();
-
-		if (!remainingRefs) {
-			// No other prompts reference this tag, delete it
-			await ctx.db.delete(tagId);
-		}
-	}
+	// Note: No orphan cleanup - tags are global shared tags, never deleted
 
 	return true;
 }
@@ -645,17 +605,14 @@ export async function trackPromptUse(
 
 export async function listTags(
 	ctx: QueryCtx,
-	userId: string,
-): Promise<string[]> {
-	const tags = await ctx.db
-		.query("tags")
-		.withIndex("by_user_name", (q) => q.eq("userId", userId))
-		.collect();
-
-	// Index orders by name already, but keep stable+defensive.
-	return [...new Set(tags.map((t) => t.name))].sort((a, b) =>
-		a.toLowerCase().localeCompare(b.toLowerCase()),
-	);
+): Promise<{ purpose: string[]; domain: string[]; task: string[] }> {
+	// Global tags - no userId needed
+	const grouped = await getTagsByDimension(ctx);
+	return {
+		purpose: grouped.purpose || [],
+		domain: grouped.domain || [],
+		task: grouped.task || [],
+	};
 }
 
 function toDTOv2(prompt: {

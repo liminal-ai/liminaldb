@@ -118,7 +118,7 @@ describe("MCP Tool Handlers - save_prompts", () => {
 				name: "Test",
 				description: "A test prompt",
 				content: "Content here",
-				tags: ["tag1"],
+				tags: ["code"],
 			},
 		];
 

@@ -252,4 +252,34 @@ describe("Prompts API Integration", () => {
 			expect(res.status).toBe(409);
 		});
 	});
+
+	describe("GET /api/prompts/tags", () => {
+		test("returns tags grouped by dimension", async () => {
+			const res = await fetch(`${baseUrl}/api/prompts/tags`, {
+				headers: { Authorization: `Bearer ${authToken}` },
+			});
+
+			expect(res.status).toBe(200);
+			const data = (await res.json()) as {
+				purpose: string[];
+				domain: string[];
+				task: string[];
+			};
+
+			// Should have all 3 dimensions
+			expect(data).toHaveProperty("purpose");
+			expect(data).toHaveProperty("domain");
+			expect(data).toHaveProperty("task");
+
+			// Should have correct counts
+			expect(data.purpose).toHaveLength(5);
+			expect(data.domain).toHaveLength(7);
+			expect(data.task).toHaveLength(7);
+
+			// Should contain expected tags
+			expect(data.purpose).toContain("instruction");
+			expect(data.domain).toContain("code");
+			expect(data.task).toContain("review");
+		});
+	});
 });

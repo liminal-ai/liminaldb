@@ -27,7 +27,7 @@ const validPromptBody = {
 	name: "Test Prompt",
 	description: "A test prompt",
 	content: "Hello, {{name}}!",
-	tags: ["test"],
+	tags: ["code"],
 };
 
 describe("PUT /api/prompts/:slug", () => {

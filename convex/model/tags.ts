@@ -1,53 +1,86 @@
-import type { MutationCtx } from "../_generated/server";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import { ALL_TAG_NAMES, GLOBAL_TAGS, type TagName } from "./tagConstants";
 
 /**
- * Find existing tag or create new one.
- * Handles race conditions by checking for duplicates after insert.
- * Returns tag ID.
+ * Validate tag name against the fixed list of 19 global tags.
+ * @param name - Tag name to validate
+ * @returns Normalized tag name (lowercase)
+ * @throws Error if tag is not in the global list
  */
-export async function findOrCreateTag(
-	ctx: MutationCtx,
-	userId: string,
+export function validateGlobalTag(name: string): TagName {
+	const normalized = name.trim().toLowerCase();
+	if (!normalized) {
+		throw new Error(
+			`Invalid tag: empty. Valid tags: ${ALL_TAG_NAMES.join(", ")}`,
+		);
+	}
+	if (!ALL_TAG_NAMES.includes(normalized as TagName)) {
+		throw new Error(
+			`Invalid tag: "${name}". Valid tags: ${ALL_TAG_NAMES.join(", ")}`,
+		);
+	}
+	return normalized as TagName;
+}
+
+/**
+ * Get tag ID by name. Tags are pre-seeded, so this should always find one.
+ * @param ctx - Convex query/mutation context
+ * @param name - Tag name to look up
+ * @returns Tag document ID
+ * @throws Error if tag not found (indicates seeding issue)
+ */
+export async function getTagId(
+	ctx: QueryCtx | MutationCtx,
 	name: string,
 ): Promise<Id<"tags">> {
-	// Look up existing tag using the composite index
-	const existing = await ctx.db
+	const normalized = validateGlobalTag(name);
+
+	const tag = await ctx.db
 		.query("tags")
-		.withIndex("by_user_name", (q) => q.eq("userId", userId).eq("name", name))
+		.withIndex("by_name", (q) => q.eq("name", normalized))
 		.unique();
 
-	if (existing) {
-		return existing._id;
-	}
-
-	// Create new tag
-	const newId = await ctx.db.insert("tags", { userId, name });
-
-	// Check for race condition - another request may have created the same tag
-	const allMatching = await ctx.db
-		.query("tags")
-		.withIndex("by_user_name", (q) => q.eq("userId", userId).eq("name", name))
-		.collect();
-
-	if (allMatching.length > 1) {
-		// Race condition occurred - keep oldest, delete all duplicates
-		const sorted = allMatching.sort(
-			(a, b) => a._creationTime - b._creationTime,
+	if (!tag) {
+		throw new Error(
+			`Tag "${normalized}" not found. Run seedGlobalTags migration first.`,
 		);
-		const oldest = sorted[0];
-		if (!oldest) {
-			return newId;
-		}
-
-		// Delete all except oldest
-		for (const tag of allMatching) {
-			if (tag._id !== oldest._id) {
-				await ctx.db.delete(tag._id);
-			}
-		}
-		return oldest._id;
 	}
 
-	return newId;
+	return tag._id;
+}
+
+/**
+ * Get all tags grouped by dimension for UI rendering.
+ * Tags are sorted to match the canonical order in GLOBAL_TAGS.
+ * @param ctx - Convex query context
+ * @returns Object with purpose, domain, task arrays
+ */
+export async function getTagsByDimension(
+	ctx: QueryCtx,
+): Promise<{ purpose: string[]; domain: string[]; task: string[] }> {
+	const allTags = await ctx.db.query("tags").collect();
+
+	const grouped: { purpose: string[]; domain: string[]; task: string[] } = {
+		purpose: [],
+		domain: [],
+		task: [],
+	};
+
+	for (const tag of allTags) {
+		const arr = grouped[tag.dimension as keyof typeof grouped];
+		if (arr) {
+			arr.push(tag.name);
+		}
+	}
+
+	// Sort each dimension to match canonical order in GLOBAL_TAGS
+	for (const dim of ["purpose", "domain", "task"] as const) {
+		const canonicalOrder = GLOBAL_TAGS[dim] as readonly string[];
+		grouped[dim].sort(
+			(a, b) => canonicalOrder.indexOf(a) - canonicalOrder.indexOf(b),
+		);
+	}
+
+	return grouped;
 }

@@ -554,6 +554,79 @@ select {
   opacity: 1;
 }
 
+/* Tag picker grouped sections */
+.tag-picker-section {
+  padding: var(--space-xs) 0;
+}
+
+.tag-picker-section:not(:last-child) {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tag-picker-section-header {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: var(--space-xs) var(--space-md);
+}
+
+/* ============================================
+   TAG SELECTOR COMPONENT (Editor chips)
+   ============================================ */
+
+.tag-selector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.tag-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.tag-section-header {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tag-chip:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.tag-chip.selected {
+  background: var(--accent);
+  color: var(--bg-deep);
+  border-color: var(--accent);
+}
+
 /* ============================================
    THEME PICKER DROPDOWN
    ============================================ */
