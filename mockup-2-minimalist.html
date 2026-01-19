@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LiminalDB - Mockup 2: Minimalist/Refined</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* =============================================
+       MOCKUP 2: MINIMALIST/REFINED AESTHETIC
+
+       Concept: Swiss design influence. Extreme restraint,
+       precision spacing, type-focused hierarchy.
+       Breathable whitespace that feels intentional.
+       Every element earns its place.
+       ============================================= */
+
+    :root {
+      /* Tokyo Night colors */
+      --bg-deep: #1a1b26;
+      --bg-surface: #24283b;
+      --bg-elevated: #414868;
+      --bg-hover: #565f89;
+      --border: #414868;
+      --border-subtle: #2f3549;
+      --text-primary: #c0caf5;
+      --text-secondary: #9aa5ce;
+      --text-muted: #565f89;
+      --accent: #e0af68;
+      --accent-bright: #ffcb6b;
+      --accent-dim: #c49a4a;
+      --accent-glow: rgba(224, 175, 104, 0.2);
+      --accent-secondary: #7dcfff;
+      --accent-secondary-dim: rgba(125, 207, 255, 0.15);
+
+      /* Typography */
+      --font-body: 'DM Sans', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    /* Shell Header */
+    .shell-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 24px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .search-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      max-width: 600px;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 8px 12px;
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .search-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .tag-picker-btn {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 6px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .logo {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+      margin-left: auto;
+    }
+
+    .logo strong {
+      font-weight: 700;
+    }
+
+    .user-info {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Main Layout */
+    .main-layout {
+      display: flex;
+      height: calc(100vh - 53px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      min-width: 280px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header {
+      display: flex;
+      justify-content: flex-end;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .btn-primary {
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 16px;
+      background: var(--accent);
+      color: var(--bg-deep);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .prompt-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .prompt-item {
+      padding: 12px 16px;
+      margin-bottom: 4px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .prompt-item:hover {
+      background: var(--bg-elevated);
+    }
+
+    .prompt-item.selected {
+      background: var(--bg-hover);
+      border-left: 2px solid var(--accent);
+      padding-left: 14px;
+    }
+
+    .prompt-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .prompt-slug {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .prompt-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 2px 8px;
+      background: var(--accent-secondary-dim);
+      color: var(--accent-secondary);
+      border-radius: 4px;
+    }
+
+    .prompt-indicators {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+    }
+
+    /* Content Area - The Minimalist Landing */
+    .content {
+      flex: 1;
+      overflow: auto;
+      background: var(--bg-deep);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .landing-minimal {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 64px;
+      max-width: 640px;
+    }
+
+    /* Simple, powerful headline */
+    .landing-headline {
+      font-size: 32px;
+      font-weight: 500;
+      line-height: 1.3;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    .landing-subtitle {
+      font-size: 16px;
+      color: var(--text-secondary);
+      margin-bottom: 48px;
+      max-width: 400px;
+      animation: fadeIn 0.6s ease-out 0.1s both;
+    }
+
+    /* Primary action - very prominent */
+    .landing-action {
+      margin-bottom: 64px;
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+
+    .btn-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 12px 24px;
+      background: var(--accent);
+      color: var(--bg-deep);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-cta:hover {
+      background: var(--accent-bright);
+      transform: translateY(-1px);
+    }
+
+    .btn-cta-icon {
+      font-size: 18px;
+    }
+
+    .shortcut {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .shortcut kbd {
+      display: inline-block;
+      padding: 2px 6px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+
+    /* Feature list - ultra clean */
+    .landing-features {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      animation: fadeIn 0.6s ease-out 0.3s both;
+    }
+
+    .feature {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .feature-number {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+      min-width: 24px;
+    }
+
+    .feature-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .feature-text strong {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    /* Bottom info strip */
+    .landing-footer {
+      padding: 24px 64px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      gap: 48px;
+      animation: fadeIn 0.6s ease-out 0.4s both;
+    }
+
+    .footer-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .footer-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+
+    .footer-value {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Shell Header -->
+  <header class="shell-header">
+    <div class="search-group">
+      <input type="search" class="search-input" placeholder="Search prompts... (Cmd+K)" />
+      <button class="tag-picker-btn">Tags</button>
+    </div>
+    <div class="logo"><strong>LIMINAL</strong>DB</div>
+    <div class="user-info">lee@example.com</div>
+  </header>
+
+  <div class="main-layout">
+    <!-- Sidebar with sample prompts -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <button class="btn-primary">+ New</button>
+      </div>
+      <div class="prompt-list">
+        <div class="prompt-item">
+          <div class="prompt-name">Code Review Assistant</div>
+          <div class="prompt-slug">code-review</div>
+          <div class="prompt-tags">
+            <span class="tag">code-review</span>
+            <span class="tag">quality</span>
+          </div>
+          <div class="prompt-indicators">
+            <span title="Pinned">📌</span>
+          </div>
+        </div>
+        <div class="prompt-item">
+          <div class="prompt-name">SQL Query Builder</div>
+          <div class="prompt-slug">sql-builder</div>
+          <div class="prompt-tags">
+            <span class="tag">database</span>
+          </div>
+        </div>
+        <div class="prompt-item">
+          <div class="prompt-name">Documentation Writer</div>
+          <div class="prompt-slug">doc-writer</div>
+          <div class="prompt-tags">
+            <span class="tag">documentation</span>
+            <span class="tag">technical</span>
+          </div>
+        </div>
+        <div class="prompt-item">
+          <div class="prompt-name">Test Case Generator</div>
+          <div class="prompt-slug">test-gen</div>
+          <div class="prompt-tags">
+            <span class="tag">testing</span>
+          </div>
+        </div>
+        <div class="prompt-item">
+          <div class="prompt-name">API Design Helper</div>
+          <div class="prompt-slug">api-design</div>
+          <div class="prompt-tags">
+            <span class="tag">api</span>
+            <span class="tag">architecture</span>
+          </div>
+          <div class="prompt-indicators">
+            <span title="Favorited">⭐</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Minimalist Landing Content -->
+    <main class="content">
+      <div class="landing-minimal">
+        <h1 class="landing-headline">
+          Select a prompt to view,<br>
+          or create something new.
+        </h1>
+
+        <p class="landing-subtitle">
+          Your personal prompt library. Capture once, retrieve from anywhere you work with AI.
+        </p>
+
+        <div class="landing-action">
+          <button class="btn-cta">
+            <span class="btn-cta-icon">+</span>
+            New Prompt
+          </button>
+          <span class="shortcut">
+            <kbd>⌘</kbd><kbd>K</kbd> to search
+          </span>
+        </div>
+
+        <div class="landing-features">
+          <div class="feature">
+            <span class="feature-number">01</span>
+            <span class="feature-text">
+              <strong>Save prompts naturally.</strong> "Save this as my code-review prompt" works via MCP.
+            </span>
+          </div>
+          <div class="feature">
+            <span class="feature-number">02</span>
+            <span class="feature-text">
+              <strong>Retrieve from any surface.</strong> Claude Code, Cursor, ChatGPT, VS Code.
+            </span>
+          </div>
+          <div class="feature">
+            <span class="feature-number">03</span>
+            <span class="feature-text">
+              <strong>Smart organization.</strong> 19 tags across purpose, domain, and task dimensions.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <footer class="landing-footer">
+        <div class="footer-item">
+          <span class="footer-label">Access</span>
+          <span class="footer-value">Web UI &middot; MCP &middot; REST API</span>
+        </div>
+        <div class="footer-item">
+          <span class="footer-label">Tags</span>
+          <span class="footer-value">19 shared vocabulary</span>
+        </div>
+        <div class="footer-item">
+          <span class="footer-label">Drafts</span>
+          <span class="footer-value">Durable, 24h TTL</span>
+        </div>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

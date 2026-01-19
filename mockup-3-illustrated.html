@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LiminalDB - Mockup 3: Illustrated/Playful</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* =============================================
+       MOCKUP 3: ILLUSTRATED/PLAYFUL AESTHETIC
+
+       Concept: Friendly, approachable, with hand-drawn
+       style illustrations and warm colors. Feels like
+       a creative tool, not enterprise software.
+       ASCII art patterns and playful iconography.
+       ============================================= */
+
+    :root {
+      /* Tokyo Night colors with warmer tints */
+      --bg-deep: #1a1b26;
+      --bg-surface: #24283b;
+      --bg-elevated: #414868;
+      --bg-hover: #565f89;
+      --border: #414868;
+      --border-subtle: #2f3549;
+      --text-primary: #c0caf5;
+      --text-secondary: #9aa5ce;
+      --text-muted: #565f89;
+      --accent: #e0af68;
+      --accent-bright: #ffcb6b;
+      --accent-dim: #c49a4a;
+      --accent-glow: rgba(224, 175, 104, 0.2);
+      --accent-secondary: #7dcfff;
+      --accent-secondary-dim: rgba(125, 207, 255, 0.15);
+      --accent-pink: #f7768e;
+      --accent-green: #9ece6a;
+      --accent-purple: #bb9af7;
+
+      /* Typography */
+      --font-body: 'Nunito', -apple-system, sans-serif;
+      --font-mono: 'Space Mono', monospace;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    /* Shell Header */
+    .shell-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 24px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .search-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      max-width: 600px;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 8px 12px;
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .search-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .tag-picker-btn {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 6px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .logo {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+      margin-left: auto;
+    }
+
+    .logo strong {
+      font-weight: 700;
+    }
+
+    .user-info {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Main Layout */
+    .main-layout {
+      display: flex;
+      height: calc(100vh - 53px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      min-width: 280px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header {
+      display: flex;
+      justify-content: flex-end;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .btn-primary {
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 16px;
+      background: var(--accent);
+      color: var(--bg-deep);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .prompt-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .prompt-item {
+      padding: 12px 16px;
+      margin-bottom: 4px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .prompt-item:hover {
+      background: var(--bg-elevated);
+    }
+
+    .prompt-item.selected {
+      background: var(--bg-hover);
+      border-left: 2px solid var(--accent);
+      padding-left: 14px;
+    }
+
+    .prompt-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .prompt-slug {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .prompt-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 2px 8px;
+      background: var(--accent-secondary-dim);
+      color: var(--accent-secondary);
+      border-radius: 4px;
+    }
+
+    .prompt-indicators {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+    }
+
+    /* Content Area - The Illustrated Landing */
+    .content {
+      flex: 1;
+      overflow: auto;
+      background: var(--bg-deep);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px;
+    }
+
+    .landing-illustrated {
+      max-width: 600px;
+      text-align: center;
+    }
+
+    /* ASCII Art Hero */
+    .ascii-hero {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.3;
+      color: var(--accent);
+      margin-bottom: 32px;
+      white-space: pre;
+      animation: flicker 0.1s ease-out, fadeIn 0.8s ease-out;
+    }
+
+    /* Greeting */
+    .landing-greeting {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-secondary);
+      margin-bottom: 8px;
+      animation: fadeSlideUp 0.6s ease-out 0.1s both;
+    }
+
+    .landing-headline {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      animation: fadeSlideUp 0.6s ease-out 0.2s both;
+    }
+
+    .landing-headline .highlight {
+      color: var(--accent);
+      position: relative;
+    }
+
+    .landing-headline .highlight::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 2px;
+      opacity: 0.3;
+    }
+
+    .landing-subtitle {
+      font-size: 15px;
+      color: var(--text-secondary);
+      margin-bottom: 40px;
+      animation: fadeSlideUp 0.6s ease-out 0.3s both;
+    }
+
+    /* CTA Button - Playful */
+    .btn-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 700;
+      padding: 14px 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+      color: var(--bg-deep);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 16px var(--accent-glow);
+      animation: fadeSlideUp 0.6s ease-out 0.4s both;
+    }
+
+    .btn-cta:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 8px 24px var(--accent-glow);
+    }
+
+    .btn-cta-icon {
+      font-size: 20px;
+    }
+
+    /* Feature Cards - Illustrated Style */
+    .landing-features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 48px;
+      animation: fadeSlideUp 0.6s ease-out 0.5s both;
+    }
+
+    .feature-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 16px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent-secondary);
+    }
+
+    .feature-icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .feature-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .feature-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* Quick Tips - Playful boxes */
+    .landing-tips {
+      margin-top: 48px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      animation: fadeSlideUp 0.6s ease-out 0.6s both;
+    }
+
+    .tip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--bg-surface);
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .tip kbd {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 3px 6px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+    }
+
+    .tip-icon {
+      font-size: 16px;
+    }
+
+    /* Decorative Elements */
+    .sparkles {
+      position: absolute;
+      font-size: 12px;
+      color: var(--accent);
+      animation: sparkle 2s ease-in-out infinite;
+    }
+
+    @keyframes sparkle {
+      0%, 100% { opacity: 0.3; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes fadeSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes flicker {
+      0% { opacity: 0.8; }
+      50% { opacity: 1; }
+      100% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Shell Header -->
+  <header class="shell-header">
+    <div class="search-group">
+      <input type="search" class="search-input" placeholder="Search prompts... (Cmd+K)" />
+      <button class="tag-picker-btn">Tags</button>
+    </div>
+    <div class="logo"><strong>LIMINAL</strong>DB</div>
+    <div class="user-info">lee@example.com</div>
+  </header>
+
+  <div class="main-layout">
+    <!-- Sidebar with sample prompts -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <button class="btn-primary">+ New</button>
+      </div>
+      <div class="prompt-list">
+        <div class="prompt-item">
+          <div class="prompt-name">Code Review Assistant</div>
+          <div class="prompt-slug">code-review</div>
+          <div class="prompt-tags">
+            <span class="tag">code-review</span>
+            <span class="tag">quality</span>
+          </div>
+          <div class="prompt-indicators">
+            <span title="Pinned">📌</span>
+          </div>
+        </div>
+        <div class="prompt-item">
+          <div class="prompt-name">SQL Query Builder</div>
+          <div class="prompt-slug">sql-builder</div>
+          <div class="prompt-tags">
+            <span class="tag">database</span>
+          </div>
+        </div>
+        <div class="prompt-item">
+          <div class="prompt-name">Documentation Writer</div>
+          <div class="prompt-slug">doc-writer</div>
+          <div class="prompt-tags">
+            <span class="tag">documentation</span>
+            <span class="tag">technical</span>
+          </div>
+        </div>
+        <div class="prompt-item">
+          <div class="prompt-name">Test Case Generator</div>
+          <div class="prompt-slug">test-gen</div>
+          <div class="prompt-tags">
+            <span class="tag">testing</span>
+          </div>
+        </div>
+        <div class="prompt-item">
+          <div class="prompt-name">API Design Helper</div>
+          <div class="prompt-slug">api-design</div>
+          <div class="prompt-tags">
+            <span class="tag">api</span>
+            <span class="tag">architecture</span>
+          </div>
+          <div class="prompt-indicators">
+            <span title="Favorited">⭐</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Illustrated Landing Content -->
+    <main class="content">
+      <div class="landing-illustrated">
+        <pre class="ascii-hero">
+    ╭──────────────────────────╮
+    │  ┌─┐┬─┐┌─┐┌┬┐┌─┐┌┬┐┌─┐  │
+    │  ├─┘├┬┘│ │││││├─┘ │ └─┐  │
+    │  ┴  ┴└─└─┘┴ ┴┴   ┴ └─┘  │
+    ╰──────────────────────────╯
+        </pre>
+
+        <div class="landing-greeting">👋 Welcome to your library</div>
+
+        <h1 class="landing-headline">
+          Your prompts,<br>
+          <span class="highlight">everywhere you work</span>
+        </h1>
+
+        <p class="landing-subtitle">
+          Save your best prompts once. Retrieve them from Claude Code, Cursor, ChatGPT, VS Code — anywhere you use AI.
+        </p>
+
+        <button class="btn-cta">
+          <span class="btn-cta-icon">✨</span>
+          Create Your First Prompt
+        </button>
+
+        <div class="landing-features">
+          <div class="feature-card">
+            <span class="feature-icon">🏷️</span>
+            <div class="feature-title">Smart Tags</div>
+            <div class="feature-desc">19 tags organized by purpose, domain & task</div>
+          </div>
+          <div class="feature-card">
+            <span class="feature-icon">🔍</span>
+            <div class="feature-title">Full-Text Search</div>
+            <div class="feature-desc">Find any prompt instantly by content</div>
+          </div>
+          <div class="feature-card">
+            <span class="feature-icon">⚡</span>
+            <div class="feature-title">MCP Access</div>
+            <div class="feature-desc">"Get my code-review prompt" just works</div>
+          </div>
+        </div>
+
+        <div class="landing-tips">
+          <div class="tip">
+            <span class="tip-icon">🔎</span>
+            <kbd>⌘</kbd> + <kbd>K</kbd> to search
+          </div>
+          <div class="tip">
+            <span class="tip-icon">📌</span>
+            Pin prompts you use daily
+          </div>
+          <div class="tip">
+            <span class="tip-icon">⭐</span>
+            Favorite to boost ranking
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

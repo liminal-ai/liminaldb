@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LiminalDB - Mockup 4: Dashboard/Utilitarian</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* =============================================
+       MOCKUP 4: DASHBOARD/UTILITARIAN AESTHETIC
+
+       Concept: Information-dense, tool-focused.
+       Shows real data, stats, and quick actions.
+       Feels like a professional dashboard or IDE.
+       Efficient use of space, grid-based layout.
+       ============================================= */
+
+    :root {
+      /* Tokyo Night colors */
+      --bg-deep: #1a1b26;
+      --bg-surface: #24283b;
+      --bg-elevated: #414868;
+      --bg-hover: #565f89;
+      --border: #414868;
+      --border-subtle: #2f3549;
+      --text-primary: #c0caf5;
+      --text-secondary: #9aa5ce;
+      --text-muted: #565f89;
+      --accent: #e0af68;
+      --accent-bright: #ffcb6b;
+      --accent-dim: #c49a4a;
+      --accent-glow: rgba(224, 175, 104, 0.2);
+      --accent-secondary: #7dcfff;
+      --accent-secondary-dim: rgba(125, 207, 255, 0.15);
+      --success: #9ece6a;
+      --error: #f7768e;
+
+      /* Typography */
+      --font-sans: 'IBM Plex Sans', -apple-system, sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    /* Shell Header */
+    .shell-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 24px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .search-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      max-width: 600px;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 8px 12px;
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .search-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .tag-picker-btn {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 6px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .logo {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+      margin-left: auto;
+    }
+
+    .logo strong {
+      font-weight: 700;
+    }
+
+    .user-info {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Main Layout */
+    .main-layout {
+      display: flex;
+      height: calc(100vh - 53px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      min-width: 280px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header {
+      display: flex;
+      justify-content: flex-end;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .btn-primary {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 16px;
+      background: var(--accent);
+      color: var(--bg-deep);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .prompt-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .prompt-item {
+      padding: 12px 16px;
+      margin-bottom: 4px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .prompt-item:hover {
+      background: var(--bg-elevated);
+    }
+
+    .prompt-item.selected {
+      background: var(--bg-hover);
+      border-left: 2px solid var(--accent);
+      padding-left: 14px;
+    }
+
+    .prompt-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .prompt-slug {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .prompt-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 2px 8px;
+      background: var(--accent-secondary-dim);
+      color: var(--accent-secondary);
+      border-radius: 4px;
+    }
+
+    .prompt-indicators {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+    }
+
+    /* Content Area - Dashboard Landing */
+    .content {
+      flex: 1;
+      overflow: auto;
+      background: var(--bg-deep);
+      padding: 24px;
+    }
+
+    .landing-dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      max-width: 1000px;
+    }
+
+    /* Section Label */
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    /* Stats Row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .stat-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .stat-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    .stat-value.accent {
+      color: var(--accent);
+    }
+
+    .stat-value.secondary {
+      color: var(--accent-secondary);
+    }
+
+    .stat-change {
+      font-size: 11px;
+      color: var(--success);
+      margin-top: 4px;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      animation: fadeIn 0.4s ease-out 0.1s both;
+    }
+
+    .action-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: left;
+    }
+
+    .action-btn:hover {
+      background: var(--bg-elevated);
+      border-color: var(--accent);
+    }
+
+    .action-icon {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-deep);
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    .action-content {
+      flex: 1;
+    }
+
+    .action-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+
+    .action-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .action-shortcut {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      padding: 2px 6px;
+      background: var(--bg-deep);
+      border-radius: 4px;
+    }
+
+    /* Two Column Layout */
+    .two-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      animation: fadeIn 0.4s ease-out 0.2s both;
+    }
+
+    .panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .panel-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .panel-action {
+      font-size: 11px;
+      color: var(--accent);
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+
+    .panel-action:hover {
+      text-decoration: underline;
+    }
+
+    .panel-content {
+      padding: 16px;
+    }
+
+    /* Recent Prompts List */
+    .recent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .recent-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .recent-item:hover {
+      background: var(--bg-elevated);
+    }
+
+    .recent-rank {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      width: 16px;
+    }
+
+    .recent-info {
+      flex: 1;
+    }
+
+    .recent-name {
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .recent-meta {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .recent-stat {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent-secondary);
+    }
+
+    /* Tag Distribution */
+    .tag-distribution {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tag-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .tag-name {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      width: 100px;
+    }
+
+    .tag-bar-container {
+      flex: 1;
+      height: 6px;
+      background: var(--bg-deep);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .tag-bar {
+      height: 100%;
+      background: var(--accent-secondary);
+      border-radius: 3px;
+      transition: width 0.6s ease-out;
+    }
+
+    .tag-count {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      width: 24px;
+      text-align: right;
+    }
+
+    /* Access Info */
+    .access-info {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      gap: 24px;
+      animation: fadeIn 0.4s ease-out 0.3s both;
+    }
+
+    .access-method {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .access-icon {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-deep);
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .access-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .access-status {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 2px 6px;
+      background: rgba(158, 206, 106, 0.15);
+      color: var(--success);
+      border-radius: 3px;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Shell Header -->
+  <header class="shell-header">
+    <div class="search-group">
+      <input type="search" class="search-input" placeholder="Search prompts... (Cmd+K)" />
+      <button class="tag-picker-btn">Tags</button>
+    </div>
+    <div class="logo"><strong>LIMINAL</strong>DB</div>
+    <div class="user-info">lee@example.com</div>
+  </header>
+
+  <div class="main-layout">
+    <!-- Sidebar with sample prompts -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <button class="btn-primary">+ New</button>
+      </div>
+      <div class="prompt-list">
+        <div class="prompt-item">
+          <div class="prompt-name">Code Review Assistant</div>
+          <div class="prompt-slug">code-review</div>
+          <div class="prompt-tags">
+            <span class="tag">code-review</span>
+            <span class="tag">quality</span>
+          </div>
+          <div class="prompt-indicators">
+            <span title="Pinned">📌</span>
+          </div>
+        </div>
+        <div class="prompt-item">
+          <div class="prompt-name">SQL Query Builder</div>
+          <div class="prompt-slug">sql-builder</div>
+          <div class="prompt-tags">
+            <span class="tag">database</span>
+          </div>
+        </div>
+        <div class="prompt-item">
+          <div class="prompt-name">Documentation Writer</div>
+          <div class="prompt-slug">doc-writer</div>
+          <div class="prompt-tags">
+            <span class="tag">documentation</span>
+            <span class="tag">technical</span>
+          </div>
+        </div>
+        <div class="prompt-item">
+          <div class="prompt-name">Test Case Generator</div>
+          <div class="prompt-slug">test-gen</div>
+          <div class="prompt-tags">
+            <span class="tag">testing</span>
+          </div>
+        </div>
+        <div class="prompt-item">
+          <div class="prompt-name">API Design Helper</div>
+          <div class="prompt-slug">api-design</div>
+          <div class="prompt-tags">
+            <span class="tag">api</span>
+            <span class="tag">architecture</span>
+          </div>
+          <div class="prompt-indicators">
+            <span title="Favorited">⭐</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Dashboard Landing Content -->
+    <main class="content">
+      <div class="landing-dashboard">
+        <!-- Stats Row -->
+        <section>
+          <div class="section-label">Library Overview</div>
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-label">Total Prompts</div>
+              <div class="stat-value">24</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Uses This Week</div>
+              <div class="stat-value accent">47</div>
+              <div class="stat-change">+12% from last week</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Tags Used</div>
+              <div class="stat-value secondary">8</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Drafts</div>
+              <div class="stat-value">2</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Quick Actions -->
+        <section>
+          <div class="section-label">Quick Actions</div>
+          <div class="quick-actions">
+            <button class="action-btn">
+              <span class="action-icon">+</span>
+              <div class="action-content">
+                <div class="action-title">New Prompt</div>
+                <div class="action-desc">Create from scratch</div>
+              </div>
+              <span class="action-shortcut">⌘N</span>
+            </button>
+            <button class="action-btn">
+              <span class="action-icon">🔍</span>
+              <div class="action-content">
+                <div class="action-title">Search Library</div>
+                <div class="action-desc">Find by content</div>
+              </div>
+              <span class="action-shortcut">⌘K</span>
+            </button>
+            <button class="action-btn">
+              <span class="action-icon">📋</span>
+              <div class="action-content">
+                <div class="action-title">View Drafts</div>
+                <div class="action-desc">2 unsaved changes</div>
+              </div>
+            </button>
+          </div>
+        </section>
+
+        <!-- Two Column Panels -->
+        <div class="two-columns">
+          <!-- Most Used Panel -->
+          <section class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Most Used</span>
+              <button class="panel-action">View all →</button>
+            </div>
+            <div class="panel-content">
+              <div class="recent-list">
+                <div class="recent-item">
+                  <span class="recent-rank">1</span>
+                  <div class="recent-info">
+                    <div class="recent-name">Code Review Assistant</div>
+                    <div class="recent-meta">code-review</div>
+                  </div>
+                  <span class="recent-stat">23 uses</span>
+                </div>
+                <div class="recent-item">
+                  <span class="recent-rank">2</span>
+                  <div class="recent-info">
+                    <div class="recent-name">SQL Query Builder</div>
+                    <div class="recent-meta">sql-builder</div>
+                  </div>
+                  <span class="recent-stat">18 uses</span>
+                </div>
+                <div class="recent-item">
+                  <span class="recent-rank">3</span>
+                  <div class="recent-info">
+                    <div class="recent-name">Documentation Writer</div>
+                    <div class="recent-meta">doc-writer</div>
+                  </div>
+                  <span class="recent-stat">12 uses</span>
+                </div>
+                <div class="recent-item">
+                  <span class="recent-rank">4</span>
+                  <div class="recent-info">
+                    <div class="recent-name">Test Case Generator</div>
+                    <div class="recent-meta">test-gen</div>
+                  </div>
+                  <span class="recent-stat">9 uses</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Tag Distribution Panel -->
+          <section class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Tags Distribution</span>
+              <button class="panel-action">Manage tags →</button>
+            </div>
+            <div class="panel-content">
+              <div class="tag-distribution">
+                <div class="tag-row">
+                  <span class="tag-name">code-review</span>
+                  <div class="tag-bar-container">
+                    <div class="tag-bar" style="width: 75%"></div>
+                  </div>
+                  <span class="tag-count">6</span>
+                </div>
+                <div class="tag-row">
+                  <span class="tag-name">database</span>
+                  <div class="tag-bar-container">
+                    <div class="tag-bar" style="width: 50%"></div>
+                  </div>
+                  <span class="tag-count">4</span>
+                </div>
+                <div class="tag-row">
+                  <span class="tag-name">testing</span>
+                  <div class="tag-bar-container">
+                    <div class="tag-bar" style="width: 37.5%"></div>
+                  </div>
+                  <span class="tag-count">3</span>
+                </div>
+                <div class="tag-row">
+                  <span class="tag-name">documentation</span>
+                  <div class="tag-bar-container">
+                    <div class="tag-bar" style="width: 37.5%"></div>
+                  </div>
+                  <span class="tag-count">3</span>
+                </div>
+                <div class="tag-row">
+                  <span class="tag-name">api</span>
+                  <div class="tag-bar-container">
+                    <div class="tag-bar" style="width: 25%"></div>
+                  </div>
+                  <span class="tag-count">2</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Access Info -->
+        <section class="access-info">
+          <div class="access-method">
+            <span class="access-icon">🌐</span>
+            <span class="access-label">Web UI</span>
+            <span class="access-status">active</span>
+          </div>
+          <div class="access-method">
+            <span class="access-icon">⚡</span>
+            <span class="access-label">MCP Protocol</span>
+            <span class="access-status">connected</span>
+          </div>
+          <div class="access-method">
+            <span class="access-icon">{ }</span>
+            <span class="access-label">REST API</span>
+            <span class="access-status">available</span>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
