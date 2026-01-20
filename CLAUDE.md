@@ -15,6 +15,7 @@ Present the full list for user review before executing. The user validates what'
 ## Project Overview
 
 - **Stack:** Bun + Fastify + Convex + Redis + WorkOS
+- **Port:** 5001 (default) — `http://localhost:5001`
 - **Auth:** WorkOS AuthKit (cookie for web, Bearer for MCP)
 - **Tests:** 365 tests (`bun run test`)
 

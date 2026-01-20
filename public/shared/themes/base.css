@@ -2,8 +2,8 @@
 
 :root {
   /* Typography */
-  --font-mono: 'JetBrains Mono', monospace;
-  --font-sans: 'Inter', -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+  --font-sans: 'IBM Plex Sans', 'Inter', -apple-system, sans-serif;
   --font-display: 'Playfair Display', Georgia, serif;
 
   --text-xs: 11px;

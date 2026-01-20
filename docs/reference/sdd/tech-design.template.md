@@ -391,7 +391,7 @@ http.post('*/api/[endpoint]', () => { /* mock response */ }),
 After TDD Green, verify manually:
 
 1. [ ] Start dev server: `npm run dev:start`
-2. [ ] Open launcher: `http://localhost:3000/location/launcher.html`
+2. [ ] Open launcher: `http://localhost:5001/location/launcher.html` (5001 is PromptDB default port)
 3. [ ] Select "[Feature]" preset
 4. [ ] [Specific action to test]
 5. [ ] Verify [expected outcome]

@@ -33,7 +33,7 @@ fastify.get('/', (req, reply) => {
   reply.send({ hello: 'world' })
 })
 
-await fastify.listen({ port: 3000 })
+await fastify.listen({ port: 5001 }) // 5001 is PromptDB default port
 ```
 
 ## Options

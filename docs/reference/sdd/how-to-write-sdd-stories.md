@@ -674,7 +674,7 @@ npm test           # All {Total} tests should PASS
 ### Manual Verification
 
 1. Start dev server: `npm run dev:start`
-2. Navigate to: `http://localhost:3000/path/to/launcher.html`
+2. Navigate to: `http://localhost:5001/path/to/launcher.html` (5001 is PromptDB default port)
 3. {Specific test scenario 1}
 4. {Specific test scenario 2}
 5. Verify: {Expected outcome}
@@ -758,7 +758,7 @@ All of these should PASS:
 
 ## Manual Verification
 
-Using the launcher at `http://localhost:3000/path/to/launcher.html`:
+Using the launcher at `http://localhost:5001/path/to/launcher.html`:
 
 **Test 1: {Scenario Name} (TC-{X}, TC-{Y} / AC-{A}, AC-{B})**
 - {Precondition/setup}

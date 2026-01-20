@@ -32,7 +32,7 @@ fastify.get('/another/path', function (req, reply) {
   reply.sendFile('myHtml.html')
 })
 
-fastify.listen({ port: 3000 }, (err, address) => {
+fastify.listen({ port: 5001 }, (err, address) => { // 5001 is PromptDB default port
   if (err) throw err
 })
 ```

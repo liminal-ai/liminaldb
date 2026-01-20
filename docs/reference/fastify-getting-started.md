@@ -25,7 +25,7 @@ fastify.get('/', async (request, reply) => {
 
 const start = async () => {
   try {
-    await fastify.listen({ port: 3000 })
+    await fastify.listen({ port: 5001 }) // 5001 is PromptDB default port
   } catch (err) {
     fastify.log.error(err)
     process.exit(1)
@@ -47,7 +47,7 @@ const fastify = Fastify({ logger: true })
 
 fastify.register(firstRoute)
 
-fastify.listen({ port: 3000 }, function (err, address) {
+fastify.listen({ port: 5001 }, function (err, address) { // 5001 is PromptDB default port
   if (err) {
     fastify.log.error(err)
     process.exit(1)
