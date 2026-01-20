@@ -6,10 +6,11 @@
   <title>Prompts</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/shared/themes/base.css">
   <link rel="stylesheet" href="/shared/themes/dark-1.css" id="theme-stylesheet">
   <link rel="stylesheet" href="/shared/prompt-viewer.css">
+  <link rel="stylesheet" href="/shared/home-landing.css">
   <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js" integrity="sha384-wLhprpjsmjc/XYIcF+LpMxd8yS1gss6jhevOp6F6zhiIoFK6AmHtm4bGKtehTani" crossorigin="anonymous"></script>
 </head>
 <body class="module prompts-module">
@@ -17,13 +18,608 @@
     <div class="sidebar-header">
       <button id="new-prompt-btn" class="btn-primary">+ New</button>
     </div>
+    <!-- Primary sidebar: Prompt list (shown on Home tab or when viewing prompts) -->
     <div id="prompt-list" class="prompt-list">
       <!-- Populated by JavaScript -->
+    </div>
+    <!-- Secondary sidebar: Integration nav (hidden by default) -->
+    <div id="integration-nav" class="integration-nav" style="display: none;">
+      <!-- Populated dynamically based on active tab -->
     </div>
   </aside>
 
   <main class="content">
-    <div id="empty-state" class="empty-state">
+    <!-- Home Module with Tab Navigation -->
+    <div id="home-module" class="home-module">
+      <nav class="home-tabs">
+        <button class="home-tab active" data-tab="home">Home</button>
+        <button class="home-tab" data-tab="getting-started">Getting Started</button>
+        <button class="home-tab" data-tab="ai-assistants">AI Assistants</button>
+        <button class="home-tab" data-tab="code-editors">Code Editors</button>
+        <button class="home-tab" data-tab="developer">Developer</button>
+        <button class="home-tab" data-tab="help">Help</button>
+      </nav>
+
+      <div class="home-content">
+        <!-- Tab: Home (Editorial Landing) -->
+        <section id="tab-home" class="tab-panel active">
+          <div class="landing-editorial">
+            <header class="landing-header">
+              <span class="issue-label">Your Prompt Library</span>
+              <h1 class="landing-headline">The prompts that define<br>how you work with AI</h1>
+              <p class="landing-tagline">"Capture once, retrieve anywhere—your personal AI knowledge base."</p>
+            </header>
+
+            <div class="feature-grid">
+              <article class="feature-card">
+                <span class="feature-icon">🌐</span>
+                <h3>Access Anywhere</h3>
+                <p>Use from any AI assistant or code editor via MCP, or access through our REST API.</p>
+              </article>
+              <article class="feature-card">
+                <span class="feature-icon">🏷️</span>
+                <h3>19 Shared Tags</h3>
+                <p>Organize by purpose, domain, or task. Find the right prompt instantly.</p>
+              </article>
+              <article class="feature-card">
+                <span class="feature-icon">📊</span>
+                <h3>Smart Ranking</h3>
+                <p>Prompts ranked by usage, recency, and favorites. Your best work surfaces first.</p>
+              </article>
+            </div>
+
+            <div class="landing-cta">
+              <button id="cta-new-prompt" class="btn-primary btn-lg">+ Create Your First Prompt</button>
+              <span class="cta-hint">or press <kbd>Cmd</kbd>+<kbd>K</kbd> to search</span>
+            </div>
+
+            <footer class="landing-access">
+              <span class="access-label">Access via:</span>
+              <span class="access-methods">
+                <span class="access-method">Web UI</span>
+                <span class="access-separator">•</span>
+                <span class="access-method">MCP</span>
+                <span class="access-separator">•</span>
+                <span class="access-method">REST API</span>
+              </span>
+            </footer>
+          </div>
+        </section>
+
+        <!-- Tab: Getting Started -->
+        <section id="tab-getting-started" class="tab-panel">
+          <div class="docs-content">
+            <h1>Getting Started with LiminalDB</h1>
+
+            <section class="docs-section">
+              <h2>Your First Prompt</h2>
+              <ol class="docs-steps">
+                <li>Click <strong>+ New</strong> in the sidebar</li>
+                <li>Fill in the details:
+                  <ul>
+                    <li><strong>Slug</strong>: A short identifier (e.g., <code>code-review</code>)</li>
+                    <li><strong>Name</strong>: Display name (e.g., "Code Review Assistant")</li>
+                    <li><strong>Description</strong>: Brief summary</li>
+                    <li><strong>Content</strong>: Your prompt text</li>
+                    <li><strong>Tags</strong>: Select from 19 shared tags</li>
+                  </ul>
+                </li>
+                <li>Click <strong>Save</strong></li>
+              </ol>
+            </section>
+
+            <section class="docs-section">
+              <h2>Organizing Your Library</h2>
+              <ul class="docs-list">
+                <li><strong>Pin</strong> frequently used prompts (📌)</li>
+                <li><strong>Favorite</strong> your best prompts (⭐)</li>
+                <li>Use <strong>tags</strong> to categorize by purpose, domain, or task</li>
+              </ul>
+            </section>
+
+            <section class="docs-section">
+              <h2>Searching & Filtering</h2>
+              <ul class="docs-list">
+                <li>Press <kbd>Cmd</kbd>+<kbd>K</kbd> to search by content</li>
+                <li>Use tag filters to narrow results</li>
+                <li>Prompts ranked by usage, recency, and favorites</li>
+              </ul>
+            </section>
+
+            <section class="docs-section">
+              <h2>Tips</h2>
+              <ul class="docs-list">
+                <li>Drafts auto-save every few seconds</li>
+                <li>Line edits accumulate until you save</li>
+                <li>Use semantic view to see structure</li>
+              </ul>
+            </section>
+          </div>
+        </section>
+
+        <!-- Tab: AI Assistants -->
+        <section id="tab-ai-assistants" class="tab-panel">
+          <div class="integration-content">
+            <!-- Claude.ai -->
+            <div data-content="claude-ai" class="integration-guide">
+              <h1>Claude.ai Integration</h1>
+              <p class="integration-intro">Access your prompts directly from Claude desktop via the Model Context Protocol (MCP).</p>
+
+              <section class="setup-section">
+                <h2>Quick Setup</h2>
+
+                <div class="setup-step">
+                  <span class="step-number">1</span>
+                  <div class="step-content">
+                    <p>Install the MCP server:</p>
+                    <div class="code-block">
+                      <code>npm install -g @liminaldb/mcp</code>
+                      <button class="copy-code-btn" title="Copy">Copy</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="setup-step">
+                  <span class="step-number">2</span>
+                  <div class="step-content">
+                    <p>Add to Claude desktop config (<code>~/Library/Application Support/Claude/claude_desktop_config.json</code>):</p>
+                    <div class="code-block">
+<pre><code>{
+  "mcpServers": {
+    "liminaldb": {
+      "command": "liminaldb-mcp",
+      "env": { "LIMINALDB_API_KEY": "your-api-key" }
+    }
+  }
+}</code></pre>
+                      <button class="copy-code-btn" title="Copy">Copy</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="setup-step">
+                  <span class="step-number">3</span>
+                  <div class="step-content">
+                    <p>Restart Claude desktop</p>
+                  </div>
+                </div>
+              </section>
+
+              <div class="video-placeholder">
+                <div class="video-icon">▶</div>
+                <span>Watch the setup walkthrough</span>
+              </div>
+
+              <section class="usage-section">
+                <h2>Usage Examples</h2>
+                <p>Just ask naturally:</p>
+                <ul class="usage-examples">
+                  <li>"Get my code-review prompt"</li>
+                  <li>"Save this as my sql-helper prompt"</li>
+                  <li>"List my testing prompts"</li>
+                </ul>
+              </section>
+
+              <section class="troubleshooting-section">
+                <h2>Troubleshooting</h2>
+                <ul class="docs-list">
+                  <li>Make sure Claude desktop is fully restarted after config changes</li>
+                  <li>Check that your API key is valid in the LiminalDB dashboard</li>
+                  <li>Verify the MCP server is installed globally with <code>which liminaldb-mcp</code></li>
+                </ul>
+              </section>
+            </div>
+
+            <!-- ChatGPT (Coming Soon) -->
+            <div data-content="chatgpt" class="integration-guide" style="display: none;">
+              <h1>ChatGPT Integration</h1>
+              <div class="coming-soon-card">
+                <span class="coming-soon-icon">🚧</span>
+                <h3>Coming Soon</h3>
+                <p>ChatGPT integration via custom GPT action is on the roadmap.</p>
+                <p class="coming-soon-cta">Want to be notified when it's ready?</p>
+                <button class="btn-secondary">Subscribe to updates</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tab: Code Editors -->
+        <section id="tab-code-editors" class="tab-panel">
+          <div class="integration-content">
+            <!-- Claude Code -->
+            <div data-content="claude-code" class="integration-guide">
+              <h1>Claude Code Integration</h1>
+              <p class="integration-intro">Claude Code has built-in MCP support. Add LiminalDB to any project in one command.</p>
+
+              <section class="setup-section">
+                <h2>Quick Setup</h2>
+
+                <div class="setup-step">
+                  <span class="step-number">1</span>
+                  <div class="step-content">
+                    <p>In your project directory:</p>
+                    <div class="code-block">
+                      <code>claude mcp add liminaldb</code>
+                      <button class="copy-code-btn" title="Copy">Copy</button>
+                    </div>
+                  </div>
+                </div>
+
+                <p class="setup-done">That's it! Your prompts are now available.</p>
+              </section>
+
+              <div class="video-placeholder">
+                <div class="video-icon">▶</div>
+                <span>Watch the setup walkthrough</span>
+              </div>
+
+              <section class="usage-section">
+                <h2>Usage Examples</h2>
+                <ul class="usage-examples">
+                  <li>"Use my code-review prompt on this file"</li>
+                  <li>"Get my commit-message prompt"</li>
+                  <li>"Save this as my refactor-helper prompt"</li>
+                </ul>
+              </section>
+            </div>
+
+            <!-- Cursor -->
+            <div data-content="cursor" class="integration-guide" style="display: none;">
+              <h1>Cursor Integration</h1>
+              <p class="integration-intro">Connect LiminalDB to Cursor via MCP.</p>
+
+              <section class="setup-section">
+                <h2>Setup Steps</h2>
+
+                <div class="setup-step">
+                  <span class="step-number">1</span>
+                  <div class="step-content">
+                    <p>Open Cursor Settings → Features → MCP</p>
+                  </div>
+                </div>
+
+                <div class="setup-step">
+                  <span class="step-number">2</span>
+                  <div class="step-content">
+                    <p>Add this server configuration:</p>
+                    <div class="code-block">
+<pre><code>{
+  "liminaldb": {
+    "command": "npx",
+    "args": ["@liminaldb/mcp"],
+    "env": {
+      "LIMINALDB_API_KEY": "your-api-key"
+    }
+  }
+}</code></pre>
+                      <button class="copy-code-btn" title="Copy">Copy</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="setup-step">
+                  <span class="step-number">3</span>
+                  <div class="step-content">
+                    <p>Restart Cursor</p>
+                  </div>
+                </div>
+              </section>
+
+              <div class="video-placeholder">
+                <div class="video-icon">▶</div>
+                <span>Watch the setup walkthrough</span>
+              </div>
+            </div>
+
+            <!-- VS Code -->
+            <div data-content="vscode" class="integration-guide" style="display: none;">
+              <h1>VS Code Integration</h1>
+              <p class="integration-intro">Use with any MCP-compatible VS Code extension.</p>
+
+              <section class="setup-section">
+                <h2>Recommended: Continue Extension</h2>
+
+                <div class="setup-step">
+                  <span class="step-number">1</span>
+                  <div class="step-content">
+                    <p>Install the Continue extension from marketplace</p>
+                  </div>
+                </div>
+
+                <div class="setup-step">
+                  <span class="step-number">2</span>
+                  <div class="step-content">
+                    <p>Open <code>.continue/config.json</code> and add:</p>
+                    <div class="code-block">
+<pre><code>{
+  "mcpServers": [{
+    "name": "liminaldb",
+    "command": "npx @liminaldb/mcp"
+  }]
+}</code></pre>
+                      <button class="copy-code-btn" title="Copy">Copy</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="setup-step">
+                  <span class="step-number">3</span>
+                  <div class="step-content">
+                    <p>Reload VS Code</p>
+                  </div>
+                </div>
+              </section>
+
+              <div class="video-placeholder">
+                <div class="video-icon">▶</div>
+                <span>Watch the setup walkthrough</span>
+              </div>
+            </div>
+
+            <!-- GitHub Copilot (Coming Soon) -->
+            <div data-content="copilot" class="integration-guide" style="display: none;">
+              <h1>GitHub Copilot Integration</h1>
+              <div class="coming-soon-card">
+                <span class="coming-soon-icon">🚧</span>
+                <h3>Coming Soon</h3>
+                <p>GitHub Copilot integration is on the roadmap.</p>
+                <p class="coming-soon-cta">Want to be notified when it's ready?</p>
+                <button class="btn-secondary">Subscribe to updates</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tab: Developer -->
+        <section id="tab-developer" class="tab-panel">
+          <div class="integration-content">
+            <!-- REST API -->
+            <div data-content="rest-api" class="integration-guide">
+              <h1>REST API</h1>
+              <p class="integration-intro">Full CRUD access to your prompt library via HTTP.</p>
+
+              <section class="docs-section">
+                <h2>Authentication</h2>
+                <div class="code-block">
+<pre><code>curl -H "Authorization: Bearer YOUR_API_KEY" \
+  https://api.liminaldb.com/api/prompts</code></pre>
+                  <button class="copy-code-btn" title="Copy">Copy</button>
+                </div>
+              </section>
+
+              <section class="docs-section">
+                <h2>Endpoints</h2>
+                <table class="api-table">
+                  <thead>
+                    <tr>
+                      <th>Method</th>
+                      <th>Endpoint</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>GET</td><td>/api/prompts</td><td>List prompts</td></tr>
+                    <tr><td>GET</td><td>/api/prompts/:slug</td><td>Get prompt</td></tr>
+                    <tr><td>POST</td><td>/api/prompts</td><td>Create prompt</td></tr>
+                    <tr><td>PUT</td><td>/api/prompts/:slug</td><td>Update prompt</td></tr>
+                    <tr><td>DELETE</td><td>/api/prompts/:slug</td><td>Delete prompt</td></tr>
+                    <tr><td>GET</td><td>/api/tags</td><td>List tags</td></tr>
+                  </tbody>
+                </table>
+              </section>
+
+              <section class="docs-section">
+                <h2>Query Parameters</h2>
+                <ul class="docs-list">
+                  <li><code>q</code> — Full-text search</li>
+                  <li><code>tags</code> — Filter by tags (comma-separated)</li>
+                </ul>
+              </section>
+            </div>
+
+            <!-- SDK -->
+            <div data-content="sdk" class="integration-guide" style="display: none;">
+              <h1>SDK (Node.js)</h1>
+              <p class="integration-intro">Programmatic access for applications.</p>
+
+              <section class="docs-section">
+                <h2>Install</h2>
+                <div class="code-block">
+                  <code>npm install @liminaldb/sdk</code>
+                  <button class="copy-code-btn" title="Copy">Copy</button>
+                </div>
+                <p>or with Bun:</p>
+                <div class="code-block">
+                  <code>bun add @liminaldb/sdk</code>
+                  <button class="copy-code-btn" title="Copy">Copy</button>
+                </div>
+              </section>
+
+              <section class="docs-section">
+                <h2>Usage</h2>
+                <div class="code-block">
+<pre><code>import { LiminalDB } from '@liminaldb/sdk';
+
+const db = new LiminalDB({
+  apiKey: process.env.LIMINALDB_API_KEY
+});
+
+// List prompts
+const prompts = await db.prompts.list();
+
+// Get by slug
+const prompt = await db.prompts.get('code-review');
+
+// Create
+await db.prompts.create({
+  slug: 'my-prompt',
+  name: 'My Prompt',
+  content: '...',
+  tags: ['coding']
+});</code></pre>
+                  <button class="copy-code-btn" title="Copy">Copy</button>
+                </div>
+              </section>
+            </div>
+
+            <!-- CLI -->
+            <div data-content="cli" class="integration-guide" style="display: none;">
+              <h1>CLI</h1>
+              <p class="integration-intro">Command-line interface for scripting and automation.</p>
+
+              <section class="docs-section">
+                <h2>Install</h2>
+                <div class="code-block">
+                  <code>npm install -g @liminaldb/cli</code>
+                  <button class="copy-code-btn" title="Copy">Copy</button>
+                </div>
+              </section>
+
+              <section class="docs-section">
+                <h2>Commands</h2>
+                <div class="code-block">
+<pre><code># Authenticate
+liminaldb auth login
+
+# List prompts
+liminaldb list
+liminaldb list --tag code-review
+
+# Get prompt content
+liminaldb get code-review
+
+# Create from file
+liminaldb create --file my-prompt.md
+
+# Sync local directory
+liminaldb sync ./prompts/</code></pre>
+                  <button class="copy-code-btn" title="Copy">Copy</button>
+                </div>
+              </section>
+            </div>
+
+            <!-- NPM / Bun Scripts -->
+            <div data-content="scripts" class="integration-guide" style="display: none;">
+              <h1>NPM / Bun Scripts</h1>
+              <p class="integration-intro">Run LiminalDB commands without global install.</p>
+
+              <section class="docs-section">
+                <h2>One-off Commands</h2>
+                <div class="code-block">
+<pre><code># Using npx
+npx @liminaldb/cli list
+npx @liminaldb/cli get code-review
+
+# Using bunx
+bunx @liminaldb/cli list
+bunx @liminaldb/cli get code-review</code></pre>
+                  <button class="copy-code-btn" title="Copy">Copy</button>
+                </div>
+              </section>
+
+              <section class="docs-section">
+                <h2>Add to package.json</h2>
+                <div class="code-block">
+<pre><code>{
+  "scripts": {
+    "prompts": "liminaldb list",
+    "prompts:sync": "liminaldb sync ./prompts"
+  },
+  "devDependencies": {
+    "@liminaldb/cli": "^1.0.0"
+  }
+}</code></pre>
+                  <button class="copy-code-btn" title="Copy">Copy</button>
+                </div>
+                <p>Then run:</p>
+                <div class="code-block">
+<pre><code>npm run prompts
+bun run prompts:sync</code></pre>
+                  <button class="copy-code-btn" title="Copy">Copy</button>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tab: Help -->
+        <section id="tab-help" class="tab-panel">
+          <div class="docs-content">
+            <h1>Help & Resources</h1>
+
+            <section class="docs-section">
+              <h2>Documentation</h2>
+              <ul class="docs-list">
+                <li><a href="#getting-started" class="help-link" data-tab="getting-started">Getting Started Guide</a></li>
+                <li><a href="https://docs.liminaldb.com/api" target="_blank" rel="noopener">API Reference ↗</a></li>
+                <li><a href="https://docs.liminaldb.com/mcp" target="_blank" rel="noopener">MCP Integration Guide ↗</a></li>
+              </ul>
+            </section>
+
+            <section class="docs-section">
+              <h2>Keyboard Shortcuts</h2>
+              <table class="shortcuts-table">
+                <tbody>
+                  <tr><td><kbd>Cmd</kbd>+<kbd>K</kbd></td><td>Focus search</td></tr>
+                  <tr><td><kbd>Cmd</kbd>+<kbd>N</kbd></td><td>New prompt</td></tr>
+                  <tr><td><kbd>Escape</kbd></td><td>Clear selection</td></tr>
+                </tbody>
+              </table>
+            </section>
+
+            <section class="docs-section">
+              <h2>FAQs</h2>
+
+              <details class="faq-item">
+                <summary>How are prompts ranked?</summary>
+                <div class="faq-answer">
+                  <p>Prompts are scored by:</p>
+                  <ol>
+                    <li>Pin status (pinned always first)</li>
+                    <li>Usage frequency</li>
+                    <li>Recency of use</li>
+                    <li>Favorite status</li>
+                  </ol>
+                </div>
+              </details>
+
+              <details class="faq-item">
+                <summary>What are the 19 shared tags?</summary>
+                <div class="faq-answer">
+                  <p>Tags are organized by dimension:</p>
+                  <p><strong>Purpose:</strong> coding, writing, analysis, creative, planning, learning</p>
+                  <p><strong>Domain:</strong> backend, frontend, data, devops, security, general</p>
+                  <p><strong>Task:</strong> review, generate, explain, debug, refactor, document, test</p>
+                </div>
+              </details>
+
+              <details class="faq-item">
+                <summary>How long do drafts persist?</summary>
+                <div class="faq-answer">
+                  <p>Drafts are stored for 24 hours. They survive browser refresh and work across tabs.</p>
+                </div>
+              </details>
+            </section>
+
+            <section class="docs-section">
+              <h2>Support</h2>
+              <ul class="docs-list">
+                <li>GitHub Issues: <a href="https://github.com/liminaldb/liminaldb" target="_blank" rel="noopener">github.com/liminaldb/liminaldb ↗</a></li>
+                <li>Email: <a href="mailto:support@liminaldb.com">support@liminaldb.com</a></li>
+              </ul>
+            </section>
+
+            <section class="docs-section">
+              <h2>Feedback</h2>
+              <p>We'd love to hear from you! Use the feedback form or open a GitHub issue.</p>
+            </section>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div id="empty-state" class="empty-state" style="display: none;">
       Select a prompt to view
     </div>
 
@@ -129,12 +725,15 @@
     // State
     let prompts = [];
     let selectedSlug = null;
-    let currentMode = 'empty'; // 'empty' | 'view' | 'edit' | 'new'
+    let currentMode = 'home'; // 'home' | 'view' | 'edit' | 'new'
     let currentView = 'rendered';
     let lineEditEnabled = false;
+    let currentHomeTab = 'home';
+    let currentSubItem = null; // Selected item within a tab (e.g., 'claude-ai')
     try {
       currentView = localStorage.getItem('promptViewMode') || 'rendered';
       lineEditEnabled = localStorage.getItem('lineEditEnabled') === 'true';
+      currentHomeTab = localStorage.getItem('homeTab') || 'home';
     } catch (e) {
       // localStorage unavailable (private browsing, etc.)
     }
@@ -144,6 +743,26 @@
     // Filter state tracking
     let currentQuery = '';
     let currentTags = [];
+
+    // Integration nav data
+    const integrationNavs = {
+      'ai-assistants': [
+        { id: 'claude-ai', name: 'Claude.ai', icon: '🤖' },
+        { id: 'chatgpt', name: 'ChatGPT', badge: 'coming soon' }
+      ],
+      'code-editors': [
+        { id: 'claude-code', name: 'Claude Code', icon: '⚡' },
+        { id: 'cursor', name: 'Cursor', icon: '🎯' },
+        { id: 'vscode', name: 'VS Code', icon: '💻' },
+        { id: 'copilot', name: 'GitHub Copilot', badge: 'coming soon' }
+      ],
+      'developer': [
+        { id: 'rest-api', name: 'REST API', icon: '{ }' },
+        { id: 'sdk', name: 'SDK (Node.js)', icon: '📦' },
+        { id: 'cli', name: 'CLI', icon: '▶️' },
+        { id: 'scripts', name: 'NPM / Bun Scripts', icon: '📜' }
+      ]
+    };
 
     // Current prompt flags (for optimistic updates)
     let currentPromptFlags = { pinned: false, favorited: false };
@@ -226,32 +845,167 @@
         if (currentMode !== 'new') {
           enterInsertMode();
         }
-      } else if (state.mode === 'empty' || !state.slug) {
-        clearSelection({ trackHistory: false });
+      } else if (state.mode === 'home' || state.mode === 'empty' || !state.slug) {
+        enterHomeMode({ trackHistory: false });
       }
     }
 
     /**
-     * Clear current selection and show empty state.
+     * Clear current selection and show home module.
      * @param {Object} options
      * @param {boolean} options.trackHistory - Whether to add to browser history
      */
     function clearSelection({ trackHistory = true } = {}) {
+      enterHomeMode({ trackHistory });
+    }
+
+    // ============================================
+    // HOME MODULE (Tab Navigation)
+    // ============================================
+
+    /**
+     * Enter home mode - show the landing page with tabs
+     * @param {Object} options
+     * @param {boolean} options.trackHistory - Whether to add to browser history
+     */
+    function enterHomeMode({ trackHistory = true } = {}) {
       selectedSlug = null;
-      currentMode = 'empty';
+      currentMode = 'home';
 
       document.querySelectorAll(".prompt-item").forEach((item) => {
         item.classList.remove("selected");
       });
 
+      const homeModule = document.getElementById("home-module");
       const emptyState = document.getElementById("empty-state");
       const promptView = document.getElementById("prompt-view");
-      if (emptyState) emptyState.style.display = "flex";
+      const promptEdit = document.getElementById("prompt-edit");
+
+      if (homeModule) homeModule.classList.remove("hidden");
+      if (emptyState) emptyState.style.display = "none";
       if (promptView) promptView.style.display = "none";
+      if (promptEdit) promptEdit.style.display = "none";
+
+      // Restore last active tab
+      switchHomeTab(currentHomeTab);
 
       if (trackHistory) {
         notifyShellStateChange(true);
       }
+    }
+
+    /**
+     * Switch between home tabs (non-history navigation)
+     * @param {string} tabId - The tab to switch to
+     */
+    function switchHomeTab(tabId) {
+      currentHomeTab = tabId;
+      currentSubItem = null;
+
+      // Update tab buttons
+      document.querySelectorAll('.home-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabId);
+      });
+
+      // Update panels
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === `tab-${tabId}`);
+      });
+
+      // Update sidebar based on tab
+      updateSidebarForTab(tabId);
+
+      // Persist
+      try {
+        localStorage.setItem('homeTab', tabId);
+      } catch (e) {}
+    }
+
+    /**
+     * Update sidebar content based on active tab
+     * @param {string} tabId - The active tab ID
+     */
+    function updateSidebarForTab(tabId) {
+      const promptList = document.getElementById('prompt-list');
+      const integrationNav = document.getElementById('integration-nav');
+      const newPromptBtn = document.getElementById('new-prompt-btn');
+
+      if (tabId === 'home') {
+        // Show prompts list
+        if (promptList) promptList.style.display = 'block';
+        if (integrationNav) integrationNav.style.display = 'none';
+        if (newPromptBtn) newPromptBtn.style.display = 'block';
+      } else if (integrationNavs[tabId]) {
+        // Show integration nav
+        if (promptList) promptList.style.display = 'none';
+        if (integrationNav) integrationNav.style.display = 'block';
+        if (newPromptBtn) newPromptBtn.style.display = 'none';
+        renderIntegrationNav(tabId);
+        // Auto-select first item
+        selectIntegrationItem(integrationNavs[tabId][0].id);
+      } else {
+        // Full-width content (getting-started, help)
+        if (promptList) promptList.style.display = 'none';
+        if (integrationNav) integrationNav.style.display = 'none';
+        if (newPromptBtn) newPromptBtn.style.display = 'none';
+      }
+    }
+
+    /**
+     * Render the integration navigation items in sidebar
+     * @param {string} tabId - The active tab ID
+     */
+    function renderIntegrationNav(tabId) {
+      const nav = document.getElementById('integration-nav');
+      const items = integrationNavs[tabId] || [];
+
+      if (!nav) return;
+
+      nav.innerHTML = items.map(item => `
+        <div class="integration-nav-item" data-item="${item.id}">
+          <span class="integration-nav-icon">${item.icon || ''}</span>
+          <span class="integration-nav-name">${item.name}</span>
+          ${item.badge ? `<span class="badge">${item.badge}</span>` : ''}
+        </div>
+      `).join('');
+
+      // Attach click handlers
+      nav.querySelectorAll('.integration-nav-item').forEach(el => {
+        el.addEventListener('click', () => {
+          selectIntegrationItem(el.dataset.item);
+        });
+      });
+    }
+
+    /**
+     * Select an item in the integration nav
+     * @param {string} itemId - The item to select
+     */
+    function selectIntegrationItem(itemId) {
+      currentSubItem = itemId;
+
+      // Update nav selection
+      document.querySelectorAll('.integration-nav-item').forEach(el => {
+        el.classList.toggle('selected', el.dataset.item === itemId);
+      });
+
+      // Update content panel
+      updateIntegrationContent(currentHomeTab, itemId);
+    }
+
+    /**
+     * Show/hide integration content based on selected item
+     * @param {string} tabId - The active tab ID
+     * @param {string} itemId - The selected item ID
+     */
+    function updateIntegrationContent(tabId, itemId) {
+      const panel = document.getElementById(`tab-${tabId}`);
+      if (!panel) return;
+
+      // Content is pre-rendered in HTML, we just show/hide the right section
+      panel.querySelectorAll('[data-content]').forEach(el => {
+        el.style.display = el.dataset.content === itemId ? 'block' : 'none';
+      });
     }
 
     // ============================================
@@ -1043,10 +1797,21 @@
         }
       });
 
+      // Hide home module and show prompt view
+      const homeModule = document.getElementById("home-module");
       const emptyState = document.getElementById("empty-state");
       const promptView = document.getElementById("prompt-view");
+      if (homeModule) homeModule.classList.add("hidden");
       if (emptyState) emptyState.style.display = "none";
       if (promptView) promptView.style.display = "block";
+
+      // Restore sidebar to show prompt list
+      const promptList = document.getElementById('prompt-list');
+      const integrationNav = document.getElementById('integration-nav');
+      const newPromptBtn = document.getElementById('new-prompt-btn');
+      if (promptList) promptList.style.display = 'block';
+      if (integrationNav) integrationNav.style.display = 'none';
+      if (newPromptBtn) newPromptBtn.style.display = 'block';
 
       const slugEl = document.getElementById("prompt-slug");
       const descEl = document.getElementById("prompt-description");
@@ -1532,6 +2297,51 @@
     // Copy button
     document.getElementById('copy-btn').addEventListener('click', copyContent);
 
+    // Home module tab navigation
+    document.querySelectorAll('.home-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        switchHomeTab(btn.dataset.tab);
+      });
+    });
+
+    // CTA button on landing page
+    const ctaBtn = document.getElementById('cta-new-prompt');
+    if (ctaBtn) {
+      ctaBtn.addEventListener('click', () => {
+        enterInsertMode();
+      });
+    }
+
+    // Help tab internal link to getting-started
+    document.querySelectorAll('.help-link[data-tab]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        switchHomeTab(link.dataset.tab);
+      });
+    });
+
+    // Copy code buttons in integration guides
+    document.querySelectorAll('.copy-code-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const codeBlock = btn.closest('.code-block');
+        if (!codeBlock) return;
+
+        const codeEl = codeBlock.querySelector('code, pre');
+        if (!codeEl) return;
+
+        try {
+          await navigator.clipboard.writeText(codeEl.textContent.trim());
+          const originalText = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(() => {
+            btn.textContent = originalText;
+          }, 1200);
+        } catch (err) {
+          console.error('Failed to copy:', err);
+        }
+      });
+    });
+
     // Pin/favorite toggle handlers
     async function handlePinToggle(slug, currentPinned) {
       // Capture original state before any mutations (prevents race condition with concurrent toggles)
@@ -1684,6 +2494,8 @@
     window.restoreState = restoreState;
     window.enterInsertMode = enterInsertMode;
     window.enterEditMode = enterEditMode;
+    window.enterHomeMode = enterHomeMode;
+    window.switchHomeTab = switchHomeTab;
 
     async function init() {
       await loadPrompts();
@@ -1695,6 +2507,9 @@
         if (prompt) {
           selectPrompt(selectedSlug, { trackHistory: false });
         }
+      } else if (currentMode === 'home') {
+        // Start in home mode (default state)
+        enterHomeMode({ trackHistory: false });
       }
 
       // Tell shell we're ready to receive state

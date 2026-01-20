@@ -4,6 +4,7 @@
   /* Typography */
   --font-mono: 'JetBrains Mono', monospace;
   --font-sans: 'Inter', -apple-system, sans-serif;
+  --font-display: 'Playfair Display', Georgia, serif;
 
   --text-xs: 11px;
   --text-sm: 13px;
@@ -1176,4 +1177,116 @@ select {
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   border: 0;
+}
+
+/* ============================================
+   HOME MODULE
+   ============================================ */
+
+.home-module {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.home-module.hidden {
+  display: none;
+}
+
+.home-tabs {
+  display: flex;
+  gap: var(--space-xs);
+  padding: 0 0 var(--space-lg) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-lg);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.home-tab {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.home-tab:hover {
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+}
+
+.home-tab.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.home-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+/* ============================================
+   INTEGRATION NAV (sidebar)
+   ============================================ */
+
+.integration-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-sm);
+}
+
+.integration-nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-xs);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  color: var(--text-secondary);
+}
+
+.integration-nav-item:hover {
+  background: var(--bg-elevated);
+}
+
+.integration-nav-item.selected {
+  background: var(--bg-hover);
+  border-left: 2px solid var(--accent);
+  padding-left: calc(var(--space-lg) - 2px);
+  color: var(--text-primary);
+}
+
+.integration-nav-icon {
+  width: 20px;
+  text-align: center;
+}
+
+.integration-nav-name {
+  flex: 1;
+  font-size: var(--text-sm);
+}
+
+.integration-nav-item .badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px var(--space-sm);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
 }
