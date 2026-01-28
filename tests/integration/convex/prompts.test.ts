@@ -164,7 +164,7 @@ describe("Convex Prompts Integration", () => {
 						},
 					],
 				}),
-			).rejects.toThrow(/already exists/);
+			).rejects.toThrow(/DUPLICATE_SLUG/);
 		});
 	});
 
@@ -209,7 +209,7 @@ describe("Convex Prompts Integration", () => {
 						},
 					],
 				}),
-			).rejects.toThrow(/Duplicate slug in batch/);
+			).rejects.toThrow(/DUPLICATE_SLUG_IN_BATCH/);
 		});
 	});
 
