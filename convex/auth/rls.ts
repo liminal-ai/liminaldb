@@ -27,9 +27,10 @@ export type TableRules = {
 export type RLSRules = Record<string, TableRules>;
 
 /**
- * User owns this prompt (userId field matches authenticated user).
+ * User owns this document (userId field matches authenticated user).
+ * Reused across all user-scoped tables.
  */
-const isPromptOwner: RLSRule = (ctx, doc) => {
+const isOwner: RLSRule = (ctx, doc) => {
 	return doc.userId === ctx.userId;
 };
 
@@ -43,16 +44,16 @@ const isPromptOwner: RLSRule = (ctx, doc) => {
  */
 export const rlsRules: RLSRules = {
 	prompts: {
-		read: isPromptOwner,
-		insert: isPromptOwner,
-		modify: isPromptOwner,
-		delete: isPromptOwner,
+		read: isOwner,
+		insert: isOwner,
+		modify: isOwner,
+		delete: isOwner,
 	},
 	userPreferences: {
-		read: (ctx, doc) => doc.userId === ctx.userId,
-		insert: (ctx, doc) => doc.userId === ctx.userId,
-		modify: (ctx, doc) => doc.userId === ctx.userId,
-		delete: (ctx, doc) => doc.userId === ctx.userId,
+		read: isOwner,
+		insert: isOwner,
+		modify: isOwner,
+		delete: isOwner,
 	},
 	// promptTags: junction table, no userId field.
 	// Ownership is enforced indirectly — you can only reach promptTags
@@ -84,12 +85,19 @@ export function assertRLS(
 
 	const rule = tableRules[operation];
 	if (!rule) {
-		// No rule for this specific operation = allowed.
-		// If you want deny-by-default, change this to throw.
-		return;
+		// Deny-by-default for defined tables: if a table has any rules,
+		// a missing operation on that table denies access. This prevents
+		// accidentally allowing access when a new operation is added but
+		// the rule definition isn't updated.
+		throw new ConvexError({
+			code: "RLS_VIOLATION",
+			table,
+			operation,
+		});
 	}
 
 	if (!rule(ctx, doc)) {
+		// Code mirrors ERROR_CODES.RLS_VIOLATION in src/lib/errors.ts
 		throw new ConvexError({
 			code: "RLS_VIOLATION",
 			table,
