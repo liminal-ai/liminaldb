@@ -70,7 +70,7 @@ const mockTags = {
 	],
 };
 
-describe("tagSelector.render", () => {
+describe("tagSelector.renderHtml", () => {
 	let dom: JSDOM;
 
 	beforeEach(async () => {
@@ -81,7 +81,7 @@ describe("tagSelector.render", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.render(mockTags, []);
+		const html = dom.window.tagSelector.renderHtml(mockTags, []);
 		container.innerHTML = html;
 
 		const sections = container.querySelectorAll(".tag-section");
@@ -92,7 +92,7 @@ describe("tagSelector.render", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.render(mockTags, []);
+		const html = dom.window.tagSelector.renderHtml(mockTags, []);
 		container.innerHTML = html;
 
 		const headers = container.querySelectorAll(".tag-section-header");
@@ -110,7 +110,7 @@ describe("tagSelector.render", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.render(mockTags, []);
+		const html = dom.window.tagSelector.renderHtml(mockTags, []);
 		container.innerHTML = html;
 
 		const chips = container.querySelectorAll(".tag-chip");
@@ -121,7 +121,7 @@ describe("tagSelector.render", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.render(mockTags, ["code", "review"]);
+		const html = dom.window.tagSelector.renderHtml(mockTags, ["code", "review"]);
 		container.innerHTML = html;
 
 		const selectedChips = container.querySelectorAll(".tag-chip.selected");
@@ -138,7 +138,7 @@ describe("tagSelector.render", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.render(mockTags, []);
+		const html = dom.window.tagSelector.renderHtml(mockTags, []);
 		container.innerHTML = html;
 
 		const chips = container.querySelectorAll(".tag-chip");
@@ -151,7 +151,7 @@ describe("tagSelector.render", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.render(mockTags, ["code"]);
+		const html = dom.window.tagSelector.renderHtml(mockTags, ["code"]);
 		container.innerHTML = html;
 
 		const codeChip = container.querySelector('[data-tag="code"]');
@@ -173,7 +173,7 @@ describe("tagSelector.attachHandlers", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.render(mockTags, []);
+		const html = dom.window.tagSelector.renderHtml(mockTags, []);
 		container.innerHTML = html;
 
 		const onToggle = vi.fn();
@@ -191,7 +191,7 @@ describe("tagSelector.attachHandlers", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.render(mockTags, ["code"]);
+		const html = dom.window.tagSelector.renderHtml(mockTags, ["code"]);
 		container.innerHTML = html;
 
 		const onToggle = vi.fn();
@@ -209,7 +209,7 @@ describe("tagSelector.attachHandlers", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.render(mockTags, []);
+		const html = dom.window.tagSelector.renderHtml(mockTags, []);
 		container.innerHTML = html;
 
 		dom.window.tagSelector.attachHandlers(container, vi.fn());
@@ -230,7 +230,7 @@ describe("tagSelector.attachHandlers", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.render(mockTags, []);
+		const html = dom.window.tagSelector.renderHtml(mockTags, []);
 		container.innerHTML = html;
 
 		dom.window.tagSelector.attachHandlers(container, vi.fn());
@@ -259,7 +259,7 @@ describe("tagSelector list style", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.render(mockTags, [], { style: "list" });
+		const html = dom.window.tagSelector.renderHtml(mockTags, [], { style: "list" });
 		container.innerHTML = html;
 
 		const items = container.querySelectorAll(".tag-picker-item");
@@ -273,7 +273,7 @@ describe("tagSelector list style", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.render(mockTags, [], { style: "list" });
+		const html = dom.window.tagSelector.renderHtml(mockTags, [], { style: "list" });
 		container.innerHTML = html;
 
 		const headers = container.querySelectorAll(".tag-picker-section-header");
@@ -291,7 +291,7 @@ describe("tagSelector list style", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.render(mockTags, ["code", "review"], {
+		const html = dom.window.tagSelector.renderHtml(mockTags, ["code", "review"], {
 			style: "list",
 		});
 		container.innerHTML = html;
@@ -306,7 +306,7 @@ describe("tagSelector list style", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.render(mockTags, [], { style: "list" });
+		const html = dom.window.tagSelector.renderHtml(mockTags, [], { style: "list" });
 		container.innerHTML = html;
 
 		const onToggle = vi.fn();
@@ -326,7 +326,7 @@ describe("tagSelector list style", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.render(mockTags, [], { style: "list" });
+		const html = dom.window.tagSelector.renderHtml(mockTags, [], { style: "list" });
 		container.innerHTML = html;
 
 		dom.window.tagSelector.attachHandlers(container, vi.fn(), {

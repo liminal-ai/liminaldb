@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { ConvexError } from "convex/values";
 import { createTestJwt } from "../../fixtures";
 
 // Mock convex client before importing routes
@@ -261,7 +262,7 @@ describe("POST /api/prompts", () => {
 	describe("error handling", () => {
 		test("returns 409 on duplicate slug error from Convex", async () => {
 			mockConvex.mutation.mockRejectedValue(
-				new Error('Slug "existing-slug" already exists for this user'),
+				new ConvexError({ code: "DUPLICATE_SLUG", slug: "existing-slug" }),
 			);
 
 			const response = await app.inject({

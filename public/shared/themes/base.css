@@ -376,6 +376,11 @@ body {
   box-shadow: 0 2px 8px var(--accent-glow);
 }
 
+.copy-btn-primary.copied {
+  background: #22c55e;
+  color: #fff;
+}
+
 /* ============================================
    FORM INPUTS
    ============================================ */

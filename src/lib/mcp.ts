@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { ConvexError } from "convex/values";
 import { convex } from "./convex";
 import { api } from "../../convex/_generated/api";
 import { config } from "./config";
@@ -436,13 +437,13 @@ export function createMcpServer(): McpServer {
 			} catch (error) {
 				const logger = extractMcpLogger(extra);
 				logger.error({ err: error, userId }, "[MCP] save_prompts error");
-				// Sanitize error message to avoid leaking internal details
+				// Check for structured ConvexError codes
 				let errorMessage = "Failed to save prompts";
-				if (
-					error instanceof Error &&
-					error.message.includes("already exists")
-				) {
-					errorMessage = "Slug already exists";
+				if (error instanceof ConvexError) {
+					const code = (error.data as { code?: string })?.code;
+					if (code === "DUPLICATE_SLUG" || code === "DUPLICATE_SLUG_IN_BATCH") {
+						errorMessage = "Slug already exists";
+					}
 				}
 				return {
 					content: [

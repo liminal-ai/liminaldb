@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { ZodError } from "zod";
+import { ConvexError } from "convex/values";
 import { authMiddleware } from "../middleware/auth";
 import {
 	CreatePromptsRequestSchema,
@@ -7,27 +8,21 @@ import {
 	FlagsPatchSchema,
 	PromptInputSchema,
 	type PromptInput,
-	SLUG_REGEX,
-	LIMITS,
+	SlugSchema,
 } from "../schemas/prompts";
 import { convex } from "../lib/convex";
 import { api } from "../../convex/_generated/api";
 import { config } from "../lib/config";
 
 /**
- * Validate a slug parameter against the shared slug regex and length limits.
+ * Validate a slug parameter using the shared SlugSchema.
  * @param slug - The slug string to validate
  * @returns Error message if invalid, undefined if valid
  */
 function validateSlugParam(slug: string): string | undefined {
-	if (!slug || slug.length === 0) {
-		return "Slug required";
-	}
-	if (slug.length > LIMITS.SLUG_MAX_LENGTH) {
-		return `Slug max ${LIMITS.SLUG_MAX_LENGTH} chars`;
-	}
-	if (!SLUG_REGEX.test(slug)) {
-		return "Invalid slug format";
+	const result = SlugSchema.safeParse(slug);
+	if (!result.success) {
+		return result.error.issues[0]?.message ?? "Invalid slug";
 	}
 	return undefined;
 }
@@ -286,9 +281,11 @@ async function createPromptsHandler(
 
 		return reply.code(201).send({ ids });
 	} catch (error) {
-		// Check for duplicate slug error - sanitize to avoid leaking internal details
-		if (error instanceof Error && error.message.includes("already exists")) {
-			return reply.code(409).send({ error: "Slug already exists" });
+		if (error instanceof ConvexError) {
+			const code = (error.data as { code?: string })?.code;
+			if (code === "DUPLICATE_SLUG" || code === "DUPLICATE_SLUG_IN_BATCH") {
+				return reply.code(409).send({ error: "Slug already exists" });
+			}
 		}
 		request.log.error({ err: error, userId }, "Failed to create prompts");
 		return reply.code(500).send({ error: "Failed to create prompts" });
@@ -388,9 +385,11 @@ async function updatePromptHandler(
 
 		return reply.code(200).send({ updated });
 	} catch (error) {
-		// Check for duplicate slug error on rename
-		if (error instanceof Error && error.message.includes("already exists")) {
-			return reply.code(409).send({ error: "Slug already exists" });
+		if (error instanceof ConvexError) {
+			const code = (error.data as { code?: string })?.code;
+			if (code === "DUPLICATE_SLUG") {
+				return reply.code(409).send({ error: "Slug already exists" });
+			}
 		}
 		request.log.error({ err: error, slug, userId }, "Failed to update prompt");
 		return reply.code(500).send({ error: "Failed to update prompt" });

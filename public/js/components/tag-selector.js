@@ -10,12 +10,12 @@
  *
  * @example
  * // Chip style (editor)
- * const html = tagSelector.render(tags, selectedTags);
+ * const html = tagSelector.renderHtml(tags, selectedTags);
  * container.innerHTML = html;
  * tagSelector.attachHandlers(container, (tag, isSelected) => { ... });
  *
  * // List style (shell dropdown)
- * const html = tagSelector.render(tags, selectedTags, { style: 'list' });
+ * const html = tagSelector.renderHtml(tags, selectedTags, { style: 'list' });
  * container.innerHTML = html;
  * tagSelector.attachHandlers(container, onToggle, { style: 'list' });
  */
@@ -40,7 +40,7 @@ const tagSelector = (() => {
 	 * @param {string} [options.style='chip'] - 'chip' for buttons, 'list' for dropdown items
 	 * @returns {string} HTML string
 	 */
-	function render(tags, selectedTags = [], options = {}) {
+	function renderHtml(tags, selectedTags = [], options = {}) {
 		const style = options.style || "chip";
 		const dimensions = ["purpose", "domain", "task"];
 
@@ -117,7 +117,7 @@ const tagSelector = (() => {
 		});
 	}
 
-	return { render, attachHandlers };
+	return { renderHtml, attachHandlers };
 })();
 
 // Attach to window for browser use

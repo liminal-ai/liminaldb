@@ -217,7 +217,7 @@ const promptEditor = (() => {
 		const tagsToRender = allTags || { purpose: [], domain: [], task: [] };
 
 		// Render the tag selector with grouped tags
-		tagSelectorEl.innerHTML = window.tagSelector.render(
+		tagSelectorEl.innerHTML = window.tagSelector.renderHtml(
 			tagsToRender,
 			existingTags,
 		);

@@ -1852,9 +1852,11 @@ bun run prompts:sync</code></pre>
         const copyBtn = document.getElementById("copy-btn");
         if (!copyBtn) return;
         const originalText = copyBtn.textContent;
-        copyBtn.textContent = "Copied!";
+        copyBtn.textContent = "✓ Copied!";
+        copyBtn.classList.add("copied");
         setTimeout(() => {
           copyBtn.textContent = originalText;
+          copyBtn.classList.remove("copied");
         }, 1200);
 
         // Track usage after successful copy
@@ -2338,9 +2340,11 @@ bun run prompts:sync</code></pre>
         try {
           await navigator.clipboard.writeText(codeEl.textContent.trim());
           const originalText = btn.textContent;
-          btn.textContent = 'Copied!';
+          btn.textContent = '✓ Copied!';
+          btn.classList.add('copied');
           setTimeout(() => {
             btn.textContent = originalText;
+            btn.classList.remove('copied');
           }, 1200);
         } catch (err) {
           console.error('Failed to copy:', err);
