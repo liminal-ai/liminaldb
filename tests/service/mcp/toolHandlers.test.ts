@@ -6,6 +6,7 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from "vitest";
+import { ConvexError } from "convex/values";
 
 // Mock Convex client before importing - use explicit unknown return types
 const mockConvex = vi.hoisted(() => ({
@@ -139,7 +140,7 @@ describe("MCP Tool Handlers - save_prompts", () => {
 
 	test("returns sanitized error on duplicate slug", async () => {
 		mockConvex.mutation.mockRejectedValue(
-			new Error('Slug "test-slug" already exists for this user'),
+			new ConvexError({ code: "DUPLICATE_SLUG", slug: "test-slug" }),
 		);
 
 		const server = createMcpServer();

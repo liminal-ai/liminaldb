@@ -1,4 +1,5 @@
 import { describe, test, expect } from "vitest";
+import { ConvexError } from "convex/values";
 import {
 	asConvexCtx,
 	createMockCtx,
@@ -233,7 +234,7 @@ describe("insertPrompts", () => {
 
 			await expect(
 				Prompts.insertMany(asConvexCtx(ctx), userId, input),
-			).rejects.toThrow(/already exists/);
+			).rejects.toThrow(ConvexError);
 
 			// Should not insert anything
 			expect(ctx.db.insert).not.toHaveBeenCalled();
@@ -268,7 +269,7 @@ describe("insertPrompts", () => {
 
 			await expect(
 				Prompts.insertMany(asConvexCtx(ctx), userId, input),
-			).rejects.toThrow(/already exists/);
+			).rejects.toThrow(ConvexError);
 
 			// Atomic: nothing should be inserted
 			expect(ctx.db.insert).not.toHaveBeenCalled();
@@ -300,7 +301,7 @@ describe("insertPrompts", () => {
 
 			await expect(
 				Prompts.insertMany(asConvexCtx(ctx), userId, input),
-			).rejects.toThrow(/Duplicate slug in batch: "same-slug"/);
+			).rejects.toThrow(ConvexError);
 
 			// Atomic: nothing should be inserted
 			expect(ctx.db.insert).not.toHaveBeenCalled();

@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { ConvexError } from "convex/values";
 import { createTestJwt } from "../../fixtures";
 
 const mockConvex = vi.hoisted(() => ({
@@ -66,7 +67,7 @@ describe("PUT /api/prompts/:slug", () => {
 			});
 
 			expect(response.statusCode).toBe(400);
-			expect(response.json().error).toContain("Invalid slug");
+			expect(response.json().error).toContain("Slug must be lowercase");
 		});
 
 		test("returns 400 for missing name", async () => {
@@ -188,7 +189,7 @@ describe("PUT /api/prompts/:slug", () => {
 
 		test("returns 409 when new slug conflicts", async () => {
 			mockConvex.mutation.mockRejectedValue(
-				new Error('Slug "new-slug" already exists'),
+				new ConvexError({ code: "DUPLICATE_SLUG", slug: "new-slug" }),
 			);
 
 			const response = await app.inject({

@@ -1,5 +1,6 @@
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import { ConvexError } from "convex/values";
 import { validateGlobalTag, getTagId, getTagsByDimension } from "./tags";
 import { getRankingConfig, rerank } from "./ranking";
 
@@ -179,13 +180,16 @@ export async function insertMany(
 
 		// Check for duplicates within the batch itself
 		if (slugsInBatch.has(prompt.slug)) {
-			throw new Error(`Duplicate slug in batch: "${prompt.slug}"`);
+			throw new ConvexError({
+				code: "DUPLICATE_SLUG_IN_BATCH",
+				slug: prompt.slug,
+			});
 		}
 		slugsInBatch.add(prompt.slug);
 
 		const exists = await slugExists(ctx, userId, prompt.slug);
 		if (exists) {
-			throw new Error(`Slug "${prompt.slug}" already exists for this user`);
+			throw new ConvexError({ code: "DUPLICATE_SLUG", slug: prompt.slug });
 		}
 	}
 
@@ -362,7 +366,7 @@ export async function updateBySlug(
 	if (updates.slug !== slug) {
 		const exists = await slugExists(ctx, userId, updates.slug);
 		if (exists) {
-			throw new Error(`Slug "${updates.slug}" already exists for this user`);
+			throw new ConvexError({ code: "DUPLICATE_SLUG", slug: updates.slug });
 		}
 	}
 

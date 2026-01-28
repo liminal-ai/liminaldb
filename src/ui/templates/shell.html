@@ -187,7 +187,7 @@
 
     // Render tag picker dropdown (grouped by dimension)
     function renderTagPicker() {
-      tagPickerDropdown.innerHTML = tagSelector.render(allTags, selectedTags, { style: 'list' });
+      tagPickerDropdown.innerHTML = tagSelector.renderHtml(allTags, selectedTags, { style: 'list' });
       tagSelector.attachHandlers(tagPickerDropdown, (tag) => toggleTag(tag), { style: 'list' });
     }
 

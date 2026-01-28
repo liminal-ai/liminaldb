@@ -28,3 +28,6 @@ docs/.archive/
 
 # macOS
 .DS_Store
+context-to-clean.txt
+transcript.txt
+data-load/
