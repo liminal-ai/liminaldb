@@ -1,6 +1,7 @@
 import { mutation, query } from "./functions";
 import { v } from "convex/values";
 import { validateApiKey, getApiKeyConfig } from "./auth/apiKey";
+import { assertCanRead, assertCanModify, assertCanInsert } from "./auth/rls";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 
 // NOTE: Must match VALID_SURFACES in src/schemas/preferences.ts
@@ -65,6 +66,8 @@ export const getThemePreference = query({
 			return null;
 		}
 
+		assertCanRead({ userId }, "userPreferences", prefs);
+
 		const theme = prefs.themes[surface];
 		return theme as ThemeId | null;
 	},
@@ -96,6 +99,7 @@ export const updateThemePreference = mutation({
 			.first();
 
 		if (existing) {
+			assertCanModify({ userId }, "userPreferences", existing);
 			await ctx.db.patch(existing._id, {
 				themes: {
 					...existing.themes,
@@ -103,6 +107,7 @@ export const updateThemePreference = mutation({
 				},
 			});
 		} else {
+			assertCanInsert({ userId }, "userPreferences", { userId });
 			await ctx.db.insert("userPreferences", {
 				userId,
 				themes: {
@@ -144,6 +149,8 @@ export const getAllPreferences = query({
 		if (!prefs) {
 			return null;
 		}
+
+		assertCanRead({ userId }, "userPreferences", prefs);
 
 		return {
 			themes: prefs.themes as {

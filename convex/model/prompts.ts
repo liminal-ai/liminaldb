@@ -3,6 +3,12 @@ import type { Id } from "../_generated/dataModel";
 import { ConvexError } from "convex/values";
 import { validateGlobalTag, getTagId, getTagsByDimension } from "./tags";
 import { getRankingConfig, rerank } from "./ranking";
+import {
+	assertCanRead,
+	assertCanInsert,
+	assertCanModify,
+	assertCanDelete,
+} from "../auth/rls";
 
 // Slug validation: lowercase, numbers, dashes only. No colons (reserved for namespacing).
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -219,6 +225,11 @@ export async function insertMany(
 			tagIds.push(tagId);
 		}
 
+		// RLS structural invariant: this always passes today (comparing userId to itself)
+		// but guards against future refactors where the document userId might diverge
+		// from the caller's userId (e.g., admin impersonation, team prompts).
+		assertCanInsert({ userId }, "prompts", { userId });
+
 		// Insert the prompt with empty tagNames
 		// Trigger on promptTags will sync the denormalized field after junction inserts
 		const promptId = await ctx.db.insert("prompts", {
@@ -268,6 +279,8 @@ export async function getBySlug(
 		return null;
 	}
 
+	assertCanRead({ userId }, "prompts", prompt);
+
 	// Map storage format to DTO format (tagNames -> tags)
 	return {
 		slug: prompt.slug,
@@ -282,6 +295,9 @@ export async function getBySlug(
 /**
  * List prompts for user with optional search.
  * Returns DTOs sorted by creation time (most recent first).
+ *
+ * RLS: enforced by index constraint — all queries filter by userId via
+ * the by_user or by_user_slug index. No per-row assertion needed.
  */
 export async function listByUser(
 	ctx: QueryCtx,
@@ -358,6 +374,8 @@ export async function updateBySlug(
 	if (!prompt) {
 		return false;
 	}
+
+	assertCanModify({ userId }, "prompts", prompt);
 
 	// Validate updates
 	validatePromptInput(updates);
@@ -457,6 +475,8 @@ export async function deleteBySlug(
 		return false;
 	}
 
+	assertCanDelete({ userId }, "prompts", prompt);
+
 	// Get all junction records for this prompt
 	const junctions = await ctx.db
 		.query("promptTags")
@@ -480,6 +500,8 @@ export async function deleteBySlug(
 
 /**
  * List prompts for a user with ranking applied.
+ *
+ * RLS: enforced by index constraint on userId (by_user index).
  *
  * SCALABILITY NOTE: This function fetches ALL user prompts into memory before
  * filtering and sorting. This is O(n) for fetch and O(n log n) for sort.
@@ -515,6 +537,11 @@ export async function listPromptsRanked(
 	return ranked.slice(0, limit).map(toDTOv2);
 }
 
+/**
+ * Search prompts by text query with optional tag filtering.
+ *
+ * RLS: enforced by search index constraint — .eq("userId", userId).
+ */
 export async function searchPrompts(
 	ctx: QueryCtx,
 	userId: string,
@@ -569,6 +596,8 @@ export async function updatePromptFlags(
 
 	if (!prompt) return false;
 
+	assertCanModify({ userId }, "prompts", prompt);
+
 	const patch: Partial<{ pinned: boolean; favorited: boolean }> = {};
 	if (updates.pinned !== undefined) patch.pinned = updates.pinned;
 	if (updates.favorited !== undefined) patch.favorited = updates.favorited;
@@ -598,6 +627,8 @@ export async function trackPromptUse(
 		.unique();
 
 	if (!prompt) return false;
+
+	assertCanModify({ userId }, "prompts", prompt);
 
 	await ctx.db.patch(prompt._id, {
 		usageCount: (prompt.usageCount ?? 0) + 1,
