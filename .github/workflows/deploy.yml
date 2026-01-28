@@ -28,7 +28,7 @@ concurrency:
 jobs:
   quality:
     name: Quality Gates
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -56,7 +56,7 @@ jobs:
   deploy-convex:
     name: Deploy Convex
     needs: quality
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     environment: staging
 
     steps:
@@ -78,7 +78,7 @@ jobs:
   deploy-fly:
     name: Deploy Fly.io
     needs: [quality, deploy-convex]
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     environment: staging
 
     steps:
@@ -95,7 +95,7 @@ jobs:
   integration-tests:
     name: Integration Tests
     needs: deploy-fly
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     environment: staging
 
     steps:
