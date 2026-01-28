@@ -1,0 +1,144 @@
+{
+	"prompts": [
+		{
+			"slug": "regex-builder",
+			"name": "Regex Pattern Builder",
+			"description": "Build and explain regex patterns",
+			"content": "Create a regex for: {{requirement}}\n\nTest cases:\n- Should match: {{matches}}\n- Should not match: {{non_matches}}\n\nProvide:\n1. The pattern\n2. Breakdown of each part\n3. Edge cases to watch for",
+			"tags": ["snippet", "code", "transform"]
+		},
+		{
+			"slug": "incident-postmortem",
+			"name": "Incident Postmortem Template",
+			"description": "Structured blameless postmortem format",
+			"content": "## Incident Postmortem: {{incident_title}}\n\n**Date**: {{date}}\n**Duration**: {{duration}}\n**Severity**: {{severity}}\n**Author**: {{author}}\n\n### Summary\n[2-3 sentence overview of what happened]\n\n### Timeline\n| Time | Event |\n|------|-------|\n| | Detection |\n| | First response |\n| | Mitigation started |\n| | Resolution |\n\n### Root Cause\n[Technical explanation without blame]\n\n### Impact\n- Users affected: \n- Revenue impact: \n- Data loss: \n\n### What Went Well\n- \n\n### What Went Poorly\n- \n\n### Action Items\n| Action | Owner | Due Date |\n|--------|-------|----------|\n| | | |\n\n### Lessons Learned\n[Key takeaways for the team]",
+			"tags": ["reference", "planning", "analysis"]
+		},
+		{
+			"slug": "user-story-writer",
+			"name": "User Story Writer",
+			"description": "Write well-formed user stories with acceptance criteria",
+			"content": "Write a user story for: {{feature}}\n\nFormat:\n**As a** [type of user]\n**I want** [goal]\n**So that** [benefit]\n\n**Acceptance Criteria:**\n- Given [context], when [action], then [outcome]\n- Given [context], when [action], then [outcome]\n\n**Notes:**\n- Edge cases to consider\n- Dependencies\n- Out of scope",
+			"tags": ["workflow", "planning", "transform"]
+		},
+		{
+			"slug": "log-analyzer",
+			"name": "Log Analyzer",
+			"description": "Extract insights from application logs",
+			"content": "Analyze these logs:\n\n```\n{{logs}}\n```\n\nFind:\n1. Error patterns and frequencies\n2. Slow operations (>{{threshold}}ms)\n3. Suspicious activity\n4. Correlation between events\n\nOutput:\n- Summary of issues by severity\n- Recommended actions\n- Queries to investigate further",
+			"tags": ["instruction", "data", "debug", "extract"]
+		},
+		{
+			"slug": "shell-script-generator",
+			"name": "Shell Script Generator",
+			"description": "Generate safe, portable shell scripts",
+			"content": "Write a shell script to: {{task}}\n\nRequirements:\n- POSIX-compliant (works on bash, zsh, sh)\n- Fail on errors (set -euo pipefail)\n- Validate inputs before proceeding\n- Provide helpful usage message\n- Log progress to stderr\n\n```bash\n#!/usr/bin/env bash\nset -euo pipefail\n\n# Your script here\n```",
+			"tags": ["snippet", "code", "workflow"]
+		},
+		{
+			"slug": "security-reviewer",
+			"name": "Security Code Reviewer",
+			"description": "Review code for security vulnerabilities",
+			"content": "Review this code for security issues:\n\n```{{language}}\n{{code}}\n```\n\nCheck for:\n- Injection (SQL, command, XSS)\n- Authentication/authorization flaws\n- Sensitive data exposure\n- Insecure deserialization\n- Known vulnerable dependencies\n- Cryptographic weaknesses\n\nFor each finding:\n- Severity: Critical/High/Medium/Low\n- Location: File and line\n- Issue: What's wrong\n- Fix: How to remediate\n- Reference: CWE or OWASP link",
+			"tags": ["instruction", "code", "review"]
+		},
+		{
+			"slug": "database-schema-designer",
+			"name": "Database Schema Designer",
+			"description": "Design normalized database schemas",
+			"content": "Design a database schema for: {{domain}}\n\nEntities:\n{{entities}}\n\nRequirements:\n- Normalize to {{normal_form}} (1NF/2NF/3NF)\n- Include indexes for common queries\n- Consider soft deletes if needed\n- Add audit columns (created_at, updated_at)\n\nOutput:\n1. ERD description\n2. CREATE TABLE statements\n3. Index recommendations\n4. Sample queries for common operations",
+			"tags": ["instruction", "data", "design"]
+		},
+		{
+			"slug": "error-message-writer",
+			"name": "Error Message Writer",
+			"description": "Write user-friendly error messages",
+			"content": "Write error messages for these scenarios:\n\n{{scenarios}}\n\nGuidelines:\n- Say what happened (not technical jargon)\n- Say what the user can do\n- Be specific, not generic\n- Don't blame the user\n- Include error codes for support\n\nBad: \"Error 500: Internal server error\"\nGood: \"We couldn't save your changes. Please try again, or contact support with code ERR-1234 if this continues.\"",
+			"tags": ["instruction", "communication", "writing"]
+		},
+		{
+			"slug": "changelog-generator",
+			"name": "Changelog Generator",
+			"description": "Generate user-facing changelogs from commits",
+			"content": "Generate a changelog from these commits:\n\n{{commits}}\n\nFormat (Keep a Changelog style):\n\n## [{{version}}] - {{date}}\n\n### Added\n- New features\n\n### Changed\n- Changes in existing functionality\n\n### Fixed\n- Bug fixes\n\n### Security\n- Vulnerability fixes\n\nGuidelines:\n- Write for users, not developers\n- Group related changes\n- Link to relevant docs/issues",
+			"tags": ["workflow", "writing", "summarize"]
+		},
+		{
+			"slug": "competitive-analysis",
+			"name": "Competitive Analysis Framework",
+			"description": "Structured competitive analysis template",
+			"content": "Analyze {{competitor}} vs our product:\n\nDimensions:\n1. **Features**: What do they have that we don't?\n2. **Pricing**: How do they monetize?\n3. **UX**: What's their onboarding like?\n4. **Tech**: What stack/architecture clues?\n5. **Market**: Who are their customers?\n\nOutput:\n- Strengths (what they do better)\n- Weaknesses (our advantages)\n- Opportunities (gaps we could fill)\n- Threats (risks to our position)\n\nSupport with specific examples.",
+			"tags": ["reference", "analysis", "planning"]
+		},
+		{
+			"slug": "typescript-strict-mode",
+			"name": "TypeScript Strict Mode Fixer",
+			"description": "Fix TypeScript strict mode errors",
+			"content": "Fix these TypeScript strict mode errors:\n\n```typescript\n{{code}}\n```\n\nErrors:\n{{errors}}\n\nApproach:\n- Prefer narrowing over type assertions\n- Use `unknown` instead of `any` where possible\n- Add explicit return types to functions\n- Handle null/undefined explicitly\n\nShow before/after for each fix with explanation.",
+			"tags": ["instruction", "code", "debug"]
+		},
+		{
+			"slug": "api-error-handler",
+			"name": "API Error Handler Pattern",
+			"description": "Consistent API error handling pattern",
+			"content": "```typescript\n// Standardized API error response\ninterface ApiError {\n  code: string;           // Machine-readable: \"AUTH_EXPIRED\"\n  message: string;        // Human-readable: \"Your session has expired\"\n  details?: unknown;      // Additional context\n  requestId?: string;     // For support/debugging\n}\n\n// Error factory\nfunction createError(code: string, message: string, status: number): ApiError {\n  return {\n    code,\n    message,\n    requestId: crypto.randomUUID(),\n  };\n}\n\n// Common errors\nconst Errors = {\n  NOT_FOUND: (resource: string) => createError('NOT_FOUND', `${resource} not found`, 404),\n  UNAUTHORIZED: () => createError('UNAUTHORIZED', 'Authentication required', 401),\n  VALIDATION: (field: string) => createError('VALIDATION', `Invalid ${field}`, 400),\n};\n```",
+			"tags": ["snippet", "code", "reference"]
+		},
+		{
+			"slug": "migration-planner",
+			"name": "Migration Planner",
+			"description": "Plan safe database or system migrations",
+			"content": "Plan migration from {{source}} to {{target}}:\n\nCurrent state:\n{{current_state}}\n\nPlanning checklist:\n1. **Data mapping**: What transforms are needed?\n2. **Backwards compatibility**: Can we run both simultaneously?\n3. **Rollback plan**: How do we undo if things go wrong?\n4. **Validation**: How do we verify data integrity?\n5. **Cutover**: What's the switch-over process?\n\nOutput:\n- Phase breakdown with milestones\n- Risk assessment for each phase\n- Estimated duration\n- Required team/resources\n- Communication plan",
+			"tags": ["workflow", "planning", "transform"]
+		},
+		{
+			"slug": "code-comment-standards",
+			"name": "Code Comment Standards",
+			"description": "When and how to write code comments",
+			"content": "Review these comments and improve them:\n\n```{{language}}\n{{code}}\n```\n\nComment guidelines:\n\n**Do comment:**\n- Why, not what (the code shows what)\n- Non-obvious business rules\n- Workarounds with links to issues\n- Public API contracts (JSDoc/docstrings)\n\n**Don't comment:**\n- Obvious code: `i++ // increment i`\n- Commented-out code (delete it)\n- TODO without owner/date\n- Lies (outdated comments)\n\nRewrite bad comments or remove unnecessary ones.",
+			"tags": ["reference", "code", "review"]
+		},
+		{
+			"slug": "performance-profiler",
+			"name": "Performance Profiler Analysis",
+			"description": "Analyze performance profiles and suggest optimizations",
+			"content": "Analyze this performance profile:\n\n{{profile}}\n\nContext: {{context}}\n\nLook for:\n1. Hot paths (where is time spent?)\n2. Memory allocations (GC pressure)\n3. Blocking operations\n4. N+1 patterns\n5. Unnecessary work\n\nFor each issue:\n- Impact: How much time/memory?\n- Cause: Why is it slow?\n- Fix: Specific optimization\n- Trade-off: What's the cost of fixing?",
+			"tags": ["instruction", "code", "analysis"]
+		},
+		{
+			"slug": "dependency-audit",
+			"name": "Dependency Audit",
+			"description": "Audit project dependencies for risks",
+			"content": "Audit these dependencies:\n\n{{dependencies}}\n\nCheck:\n1. **Security**: Known vulnerabilities (CVEs)\n2. **Maintenance**: Last update, open issues, bus factor\n3. **License**: Compatible with our license?\n4. **Size**: Bundle impact\n5. **Alternatives**: Better-maintained options?\n\nOutput:\n| Package | Risk | Issue | Recommendation |\n|---------|------|-------|----------------|\n\nPrioritize by: Security > Maintenance > License > Size",
+			"tags": ["instruction", "code", "review", "analysis"]
+		},
+		{
+			"slug": "feature-spec-template",
+			"name": "Feature Specification Template",
+			"description": "Comprehensive feature specification format",
+			"content": "## Feature: {{feature_name}}\n\n**Author**: {{author}}\n**Status**: Draft | In Review | Approved\n**Target Release**: {{release}}\n\n### Problem Statement\n[What problem does this solve? Who has this problem?]\n\n### Proposed Solution\n[High-level description of the approach]\n\n### User Stories\n[Link to user stories or list them]\n\n### Design\n[Wireframes, API contracts, data models]\n\n### Technical Approach\n[Architecture decisions, dependencies, risks]\n\n### Success Metrics\n[How do we measure if this worked?]\n\n### Open Questions\n[Things we still need to decide]\n\n### Out of Scope\n[Explicitly what this does NOT include]",
+			"tags": ["reference", "planning", "design"]
+		},
+		{
+			"slug": "interview-prep-coding",
+			"name": "Coding Interview Prep",
+			"description": "Practice coding interview problems",
+			"content": "Solve this problem:\n\n{{problem}}\n\nConstraints:\n{{constraints}}\n\nApproach:\n1. Clarify requirements (ask questions)\n2. Work through examples by hand\n3. Describe approach before coding\n4. Write clean code with good names\n5. Test with examples and edge cases\n6. Analyze time/space complexity\n\nProvide:\n- Solution with comments\n- Complexity analysis\n- Alternative approaches\n- Common mistakes to avoid",
+			"tags": ["instruction", "code", "explain"]
+		},
+		{
+			"slug": "monitoring-alert-rules",
+			"name": "Monitoring Alert Rules",
+			"description": "Define effective monitoring alerts",
+			"content": "Create monitoring alerts for: {{service}}\n\nMetrics available:\n{{metrics}}\n\nFor each alert define:\n```yaml\nname: descriptive-alert-name\ncondition: metric > threshold for duration\nseverity: critical | warning | info\nrunbook: link to response procedure\n```\n\nPrinciples:\n- Alert on symptoms, not causes\n- Avoid alert fatigue (only actionable alerts)\n- Include context in alert message\n- Define clear escalation paths\n\nCover: Availability, Latency, Errors, Saturation",
+			"tags": ["workflow", "code", "design"]
+		},
+		{
+			"slug": "data-dictionary",
+			"name": "Data Dictionary Generator",
+			"description": "Document data schemas comprehensively",
+			"content": "Create a data dictionary for:\n\n{{schema}}\n\nFor each field document:\n| Field | Type | Required | Description | Example | Validation |\n|-------|------|----------|-------------|---------|------------|\n\nInclude:\n- Business meaning (not just technical type)\n- Valid values/ranges\n- Relationships to other fields\n- Historical notes (if field changed)\n- PII/sensitive data flags",
+			"tags": ["reference", "data", "explain"]
+		}
+	]
+}

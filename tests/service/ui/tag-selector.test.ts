@@ -121,7 +121,10 @@ describe("tagSelector.renderHtml", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.renderHtml(mockTags, ["code", "review"]);
+		const html = dom.window.tagSelector.renderHtml(mockTags, [
+			"code",
+			"review",
+		]);
 		container.innerHTML = html;
 
 		const selectedChips = container.querySelectorAll(".tag-chip.selected");
@@ -259,7 +262,9 @@ describe("tagSelector list style", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.renderHtml(mockTags, [], { style: "list" });
+		const html = dom.window.tagSelector.renderHtml(mockTags, [], {
+			style: "list",
+		});
 		container.innerHTML = html;
 
 		const items = container.querySelectorAll(".tag-picker-item");
@@ -273,7 +278,9 @@ describe("tagSelector list style", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.renderHtml(mockTags, [], { style: "list" });
+		const html = dom.window.tagSelector.renderHtml(mockTags, [], {
+			style: "list",
+		});
 		container.innerHTML = html;
 
 		const headers = container.querySelectorAll(".tag-picker-section-header");
@@ -291,9 +298,13 @@ describe("tagSelector list style", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.renderHtml(mockTags, ["code", "review"], {
-			style: "list",
-		});
+		const html = dom.window.tagSelector.renderHtml(
+			mockTags,
+			["code", "review"],
+			{
+				style: "list",
+			},
+		);
 		container.innerHTML = html;
 
 		const selectedItems = container.querySelectorAll(
@@ -306,7 +317,9 @@ describe("tagSelector list style", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.renderHtml(mockTags, [], { style: "list" });
+		const html = dom.window.tagSelector.renderHtml(mockTags, [], {
+			style: "list",
+		});
 		container.innerHTML = html;
 
 		const onToggle = vi.fn();
@@ -326,7 +339,9 @@ describe("tagSelector list style", () => {
 		const container = assertElement(
 			dom.window.document.getElementById("container"),
 		);
-		const html = dom.window.tagSelector.renderHtml(mockTags, [], { style: "list" });
+		const html = dom.window.tagSelector.renderHtml(mockTags, [], {
+			style: "list",
+		});
 		container.innerHTML = html;
 
 		dom.window.tagSelector.attachHandlers(container, vi.fn(), {

@@ -1,0 +1,144 @@
+{
+	"prompts": [
+		{
+			"slug": "code-review-checklist",
+			"name": "Code Review Checklist",
+			"description": "Systematic code review following best practices",
+			"content": "Review the following code for:\n\n1. **Correctness**: Does it do what it's supposed to?\n2. **Security**: Any injection, XSS, or auth issues?\n3. **Performance**: N+1 queries, unnecessary loops?\n4. **Readability**: Clear names, appropriate comments?\n5. **Tests**: Adequate coverage for the changes?\n\nCode to review:\n```{{language}}\n{{code}}\n```\n\nProvide specific line-by-line feedback.",
+			"tags": ["instruction", "code", "review"]
+		},
+		{
+			"slug": "pr-summary-generator",
+			"name": "PR Summary Generator",
+			"description": "Generate a concise PR summary from diff",
+			"content": "Analyze this git diff and generate a PR summary:\n\n```diff\n{{diff}}\n```\n\nFormat:\n## Summary\n[2-3 bullet points on what changed]\n\n## Why\n[Brief explanation of the purpose]\n\n## Testing\n[How to verify the changes work]",
+			"tags": ["instruction", "code", "summarize"]
+		},
+		{
+			"slug": "senior-debugger",
+			"name": "Senior Debugger Persona",
+			"description": "Adopt the mindset of an experienced debugger",
+			"content": "You are a senior software engineer with 15 years of debugging experience. When presented with a bug:\n\n1. Ask clarifying questions before diving in\n2. Form hypotheses and test them systematically\n3. Check the obvious things first (typos, off-by-one, null checks)\n4. Look for recent changes that could have caused the regression\n5. Never assume - verify with logs and tests\n\nApproach: Methodical, patient, hypothesis-driven. Avoid random changes hoping something works.",
+			"tags": ["persona", "code", "debug"]
+		},
+		{
+			"slug": "technical-writer",
+			"name": "Technical Writer Persona",
+			"description": "Write clear, user-focused documentation",
+			"content": "You are a technical writer creating documentation for {{audience}}.\n\nPrinciples:\n- Lead with what the user needs to do, not background theory\n- Use active voice and present tense\n- Include working code examples for every concept\n- Anticipate common mistakes and address them\n- Keep paragraphs short (3-4 sentences max)\n\nFormat all output in markdown with clear headings.",
+			"tags": ["persona", "writing", "transform"]
+		},
+		{
+			"slug": "sql-query-builder",
+			"name": "SQL Query Builder",
+			"description": "Generate SQL queries from natural language",
+			"content": "Convert this request to SQL:\n\n{{request}}\n\nSchema:\n```sql\n{{schema}}\n```\n\nRequirements:\n- Use parameterized queries (no string interpolation)\n- Add appropriate indexes if suggesting schema changes\n- Explain any JOINs or subqueries\n- Consider NULL handling",
+			"tags": ["snippet", "code", "data", "transform"]
+		},
+		{
+			"slug": "api-endpoint-docs",
+			"name": "API Endpoint Documentation",
+			"description": "Reference template for REST API documentation",
+			"content": "## {{method}} {{path}}\n\n{{description}}\n\n### Request\n\n**Headers**\n| Name | Required | Description |\n|------|----------|-------------|\n| Authorization | Yes | Bearer token |\n\n**Body**\n```json\n{{requestBody}}\n```\n\n### Response\n\n**200 OK**\n```json\n{{responseBody}}\n```\n\n**Error Codes**\n| Code | Meaning |\n|------|---------||\n| 400 | Invalid request |\n| 401 | Not authenticated |\n| 404 | Resource not found |",
+			"tags": ["reference", "code", "explain"]
+		},
+		{
+			"slug": "commit-message-writer",
+			"name": "Git Commit Message Writer",
+			"description": "Generate conventional commit messages",
+			"content": "Generate a commit message for these changes:\n\n{{changes}}\n\nFormat:\n```\n<type>(<scope>): <subject>\n\n<body>\n```\n\nTypes: feat, fix, docs, style, refactor, test, chore\nSubject: imperative, lowercase, no period, max 50 chars\nBody: wrap at 72 chars, explain what and why (not how)",
+			"tags": ["snippet", "code", "transform"]
+		},
+		{
+			"slug": "meeting-notes-summarizer",
+			"name": "Meeting Notes Summarizer",
+			"description": "Extract action items and decisions from meeting notes",
+			"content": "Summarize these meeting notes:\n\n{{notes}}\n\nExtract:\n1. **Decisions Made**: What was agreed upon?\n2. **Action Items**: Who is doing what by when?\n3. **Open Questions**: What needs follow-up?\n4. **Key Discussion Points**: Important context (2-3 bullets)\n\nKeep the summary under 200 words.",
+			"tags": ["instruction", "communication", "summarize"]
+		},
+		{
+			"slug": "email-drafter",
+			"name": "Professional Email Drafter",
+			"description": "Draft clear, professional emails",
+			"content": "Draft an email with these parameters:\n\nTo: {{recipient}}\nPurpose: {{purpose}}\nTone: {{tone}}\nKey points: {{points}}\n\nStructure:\n1. Clear subject line\n2. Brief greeting\n3. Main message (3 paragraphs max)\n4. Specific ask or next step\n5. Professional closing\n\nAvoid: jargon, passive voice, unnecessary pleasantries",
+			"tags": ["workflow", "writing", "communication"]
+		},
+		{
+			"slug": "data-analyst-persona",
+			"name": "Data Analyst Persona",
+			"description": "Analyze data with statistical rigor",
+			"content": "You are a data analyst examining {{dataset}}.\n\nApproach:\n1. Start with summary statistics and distributions\n2. Check for missing values and outliers\n3. Look for correlations before causation claims\n4. Visualize before modeling\n5. Always state assumptions and limitations\n\nOutput format:\n- Key findings (3-5 bullets)\n- Supporting visualizations (describe what to create)\n- Recommended next steps\n- Caveats and limitations",
+			"tags": ["persona", "data", "analysis"]
+		},
+		{
+			"slug": "bug-report-template",
+			"name": "Bug Report Template",
+			"description": "Structured template for bug reports",
+			"content": "## Bug Report\n\n**Title**: [Brief description]\n\n**Environment**\n- OS: {{os}}\n- Browser/Runtime: {{runtime}}\n- Version: {{version}}\n\n**Steps to Reproduce**\n1. \n2. \n3. \n\n**Expected Behavior**\n[What should happen]\n\n**Actual Behavior**\n[What actually happens]\n\n**Screenshots/Logs**\n[Attach relevant evidence]\n\n**Severity**: [Critical/High/Medium/Low]\n\n**Workaround**: [If any]",
+			"tags": ["reference", "code", "debug"]
+		},
+		{
+			"slug": "architecture-review",
+			"name": "Architecture Review",
+			"description": "Review system architecture for common issues",
+			"content": "Review this architecture:\n\n{{architecture}}\n\nEvaluate:\n\n1. **Scalability**: What breaks at 10x load?\n2. **Reliability**: Single points of failure?\n3. **Security**: Attack vectors and mitigations?\n4. **Operability**: How do you debug production issues?\n5. **Cost**: Where are the expensive operations?\n\nFor each concern, provide:\n- Current state assessment\n- Risk level (High/Medium/Low)\n- Recommended improvement\n- Trade-offs of the recommendation",
+			"tags": ["instruction", "design", "review"]
+		},
+		{
+			"slug": "code-explainer",
+			"name": "Code Explainer",
+			"description": "Explain code at the appropriate level",
+			"content": "Explain this code to {{audience}}:\n\n```{{language}}\n{{code}}\n```\n\nFor beginners: Focus on what it does, use analogies\nFor intermediate: Explain the how and design choices\nFor experts: Focus on edge cases, performance, and alternatives\n\nInclude:\n- High-level summary (1 sentence)\n- Step-by-step walkthrough\n- Key concepts used\n- Potential gotchas",
+			"tags": ["instruction", "code", "explain"]
+		},
+		{
+			"slug": "csv-to-json-transformer",
+			"name": "CSV to JSON Transformer",
+			"description": "Convert CSV data to structured JSON",
+			"content": "Transform this CSV to JSON:\n\n```csv\n{{csv}}\n```\n\nOptions:\n- `arrayOfObjects`: Each row becomes an object\n- `nestedByKey`: Group by {{groupKey}} column\n- `flattenHeaders`: Convert \"user.name\" to nested {user: {name: ...}}\n\nOutput format: {{format}}\n\nHandle:\n- Empty values → null\n- Numeric strings → numbers\n- \"true\"/\"false\" → booleans",
+			"tags": ["snippet", "data", "transform"]
+		},
+		{
+			"slug": "translation-assistant",
+			"name": "Translation Assistant",
+			"description": "Translate text preserving tone and context",
+			"content": "Translate from {{source_language}} to {{target_language}}:\n\n{{text}}\n\nContext: {{context}}\nTone: {{tone}}\n\nGuidelines:\n- Preserve meaning over literal translation\n- Adapt idioms to target culture\n- Keep technical terms if universally understood\n- Flag any ambiguous phrases with [?]\n\nProvide:\n1. Translation\n2. Notes on any adaptations made\n3. Alternative phrasings for key sentences",
+			"tags": ["instruction", "writing", "translate"]
+		},
+		{
+			"slug": "requirements-extractor",
+			"name": "Requirements Extractor",
+			"description": "Extract structured requirements from prose",
+			"content": "Extract requirements from this document:\n\n{{document}}\n\nCategorize as:\n- **Functional**: What the system must do\n- **Non-functional**: Performance, security, usability\n- **Constraints**: Technical or business limitations\n- **Assumptions**: Implicit dependencies\n\nFor each requirement:\n- ID: REQ-XXX\n- Description: Clear, testable statement\n- Priority: Must/Should/Could\n- Source: Quote from original text",
+			"tags": ["instruction", "planning", "extract"]
+		},
+		{
+			"slug": "test-case-generator",
+			"name": "Test Case Generator",
+			"description": "Generate comprehensive test cases from requirements",
+			"content": "Generate test cases for:\n\n{{feature}}\n\nRequirements:\n{{requirements}}\n\nCover:\n1. **Happy path**: Normal successful flow\n2. **Edge cases**: Boundaries, empty inputs, max values\n3. **Error cases**: Invalid inputs, auth failures, network errors\n4. **Integration points**: External service behavior\n\nFormat:\n```\nTC-XXX: [Title]\nPreconditions: [Setup needed]\nSteps: [Numbered actions]\nExpected: [Verifiable outcome]\n```",
+			"tags": ["workflow", "code", "transform"]
+		},
+		{
+			"slug": "docs-summarizer",
+			"name": "Documentation Summarizer",
+			"description": "Create TL;DR summaries of technical docs",
+			"content": "Summarize this documentation:\n\n{{documentation}}\n\nAudience: {{audience}}\n\nProvide:\n1. **TL;DR** (2-3 sentences)\n2. **Key Concepts** (bullet list)\n3. **Quick Start** (minimal steps to get going)\n4. **Common Pitfalls** (what trips people up)\n5. **When to Read Full Docs** (what's not covered here)\n\nMax length: 500 words",
+			"tags": ["instruction", "writing", "summarize"]
+		},
+		{
+			"slug": "json-schema-generator",
+			"name": "JSON Schema Generator",
+			"description": "Generate JSON Schema from sample data",
+			"content": "Generate a JSON Schema for this data:\n\n```json\n{{sample}}\n```\n\nInclude:\n- Required vs optional fields\n- Type constraints (string, number, enum)\n- Format hints (date-time, email, uri)\n- Description for each field\n- Examples\n\nOutput as JSON Schema draft-07:\n\n```json\n{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  ...\n}\n```",
+			"tags": ["snippet", "code", "data"]
+		},
+		{
+			"slug": "refactoring-guide",
+			"name": "Refactoring Guide",
+			"description": "Step-by-step refactoring with safety checks",
+			"content": "Refactor this code:\n\n```{{language}}\n{{code}}\n```\n\nGoal: {{goal}}\n\nProcess:\n1. **Identify**: What specific smell or issue?\n2. **Test**: Ensure existing tests pass (or write them)\n3. **Small steps**: One change at a time, test after each\n4. **Review**: Does the refactored code meet the goal?\n\nFor each step, show:\n- Before snippet\n- After snippet\n- Why this change helps\n- Tests to verify behavior preserved",
+			"tags": ["reference", "code", "transform"]
+		}
+	]
+}

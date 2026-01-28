@@ -180,7 +180,10 @@ export async function insertMany(
 
 		// Check for duplicates within the batch itself
 		if (slugsInBatch.has(prompt.slug)) {
-			throw new ConvexError({ code: "DUPLICATE_SLUG_IN_BATCH", slug: prompt.slug });
+			throw new ConvexError({
+				code: "DUPLICATE_SLUG_IN_BATCH",
+				slug: prompt.slug,
+			});
 		}
 		slugsInBatch.add(prompt.slug);
 
