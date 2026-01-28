@@ -262,15 +262,11 @@ export const trackPromptUse = mutation({
 export const listTags = query({
 	args: {
 		apiKey: v.string(),
-		userId: v.string(), // Kept for API consistency, not used (tags are global)
+		userId: v.string(),
 	},
-	returns: v.object({
-		purpose: v.array(v.string()),
-		domain: v.array(v.string()),
-		task: v.array(v.string()),
-	}),
-	handler: async (ctx, { apiKey }) => {
+	returns: v.array(v.string()),
+	handler: async (ctx, { apiKey, userId }) => {
 		await assertValidApiKey(ctx, apiKey, "listTags");
-		return Prompts.listTags(ctx);
+		return Prompts.listTags(ctx, userId);
 	},
 });

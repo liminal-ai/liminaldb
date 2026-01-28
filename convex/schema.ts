@@ -7,23 +7,8 @@ export default defineSchema({
 		email: v.string(),
 	}).index("by_userId", ["userId"]),
 
-	tags: defineTable({
-		name: v.string(),
-		dimension: v.union(
-			v.literal("purpose"),
-			v.literal("domain"),
-			v.literal("task"),
-		),
-	})
-		.index("by_name", ["name"])
-		.index("by_dimension", ["dimension"]),
-
-	promptTags: defineTable({
-		promptId: v.id("prompts"),
-		tagId: v.id("tags"),
-	})
-		.index("by_prompt", ["promptId"])
-		.index("by_tag", ["tagId"]),
+	// NOTE: tags and promptTags tables removed — tags now stored directly
+	// on prompts.tagNames. Orphaned data can be cleaned via Convex dashboard.
 
 	prompts: defineTable({
 		userId: v.string(), // External auth ID
@@ -31,7 +16,7 @@ export default defineSchema({
 		name: v.string(),
 		description: v.string(),
 		content: v.string(),
-		// Denormalized for fast queries. Sync via helper functions.
+		// Source of truth for tags — user-defined, free-form slug strings.
 		tagNames: v.array(v.string()),
 		parameters: v.optional(
 			v.array(

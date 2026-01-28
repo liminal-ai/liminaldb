@@ -54,9 +54,7 @@ export const rlsRules: RLSRules = {
 		modify: (ctx, doc) => doc.userId === ctx.userId,
 		delete: (ctx, doc) => doc.userId === ctx.userId,
 	},
-	// promptTags: junction table, no userId field.
-	// Ownership is enforced indirectly — you can only reach promptTags
-	// through a prompt you own (model layer handles this).
+	// NOTE: tags and promptTags tables removed — tags now stored directly on prompts.
 };
 
 /**

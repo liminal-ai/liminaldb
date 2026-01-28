@@ -1,7 +1,7 @@
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { ConvexError } from "convex/values";
-import { validateGlobalTag, getTagId, getTagsByDimension } from "./tags";
+import { validateTagName } from "./tagConstants";
 import { getRankingConfig, rerank } from "./ranking";
 import {
 	assertCanRead,
@@ -92,14 +92,6 @@ export function validateSlug(slug: string): void {
 }
 
 /**
- * Validate tag name against the 19 fixed global tags.
- * Throws if invalid.
- */
-export function validateTagName(tagName: string): void {
-	validateGlobalTag(tagName);
-}
-
-/**
  * Validate a single prompt input.
  * Throws with specific error message if validation fails.
  */
@@ -164,8 +156,7 @@ export async function slugExists(
 
 /**
  * Insert multiple prompts for a user.
- * Creates tags as needed, creates junction records.
- * tagNames is synced automatically via database trigger on promptTags table.
+ * Tags are written directly to tagNames (no junction table).
  *
  * Atomic: All operations run within a single Convex mutation, which provides
  * serializable isolation. If any prompt fails validation, entire batch fails
@@ -199,53 +190,25 @@ export async function insertMany(
 		}
 	}
 
-	// Phase 2: Look up tag IDs (tags are pre-seeded, no creation needed)
-	// Cache to avoid duplicate lookups within batch
-	const tagIdCache = new Map<string, Id<"tags">>();
-
-	async function getTagIdCached(tagName: string): Promise<Id<"tags">> {
-		const cached = tagIdCache.get(tagName);
-		if (cached) {
-			return cached;
-		}
-
-		const tagId = await getTagId(ctx, tagName);
-		tagIdCache.set(tagName, tagId);
-		return tagId;
-	}
-
-	// Phase 3: Insert each prompt with its tags
+	// Phase 2: Insert each prompt with tags written directly
 	const promptIds: Id<"prompts">[] = [];
 
 	for (const prompt of prompts) {
-		// Look up tag IDs for this prompt
-		const tagIds: Id<"tags">[] = [];
-		for (const tagName of prompt.tags) {
-			const tagId = await getTagIdCached(tagName);
-			tagIds.push(tagId);
-		}
+		// Deduplicate and normalize tags
+		const tagNames = [
+			...new Set(prompt.tags.map((t) => t.trim().toLowerCase())),
+		];
 
 		// RLS: verify the caller is inserting under their own userId
-		const promptDoc = {
-			userId,
-			slug: prompt.slug,
-			name: prompt.name,
-			description: prompt.description,
-			content: prompt.content,
-			tagNames: [] as string[],
-			parameters: prompt.parameters,
-		};
-		assertCanInsert({ userId }, "prompts", promptDoc);
+		assertCanInsert({ userId }, "prompts", { userId });
 
-		// Insert the prompt with empty tagNames
-		// Trigger on promptTags will sync the denormalized field after junction inserts
 		const promptId = await ctx.db.insert("prompts", {
 			userId,
 			slug: prompt.slug,
 			name: prompt.name,
 			description: prompt.description,
 			content: prompt.content,
-			tagNames: [], // Synced by trigger
+			tagNames,
 			parameters: prompt.parameters,
 			// Epic 02 defaults
 			searchText: buildSearchText(prompt),
@@ -253,14 +216,6 @@ export async function insertMany(
 			favorited: false,
 			usageCount: 0,
 		});
-
-		// Create junction records - trigger fires on each insert, syncing tagNames
-		for (const tagId of tagIds) {
-			await ctx.db.insert("promptTags", {
-				promptId,
-				tagId,
-			});
-		}
 
 		promptIds.push(promptId);
 	}
@@ -392,67 +347,19 @@ export async function updateBySlug(
 		}
 	}
 
-	// Handle tag changes
-	// Get current junctions
-	const currentJunctions = await ctx.db
-		.query("promptTags")
-		.withIndex("by_prompt", (q) => q.eq("promptId", prompt._id))
-		.collect();
+	// Deduplicate and normalize tags
+	const tagNames = [
+		...new Set(updates.tags.map((t) => t.trim().toLowerCase())),
+	];
 
-	// Build map of current tagId -> junction record
-	const currentTagIds = new Set<string>();
-	const junctionByTagId = new Map<string, Id<"promptTags">>();
-	for (const junction of currentJunctions) {
-		currentTagIds.add(junction.tagId);
-		junctionByTagId.set(junction.tagId, junction._id);
-	}
-
-	// Look up tag IDs for new tags
-	const newTagIds = new Set<string>();
-	const tagIdsToAdd: Id<"tags">[] = [];
-
-	for (const tagName of updates.tags) {
-		const tagId = await getTagId(ctx, tagName);
-		newTagIds.add(tagId);
-		if (!currentTagIds.has(tagId)) {
-			tagIdsToAdd.push(tagId);
-		}
-	}
-
-	// Find tags to remove (in current but not in new)
-	const tagIdsToRemove: Id<"tags">[] = [];
-	for (const tagId of currentTagIds) {
-		if (!newTagIds.has(tagId)) {
-			tagIdsToRemove.push(tagId as Id<"tags">);
-		}
-	}
-
-	// Remove old junctions
-	for (const tagId of tagIdsToRemove) {
-		const junctionId = junctionByTagId.get(tagId);
-		if (junctionId) {
-			await ctx.db.delete(junctionId);
-		}
-	}
-
-	// Add new junctions
-	for (const tagId of tagIdsToAdd) {
-		await ctx.db.insert("promptTags", {
-			promptId: prompt._id,
-			tagId,
-		});
-	}
-
-	// Note: No orphan cleanup - tags are global shared tags, never deleted
-
-	// Update prompt fields (tagNames synced by trigger)
+	// Update prompt fields — tagNames written directly (no junction table)
 	await ctx.db.patch(prompt._id, {
 		slug: updates.slug,
 		name: updates.name,
 		description: updates.description,
 		content: updates.content,
+		tagNames,
 		parameters: updates.parameters,
-		// Epic 02: keep search index field derived from main fields
 		searchText: buildSearchText(updates),
 	});
 
@@ -481,21 +388,8 @@ export async function deleteBySlug(
 
 	assertCanDelete({ userId }, "prompts", prompt);
 
-	// Get all junction records for this prompt
-	const junctions = await ctx.db
-		.query("promptTags")
-		.withIndex("by_prompt", (q) => q.eq("promptId", prompt._id))
-		.collect();
-
-	// Delete all junction records for this prompt
-	for (const junction of junctions) {
-		await ctx.db.delete(junction._id);
-	}
-
-	// Delete the prompt
+	// Delete the prompt (no junction cleanup needed — tags stored directly)
 	await ctx.db.delete(prompt._id);
-
-	// Note: No orphan cleanup - tags are global shared tags, never deleted
 
 	return true;
 }
@@ -635,16 +529,27 @@ export async function trackPromptUse(
 	return true;
 }
 
+/**
+ * List all unique tags used by a user's prompts.
+ * Returns a flat, sorted array of tag strings.
+ */
 export async function listTags(
 	ctx: QueryCtx,
-): Promise<{ purpose: string[]; domain: string[]; task: string[] }> {
-	// Global tags - no userId needed
-	const grouped = await getTagsByDimension(ctx);
-	return {
-		purpose: grouped.purpose || [],
-		domain: grouped.domain || [],
-		task: grouped.task || [],
-	};
+	userId: string,
+): Promise<string[]> {
+	const prompts = await ctx.db
+		.query("prompts")
+		.withIndex("by_user", (q) => q.eq("userId", userId))
+		.collect();
+
+	const tagSet = new Set<string>();
+	for (const prompt of prompts) {
+		for (const tag of prompt.tagNames) {
+			tagSet.add(tag);
+		}
+	}
+
+	return [...tagSet].sort();
 }
 
 function toDTOv2(prompt: {

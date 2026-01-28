@@ -1,9 +1,9 @@
 import { describe, test, expect } from "vitest";
 import {
 	validateSlug,
-	validateTagName,
 	validatePromptInput,
 } from "../../../convex/model/prompts";
+import { validateTagName } from "../../../convex/model/tagConstants";
 
 describe("validateSlug", () => {
 	test("accepts valid slugs", () => {
@@ -42,15 +42,21 @@ describe("validateSlug", () => {
 });
 
 describe("validateTagName", () => {
-	test("accepts valid global tags", () => {
-		expect(() => validateTagName("debug")).not.toThrow();
-		expect(() => validateTagName("code")).not.toThrow();
-		expect(() => validateTagName("instruction")).not.toThrow();
+	test("accepts valid slug-format tags", () => {
+		expect(validateTagName("debug")).toBe("debug");
+		expect(validateTagName("code")).toBe("code");
+		expect(validateTagName("instruction")).toBe("instruction");
 	});
 
-	test("is case-insensitive", () => {
-		expect(() => validateTagName("DEBUG")).not.toThrow();
-		expect(() => validateTagName("Code")).not.toThrow();
+	test("accepts user-defined custom tags", () => {
+		expect(validateTagName("my-custom-tag")).toBe("my-custom-tag");
+		expect(validateTagName("foobar")).toBe("foobar");
+		expect(validateTagName("q4-review")).toBe("q4-review");
+	});
+
+	test("is case-insensitive (normalizes to lowercase)", () => {
+		expect(validateTagName("DEBUG")).toBe("debug");
+		expect(validateTagName("Code")).toBe("code");
 	});
 
 	test("rejects empty tag name", () => {
@@ -61,10 +67,10 @@ describe("validateTagName", () => {
 		expect(() => validateTagName("   ")).toThrow("empty");
 	});
 
-	test("rejects invalid tag names", () => {
-		expect(() => validateTagName("my-custom-tag")).toThrow("Invalid tag");
-		expect(() => validateTagName("work/projects")).toThrow("Invalid tag");
-		expect(() => validateTagName("foobar")).toThrow("Invalid tag");
+	test("rejects tags with invalid characters", () => {
+		expect(() => validateTagName("work/projects")).toThrow();
+		expect(() => validateTagName("hello world")).toThrow();
+		expect(() => validateTagName("hello_world")).toThrow();
 	});
 });
 
@@ -135,13 +141,22 @@ describe("validatePromptInput", () => {
 		).toThrow("Too many tags");
 	});
 
-	test("rejects invalid tag names in array", () => {
+	test("accepts custom user-defined tags", () => {
 		expect(() =>
 			validatePromptInput({
 				...validPrompt,
-				tags: ["code", "not-a-valid-tag"],
+				tags: ["code", "my-custom-tag", "q4-review"],
 			}),
-		).toThrow("Invalid tag");
+		).not.toThrow();
+	});
+
+	test("rejects tags with invalid characters", () => {
+		expect(() =>
+			validatePromptInput({
+				...validPrompt,
+				tags: ["code", "has spaces"],
+			}),
+		).toThrow();
 	});
 
 	test("rejects invalid slug format", () => {

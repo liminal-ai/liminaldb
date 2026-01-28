@@ -330,13 +330,36 @@ describe("POST /api/prompts - Edge Cases", () => {
 							name: "Test",
 							description: "Test",
 							content: "Test",
-							tags: ["invalid-tag-name"],
+							tags: ["Invalid Tag With Spaces!"],
 						},
 					],
 				},
 			});
 
 			expect(response.statusCode).toBe(400);
+		});
+
+		test("accepts custom user-defined tags", async () => {
+			mockConvex.mutation.mockResolvedValue(["id_1"]);
+
+			const response = await app.inject({
+				method: "POST",
+				url: "/api/prompts",
+				headers: { authorization: `Bearer ${createTestJwt()}` },
+				payload: {
+					prompts: [
+						{
+							slug: "custom-tags",
+							name: "Test",
+							description: "Test",
+							content: "Test",
+							tags: ["my-project", "q4-review", "custom-tag"],
+						},
+					],
+				},
+			});
+
+			expect(response.statusCode).toBe(201);
 		});
 
 		test("deduplicates duplicate tags silently", async () => {

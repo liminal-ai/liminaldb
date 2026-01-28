@@ -9,7 +9,7 @@ import type { Id } from "../../convex/_generated/dataModel";
 /**
  * Supported table names for the mock database.
  */
-type TableName = "users" | "tags" | "promptTags" | "prompts";
+type TableName = "users" | "prompts";
 
 /**
  * Type alias for vitest mock functions.
@@ -122,7 +122,7 @@ export function mockSequentialReturns<T>(mockFn: MockFn, values: T[]): void {
 	});
 }
 
-type AnyTableName = "users" | "tags" | "promptTags" | "prompts";
+type AnyTableName = "users" | "prompts";
 
 /**
  * Helper to set up mock returns for insert, tracking IDs.

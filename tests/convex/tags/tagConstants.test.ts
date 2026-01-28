@@ -1,112 +1,95 @@
 import { describe, test, expect } from "vitest";
 import {
-	TAG_DIMENSIONS,
-	GLOBAL_TAGS,
-	ALL_TAG_NAMES,
-	TAG_TO_DIMENSION,
+	SUGGESTED_TAGS,
+	TAG_REGEX,
+	TAG_MAX_LENGTH,
+	validateTagName,
 } from "../../../convex/model/tagConstants";
 
 describe("tagConstants", () => {
-	describe("TAG_DIMENSIONS", () => {
-		test("contains exactly 3 dimensions", () => {
-			expect(TAG_DIMENSIONS).toHaveLength(3);
-		});
-
-		test("contains purpose, domain, task", () => {
-			expect(TAG_DIMENSIONS).toContain("purpose");
-			expect(TAG_DIMENSIONS).toContain("domain");
-			expect(TAG_DIMENSIONS).toContain("task");
-		});
-	});
-
-	describe("GLOBAL_TAGS", () => {
-		test("purpose has 5 tags", () => {
-			expect(GLOBAL_TAGS.purpose).toHaveLength(5);
-		});
-
-		test("domain has 7 tags", () => {
-			expect(GLOBAL_TAGS.domain).toHaveLength(7);
-		});
-
-		test("task has 7 tags", () => {
-			expect(GLOBAL_TAGS.task).toHaveLength(7);
-		});
-
-		test("purpose contains expected tags", () => {
-			expect(GLOBAL_TAGS.purpose).toContain("instruction");
-			expect(GLOBAL_TAGS.purpose).toContain("reference");
-			expect(GLOBAL_TAGS.purpose).toContain("persona");
-			expect(GLOBAL_TAGS.purpose).toContain("workflow");
-			expect(GLOBAL_TAGS.purpose).toContain("snippet");
-		});
-
-		test("domain contains expected tags", () => {
-			expect(GLOBAL_TAGS.domain).toContain("code");
-			expect(GLOBAL_TAGS.domain).toContain("writing");
-			expect(GLOBAL_TAGS.domain).toContain("analysis");
-			expect(GLOBAL_TAGS.domain).toContain("planning");
-			expect(GLOBAL_TAGS.domain).toContain("design");
-			expect(GLOBAL_TAGS.domain).toContain("data");
-			expect(GLOBAL_TAGS.domain).toContain("communication");
-		});
-
-		test("task contains expected tags", () => {
-			expect(GLOBAL_TAGS.task).toContain("review");
-			expect(GLOBAL_TAGS.task).toContain("summarize");
-			expect(GLOBAL_TAGS.task).toContain("explain");
-			expect(GLOBAL_TAGS.task).toContain("debug");
-			expect(GLOBAL_TAGS.task).toContain("transform");
-			expect(GLOBAL_TAGS.task).toContain("extract");
-			expect(GLOBAL_TAGS.task).toContain("translate");
-		});
-	});
-
-	describe("ALL_TAG_NAMES", () => {
-		test("contains exactly 19 tags", () => {
-			expect(ALL_TAG_NAMES).toHaveLength(19);
-		});
-
-		test("all tag names are lowercase alphanumeric", () => {
-			for (const tag of ALL_TAG_NAMES) {
-				expect(tag).toMatch(/^[a-z]+$/);
+	describe("SUGGESTED_TAGS", () => {
+		test("is a flat string array", () => {
+			expect(Array.isArray(SUGGESTED_TAGS)).toBe(true);
+			for (const tag of SUGGESTED_TAGS) {
+				expect(typeof tag).toBe("string");
 			}
 		});
 
-		test("no duplicate tags", () => {
-			const unique = new Set(ALL_TAG_NAMES);
-			expect(unique.size).toBe(ALL_TAG_NAMES.length);
+		test("contains the original 19 tags", () => {
+			expect(SUGGESTED_TAGS).toHaveLength(19);
 		});
 
-		test("combines all dimension tags", () => {
-			const combined = [
-				...GLOBAL_TAGS.purpose,
-				...GLOBAL_TAGS.domain,
-				...GLOBAL_TAGS.task,
-			];
-			expect(ALL_TAG_NAMES).toEqual(combined);
+		test("all suggested tags are valid tag format", () => {
+			for (const tag of SUGGESTED_TAGS) {
+				expect(tag).toMatch(TAG_REGEX);
+			}
+		});
+
+		test("no duplicates", () => {
+			const unique = new Set(SUGGESTED_TAGS);
+			expect(unique.size).toBe(SUGGESTED_TAGS.length);
+		});
+
+		test("includes key tags from each former dimension", () => {
+			// Purpose
+			expect(SUGGESTED_TAGS).toContain("instruction");
+			expect(SUGGESTED_TAGS).toContain("persona");
+			// Domain
+			expect(SUGGESTED_TAGS).toContain("code");
+			expect(SUGGESTED_TAGS).toContain("writing");
+			// Task
+			expect(SUGGESTED_TAGS).toContain("review");
+			expect(SUGGESTED_TAGS).toContain("debug");
 		});
 	});
 
-	describe("TAG_TO_DIMENSION", () => {
-		test("maps all 19 tags to dimensions", () => {
-			expect(Object.keys(TAG_TO_DIMENSION)).toHaveLength(19);
+	describe("validateTagName", () => {
+		test("accepts valid lowercase slug tags", () => {
+			expect(validateTagName("code")).toBe("code");
+			expect(validateTagName("my-project")).toBe("my-project");
+			expect(validateTagName("q4-review")).toBe("q4-review");
+			expect(validateTagName("test-123")).toBe("test-123");
 		});
 
-		test("purpose tags map to purpose", () => {
-			for (const tag of GLOBAL_TAGS.purpose) {
-				expect(TAG_TO_DIMENSION[tag]).toBe("purpose");
-			}
+		test("normalizes to lowercase", () => {
+			expect(validateTagName("Code")).toBe("code");
+			expect(validateTagName("MY-PROJECT")).toBe("my-project");
 		});
 
-		test("domain tags map to domain", () => {
-			for (const tag of GLOBAL_TAGS.domain) {
-				expect(TAG_TO_DIMENSION[tag]).toBe("domain");
-			}
+		test("trims whitespace", () => {
+			expect(validateTagName("  code  ")).toBe("code");
 		});
 
-		test("task tags map to task", () => {
-			for (const tag of GLOBAL_TAGS.task) {
-				expect(TAG_TO_DIMENSION[tag]).toBe("task");
+		test("rejects empty tags", () => {
+			expect(() => validateTagName("")).toThrow("empty");
+			expect(() => validateTagName("   ")).toThrow("empty");
+		});
+
+		test("rejects tags exceeding max length", () => {
+			const longTag = "a".repeat(TAG_MAX_LENGTH + 1);
+			expect(() => validateTagName(longTag)).toThrow("chars or less");
+		});
+
+		test("accepts tags at exactly max length", () => {
+			const maxTag = "a".repeat(TAG_MAX_LENGTH);
+			expect(validateTagName(maxTag)).toBe(maxTag);
+		});
+
+		test("rejects tags with invalid characters", () => {
+			expect(() => validateTagName("hello world")).toThrow();
+			expect(() => validateTagName("hello_world")).toThrow();
+			expect(() => validateTagName("hello@world")).toThrow();
+			expect(() => validateTagName("hello.world")).toThrow();
+		});
+
+		test("rejects tags with leading or trailing dashes", () => {
+			expect(() => validateTagName("-code")).toThrow();
+			expect(() => validateTagName("code-")).toThrow();
+		});
+
+		test("accepts all 19 suggested tags", () => {
+			for (const tag of SUGGESTED_TAGS) {
+				expect(validateTagName(tag)).toBe(tag);
 			}
 		});
 	});
