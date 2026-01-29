@@ -367,7 +367,7 @@ bun run check         # Format + lint + typecheck + test
 
 ## Staging
 
-- **URL:** https://promptdb-staging.fly.dev (pre-rebrand)
+- **URL:** https://promptdb-staging.fly.dev (will become liminaldb-staging)
 - **Convex:** Cloud staging deployment
 - **CI:** GitHub Actions → Blacksmith runners
 - **Deploy:** Push to `main` triggers quality gates + deploy
