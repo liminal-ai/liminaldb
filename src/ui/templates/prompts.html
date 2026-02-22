@@ -1092,10 +1092,12 @@ bun run prompts:sync</code></pre>
      * Show the editor with given data
      */
     async function showEditor(data) {
+      const homeModule = document.getElementById('home-module');
       const emptyState = document.getElementById('empty-state');
       const promptView = document.getElementById('prompt-view');
       const promptEdit = document.getElementById('prompt-edit');
 
+      if (homeModule) homeModule.classList.add('hidden');
       if (emptyState) emptyState.style.display = 'none';
       if (promptView) promptView.style.display = 'none';
       if (promptEdit) promptEdit.style.display = 'block';
