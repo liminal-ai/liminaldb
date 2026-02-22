@@ -100,7 +100,9 @@ describe("GET /api/prompts/export", () => {
 		});
 
 		const disposition = response.headers["content-disposition"] as string;
-		expect(disposition).toMatch(/^attachment; filename="liminaldb-prompts-\d{4}-\d{2}-\d{2}\.yaml"$/);
+		expect(disposition).toMatch(
+			/^attachment; filename="liminaldb-prompts-\d{4}-\d{2}-\d{2}\.yaml"$/,
+		);
 	});
 
 	test("strips metadata fields from exported prompts", async () => {
@@ -112,7 +114,9 @@ describe("GET /api/prompts/export", () => {
 			headers: { authorization: `Bearer ${createTestJwt()}` },
 		});
 
-		const doc = yaml.load(response.body) as { prompts: Record<string, unknown>[] };
+		const doc = yaml.load(response.body) as {
+			prompts: Record<string, unknown>[];
+		};
 		const prompt = doc.prompts[0];
 
 		expect(prompt).toHaveProperty("slug", "my-prompt");
@@ -129,7 +133,12 @@ describe("GET /api/prompts/export", () => {
 		const dto = {
 			...mockPromptDTO("with-params"),
 			parameters: [
-				{ name: "lang", type: "string", required: true, description: "Language" },
+				{
+					name: "lang",
+					type: "string",
+					required: true,
+					description: "Language",
+				},
 			],
 		};
 		mockConvex.query.mockResolvedValue([dto]);
@@ -140,7 +149,9 @@ describe("GET /api/prompts/export", () => {
 			headers: { authorization: `Bearer ${createTestJwt()}` },
 		});
 
-		const doc = yaml.load(response.body) as { prompts: Record<string, unknown>[] };
+		const doc = yaml.load(response.body) as {
+			prompts: Record<string, unknown>[];
+		};
 		expect(doc.prompts[0]).toHaveProperty("parameters");
 	});
 
@@ -233,7 +244,9 @@ describe("POST /api/prompts/import", () => {
 
 	test("returns 400 with invalid prompt data", async () => {
 		const yamlContent = yaml.dump({
-			prompts: [{ slug: "INVALID", name: "", description: "", content: "", tags: [] }],
+			prompts: [
+				{ slug: "INVALID", name: "", description: "", content: "", tags: [] },
+			],
 		});
 
 		const response = await app.inject({
