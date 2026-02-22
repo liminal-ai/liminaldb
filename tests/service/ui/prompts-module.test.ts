@@ -238,6 +238,31 @@ describe("Prompts Module", () => {
 			const stagingCount = dom.window.document.getElementById("staging-count");
 			expect(stagingCount?.textContent).toBe("1");
 		});
+
+		test("clicking New Prompt hides home module", async () => {
+			dom.window.fetch = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+			});
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			// Click new prompt button
+			const newBtn = dom.window.document.getElementById("new-prompt-btn");
+			if (!newBtn) {
+				throw new Error("New prompt button not found");
+			}
+			click(newBtn);
+			await waitForAsync(50);
+
+			// Home module should be hidden
+			const homeModule = dom.window.document.getElementById("home-module");
+			expect(homeModule?.classList.contains("hidden")).toBe(true);
+
+			// Editor should be visible
+			const promptEdit = dom.window.document.getElementById("prompt-edit");
+			expect(promptEdit?.style.display).toBe("block");
+		});
 	});
 
 	describe("TC-6.1: Insert Mode - Single Prompt", () => {
