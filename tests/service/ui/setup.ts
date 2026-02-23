@@ -144,12 +144,112 @@ export const mockPrompts = [
 ];
 
 /**
+ * Mock prompts with varied pin/favorite/usage for tier sorting tests.
+ */
+export const mockPromptsWithTiers = [
+	{
+		slug: "pinned-prompt",
+		name: "Pinned Prompt",
+		description: "A pinned prompt",
+		content: "Pinned content",
+		tags: ["code"],
+		parameters: [],
+		pinned: true,
+		favorited: false,
+		usageCount: 5,
+		lastUsedAt: Date.now(),
+	},
+	{
+		slug: "fav-prompt",
+		name: "Favorited Prompt",
+		description: "A favorited prompt",
+		content: "Favorited content",
+		tags: ["review"],
+		parameters: [],
+		pinned: false,
+		favorited: true,
+		usageCount: 3,
+		lastUsedAt: Date.now(),
+	},
+	{
+		slug: "regular-prompt",
+		name: "Regular Prompt",
+		description: "A regular prompt",
+		content: "Regular content",
+		tags: ["code"],
+		parameters: [],
+		pinned: false,
+		favorited: false,
+		usageCount: 1,
+		lastUsedAt: undefined,
+	},
+];
+
+/**
  * Mock user for testing.
  */
 export const mockUser = {
 	id: "user_test123",
 	email: "test@example.com",
 };
+
+/**
+ * Assert that only one panel (view, edit, or home) is visible.
+ * Returns which panel is visible.
+ */
+export function assertSinglePanel(
+	dom: JSDOM,
+): "view" | "edit" | "home" | "none" {
+	const doc = dom.window.document;
+	const promptView = doc.getElementById("prompt-view");
+	const promptEdit = doc.getElementById("prompt-edit");
+	const homeModule = doc.getElementById("home-module");
+
+	const viewVisible =
+		promptView !== null && promptView.style.display !== "none";
+	const editVisible =
+		promptEdit !== null && promptEdit.style.display !== "none";
+	const homeVisible =
+		homeModule !== null && !homeModule.classList.contains("hidden");
+
+	const visibleCount = [viewVisible, editVisible, homeVisible].filter(
+		Boolean,
+	).length;
+	if (visibleCount > 1) {
+		throw new Error(
+			`Multiple panels visible: view=${viewVisible}, edit=${editVisible}, home=${homeVisible}`,
+		);
+	}
+
+	if (viewVisible) return "view";
+	if (editVisible) return "edit";
+	if (homeVisible) return "home";
+	return "none";
+}
+
+/**
+ * Enter edit mode for a specific prompt in tests.
+ * Loads prompts, selects one, then enters edit mode.
+ */
+export async function enterEditModeForPrompt(
+	dom: JSDOM,
+	slug: string,
+): Promise<void> {
+	await dom.window.selectPrompt(slug);
+	await waitForAsync(50);
+	await dom.window.enterEditMode();
+	await waitForAsync(100); // wait for editor init + tag fetch
+}
+
+/**
+ * Click OK or Cancel on the confirmation dialog.
+ */
+export function resolveConfirmDialog(dom: JSDOM, confirm: boolean): void {
+	const btn = dom.window.document.getElementById(
+		confirm ? "confirm-ok" : "confirm-cancel",
+	);
+	if (btn) click(btn);
+}
 
 /**
  * Create a mock fetch function.
