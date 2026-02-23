@@ -22,6 +22,7 @@ const LIMITS = {
 	MAX_TAGS_PER_PROMPT: 50,
 	SLUG_MAX_LENGTH: 200,
 } as const;
+const MAX_PROMPTS = 1000;
 
 export interface PromptInput {
 	slug: string;
@@ -178,6 +179,23 @@ export async function insertMany(
 	userId: string,
 	prompts: PromptInput[],
 ): Promise<Id<"prompts">[]> {
+	// Enforce hard max prompt limit at the model layer for all entry points.
+	const existingCount = (
+		await ctx.db
+			.query("prompts")
+			.withIndex("by_user", (q) => q.eq("userId", userId))
+			.collect()
+	).length;
+	if (existingCount + prompts.length > MAX_PROMPTS) {
+		throw new ConvexError({
+			code: "MAX_PROMPTS_EXCEEDED",
+			maxPrompts: MAX_PROMPTS,
+			currentCount: existingCount,
+			requestedCount: prompts.length,
+			available: Math.max(0, MAX_PROMPTS - existingCount),
+		});
+	}
+
 	// Phase 1: Validate ALL prompts BEFORE any inserts
 	// This ensures atomic behavior: fail fast, nothing written on error
 	const slugsInBatch = new Set<string>();

@@ -440,9 +440,16 @@ export function createMcpServer(): McpServer {
 				// Check for structured ConvexError codes
 				let errorMessage = "Failed to save prompts";
 				if (error instanceof ConvexError) {
-					const code = (error.data as { code?: string })?.code;
+					const data = error.data as {
+						code?: string;
+						maxPrompts?: number;
+					};
+					const code = data.code;
 					if (code === "DUPLICATE_SLUG" || code === "DUPLICATE_SLUG_IN_BATCH") {
 						errorMessage = "Slug already exists";
+					} else if (code === "MAX_PROMPTS_EXCEEDED") {
+						const maxPrompts = data.maxPrompts ?? 1000;
+						errorMessage = `Prompt limit exceeded (${maxPrompts} max)`;
 					}
 				}
 				return {

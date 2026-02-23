@@ -282,9 +282,19 @@ async function createPromptsHandler(
 		return reply.code(201).send({ ids });
 	} catch (error) {
 		if (error instanceof ConvexError) {
-			const code = (error.data as { code?: string })?.code;
+			const data = error.data as {
+				code?: string;
+				maxPrompts?: number;
+			};
+			const code = data.code;
 			if (code === "DUPLICATE_SLUG" || code === "DUPLICATE_SLUG_IN_BATCH") {
 				return reply.code(409).send({ error: "Slug already exists" });
+			}
+			if (code === "MAX_PROMPTS_EXCEEDED") {
+				const maxPrompts = data.maxPrompts ?? 1000;
+				return reply.code(400).send({
+					error: `Prompt limit exceeded (${maxPrompts} max). Delete prompts before creating more.`,
+				});
 			}
 		}
 		request.log.error({ err: error, userId }, "Failed to create prompts");

@@ -17,6 +17,17 @@
   <aside class="sidebar">
     <div class="sidebar-header">
       <button id="new-prompt-btn" class="btn-primary">+ New</button>
+      <button id="btn-import-yaml" class="btn-icon" title="Import from YAML">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </button>
+      <button id="btn-export-yaml" class="btn-icon" title="Export as YAML">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </button>
+      <input type="file" id="yaml-file-input" accept=".yaml,.yml" style="display: none;">
     </div>
     <!-- Primary sidebar: Prompt list (shown on Home tab or when viewing prompts) -->
     <div id="prompt-list" class="prompt-list">
@@ -2527,6 +2538,76 @@ bun run prompts:sync</code></pre>
       // Tell shell we're ready to receive state
       notifyShellReady();
     }
+
+    // ============================================
+    // IMPORT / EXPORT
+    // ============================================
+
+    // Export handler
+    document.getElementById('btn-export-yaml')?.addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/prompts/export', { credentials: 'include' });
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || `Export failed (${response.status})`);
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = response.headers.get('content-disposition')
+          ?.match(/filename="(.+)"/)?.[1] || 'liminaldb-prompts.yaml';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Prompts exported successfully', { type: 'success' });
+      } catch (err) {
+        showToast(err.message || 'Failed to export prompts', { type: 'error' });
+      }
+    });
+
+    // Import handler
+    document.getElementById('btn-import-yaml')?.addEventListener('click', () => {
+      document.getElementById('yaml-file-input')?.click();
+    });
+
+    document.getElementById('yaml-file-input')?.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      e.target.value = '';
+
+      try {
+        const yamlContent = await file.text();
+        const response = await fetch('/api/prompts/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ yaml: yamlContent }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          showToast(result.error || 'Import failed', { type: 'error' });
+          return;
+        }
+
+        let msg = `Imported ${result.created} prompt${result.created !== 1 ? 's' : ''}`;
+        if (result.skipped.length > 0) {
+          msg += `, ${result.skipped.length} skipped (duplicate)`;
+        }
+        if (result.errors.length > 0) {
+          msg += `, ${result.errors.length} invalid`;
+        }
+        const toastType = result.created > 0 || result.skipped.length > 0 ? 'success' : 'error';
+        showToast(msg, { type: toastType });
+
+        // Refresh prompt list
+        await loadPrompts(currentQuery, currentTags);
+      } catch (err) {
+        showToast('Failed to import file', { type: 'error' });
+      }
+    });
 
     if (!navigator.userAgent.includes("jsdom")) {
       if (document.readyState === "loading") {

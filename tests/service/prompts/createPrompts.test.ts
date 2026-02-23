@@ -284,5 +284,31 @@ describe("POST /api/prompts", () => {
 
 			expect(response.statusCode).toBe(409);
 		});
+
+		test("returns 400 when max prompt limit is exceeded", async () => {
+			mockConvex.mutation.mockRejectedValue(
+				new ConvexError({ code: "MAX_PROMPTS_EXCEEDED", maxPrompts: 1000 }),
+			);
+
+			const response = await app.inject({
+				method: "POST",
+				url: "/api/prompts",
+				headers: { authorization: `Bearer ${createTestJwt()}` },
+				payload: {
+					prompts: [
+						{
+							slug: "new-prompt",
+							name: "Test",
+							description: "Test",
+							content: "Test",
+							tags: [],
+						},
+					],
+				},
+			});
+
+			expect(response.statusCode).toBe(400);
+			expect(response.json().error).toMatch(/1000.*max/i);
+		});
 	});
 });
