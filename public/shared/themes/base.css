@@ -1109,7 +1109,7 @@ select {
 }
 
 /* ============================================
-   BATCH STAGING (Insert Mode)
+   INSERT MODE (Single Prompt)
    ============================================ */
 
 /* Staging item in sidebar */

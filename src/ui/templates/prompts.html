@@ -1045,8 +1045,8 @@ bun run prompts:sync</code></pre>
       // Save current list state
       const listEl = document.getElementById('prompt-list');
       savedListState = {
-        query: '', // Will be populated by shell filter state if needed
-        tags: [],
+        query: currentQuery,
+        tags: [...currentTags],
         scrollTop: listEl ? listEl.scrollTop : 0
       };
 
@@ -2077,8 +2077,8 @@ bun run prompts:sync</code></pre>
           // Save current list state
           const listEl = document.getElementById('prompt-list');
           savedListState = {
-            query: '',
-            tags: [],
+            query: currentQuery,
+            tags: [...currentTags],
             scrollTop: listEl ? listEl.scrollTop : 0
           };
 
