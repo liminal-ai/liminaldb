@@ -32,6 +32,4 @@ context-to-clean.txt
 transcript.txt
 data-load/
 
-# Internal development docs (not public)
-docs/project/
 .beads/issues.jsonl
