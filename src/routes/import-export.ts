@@ -13,6 +13,7 @@ import { api } from "../../convex/_generated/api";
 import { config } from "../lib/config";
 
 const BATCH_SIZE = 100;
+const MAX_PROMPTS = 1000;
 
 /**
  * Register import/export routes for prompts.
@@ -47,7 +48,7 @@ async function exportPromptsHandler(
 		const prompts = await convex.query(api.prompts.listPromptsRanked, {
 			apiKey: config.convexApiKey,
 			userId,
-			limit: 1000,
+			limit: MAX_PROMPTS,
 		});
 
 		// Map to export shape — strip metadata fields
@@ -130,7 +131,7 @@ async function importPromptsHandler(
 		const existing = await convex.query(api.prompts.listPromptsRanked, {
 			apiKey: config.convexApiKey,
 			userId,
-			limit: 1000,
+			limit: MAX_PROMPTS,
 		});
 		const existingSlugs = new Set(existing.map((p) => p.slug));
 
@@ -150,30 +151,46 @@ async function importPromptsHandler(
 			}
 		}
 
-		// Batch insert in chunks of 100
+		// Enforce MAX_PROMPTS limit
+		const totalAfterImport = existing.length + toCreate.length;
+		if (totalAfterImport > MAX_PROMPTS) {
+			const available = MAX_PROMPTS - existing.length;
+			return reply.code(400).send({
+				error: `Import would exceed the ${MAX_PROMPTS} prompt limit. You have ${existing.length} prompts and are trying to add ${toCreate.length}. You can import up to ${available} more.`,
+				created: 0,
+				skipped,
+				errors,
+			});
+		}
+
+		// Batch insert in chunks, retrying on duplicate slug race conditions
 		let created = 0;
 		for (let i = 0; i < toCreate.length; i += BATCH_SIZE) {
-			const batch = toCreate.slice(i, i + BATCH_SIZE);
-			try {
-				await convex.mutation(api.prompts.insertPrompts, {
-					apiKey: config.convexApiKey,
-					userId,
-					prompts: batch,
-				});
-				created += batch.length;
-			} catch (error) {
-				if (error instanceof ConvexError) {
-					const data = error.data as { code?: string; slug?: string };
-					if (
-						data.code === "DUPLICATE_SLUG" ||
-						data.code === "DUPLICATE_SLUG_IN_BATCH"
-					) {
-						// Race condition — slug was created between check and insert
-						if (data.slug) skipped.push(data.slug);
-						continue;
+			let batch = toCreate.slice(i, i + BATCH_SIZE);
+			while (batch.length > 0) {
+				try {
+					await convex.mutation(api.prompts.insertPrompts, {
+						apiKey: config.convexApiKey,
+						userId,
+						prompts: batch,
+					});
+					created += batch.length;
+					break;
+				} catch (error) {
+					if (error instanceof ConvexError) {
+						const data = error.data as { code?: string; slug?: string };
+						if (
+							(data.code === "DUPLICATE_SLUG" ||
+								data.code === "DUPLICATE_SLUG_IN_BATCH") &&
+							data.slug
+						) {
+							skipped.push(data.slug);
+							batch = batch.filter((p) => p.slug !== data.slug);
+							continue;
+						}
 					}
+					throw error;
 				}
-				throw error;
 			}
 		}
 

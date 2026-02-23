@@ -365,4 +365,80 @@ describe("POST /api/prompts/import", () => {
 		expect(result.created).toBe(0);
 		expect(result.skipped).toContain("race-slug");
 	});
+
+	test("retries batch after DUPLICATE_SLUG without losing other prompts", async () => {
+		mockConvex.query.mockResolvedValue([]);
+		mockConvex.mutation
+			.mockRejectedValueOnce(
+				new ConvexError({ code: "DUPLICATE_SLUG", slug: "race-slug" }),
+			)
+			.mockResolvedValueOnce(["id_1", "id_2"]);
+
+		const yamlContent = yaml.dump({
+			prompts: [
+				validPrompt("race-slug"),
+				validPrompt("good-a"),
+				validPrompt("good-b"),
+			],
+		});
+
+		const response = await app.inject({
+			method: "POST",
+			url: "/api/prompts/import",
+			headers: { authorization: `Bearer ${createTestJwt()}` },
+			payload: { yaml: yamlContent },
+		});
+
+		const result = response.json();
+		expect(result.created).toBe(2);
+		expect(result.skipped).toContain("race-slug");
+		expect(mockConvex.mutation).toHaveBeenCalledTimes(2);
+	});
+
+	test("returns 400 when import would exceed MAX_PROMPTS limit", async () => {
+		// Simulate 999 existing prompts
+		const existingPrompts = Array.from({ length: 999 }, (_, i) =>
+			mockPromptDTO(`existing-${i}`),
+		);
+		mockConvex.query.mockResolvedValue(existingPrompts);
+
+		const yamlContent = yaml.dump({
+			prompts: [validPrompt("new-a"), validPrompt("new-b")],
+		});
+
+		const response = await app.inject({
+			method: "POST",
+			url: "/api/prompts/import",
+			headers: { authorization: `Bearer ${createTestJwt()}` },
+			payload: { yaml: yamlContent },
+		});
+
+		expect(response.statusCode).toBe(400);
+		const result = response.json();
+		expect(result.error).toMatch(/exceed.*1000.*limit/i);
+		expect(result.created).toBe(0);
+	});
+
+	test("allows import up to exactly MAX_PROMPTS", async () => {
+		const existingPrompts = Array.from({ length: 998 }, (_, i) =>
+			mockPromptDTO(`existing-${i}`),
+		);
+		mockConvex.query.mockResolvedValue(existingPrompts);
+		mockConvex.mutation.mockResolvedValue(["id_1", "id_2"]);
+
+		const yamlContent = yaml.dump({
+			prompts: [validPrompt("new-a"), validPrompt("new-b")],
+		});
+
+		const response = await app.inject({
+			method: "POST",
+			url: "/api/prompts/import",
+			headers: { authorization: `Bearer ${createTestJwt()}` },
+			payload: { yaml: yamlContent },
+		});
+
+		expect(response.statusCode).toBe(200);
+		const result = response.json();
+		expect(result.created).toBe(2);
+	});
 });

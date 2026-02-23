@@ -2546,7 +2546,7 @@ bun run prompts:sync</code></pre>
     // Export handler
     document.getElementById('btn-export-yaml')?.addEventListener('click', async () => {
       try {
-        const response = await fetch('/api/prompts/export');
+        const response = await fetch('/api/prompts/export', { credentials: 'include' });
         if (!response.ok) {
           const errData = await response.json().catch(() => ({}));
           throw new Error(errData.error || `Export failed (${response.status})`);
@@ -2599,7 +2599,8 @@ bun run prompts:sync</code></pre>
         if (result.errors.length > 0) {
           msg += `, ${result.errors.length} invalid`;
         }
-        showToast(msg, { type: result.created > 0 ? 'success' : 'info' });
+        const toastType = result.created > 0 || result.skipped.length > 0 ? 'success' : 'error';
+        showToast(msg, { type: toastType });
 
         // Refresh prompt list
         await loadPrompts(currentQuery, currentTags);
