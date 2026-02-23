@@ -9,6 +9,9 @@ import {
 	input,
 	blur,
 	postMessage,
+	assertSinglePanel,
+	enterEditModeForPrompt,
+	resolveConfirmDialog,
 } from "./setup";
 import type { JSDOM } from "jsdom";
 
@@ -228,15 +231,6 @@ describe("Prompts Module", () => {
 			// Empty state should be hidden
 			const emptyState = dom.window.document.getElementById("empty-state");
 			expect(emptyState?.style.display).toBe("none");
-
-			// Staging header should be hidden (only shows for 2+ prompts)
-			const stagingHeader =
-				dom.window.document.getElementById("staging-header");
-			expect(stagingHeader?.style.display).toBe("none");
-
-			// Staging count should show 1
-			const stagingCount = dom.window.document.getElementById("staging-count");
-			expect(stagingCount?.textContent).toBe("1");
 		});
 
 		test("clicking New Prompt hides home module", async () => {
@@ -392,116 +386,61 @@ describe("Prompts Module", () => {
 		});
 	});
 
-	describe("TC-6.2: Insert Mode - Batch Staging", () => {
-		test("multiple +New clicks create multiple staging entries", async () => {
+	describe("TC-6.2: Insert Mode - New Prompt Reset", () => {
+		test("second +New click resets to single staging entry", async () => {
 			const newBtn = dom.window.document.getElementById("new-prompt-btn");
 			if (!newBtn) throw new Error("New prompt button not found");
 
-			// Click +New twice
-			click(newBtn);
+			// Click +New twice (second click tears down clean first, starts fresh)
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
-			click(newBtn);
-			await waitForAsync(50);
+			await dom.window.enterInsertMode();
+			await waitForAsync(100);
 
-			// Check staging count
-			const stagingCount = dom.window.document.getElementById("staging-count");
-			expect(stagingCount?.textContent).toBe("2");
-
-			// Check staging list has 2 items (class is prompt-item.staging)
-			const stagingItems = dom.window.document.querySelectorAll(
-				".prompt-item.staging",
-			);
-			expect(stagingItems.length).toBe(2);
-		});
-
-		test("staging header appears when 2+ prompts staged", async () => {
-			const newBtn = dom.window.document.getElementById("new-prompt-btn");
-			if (!newBtn) throw new Error("New prompt button not found");
-
-			// First click - header should be hidden
-			click(newBtn);
-			await waitForAsync(50);
-
-			let stagingHeader = dom.window.document.getElementById("staging-header");
-			expect(stagingHeader?.style.display).toBe("none");
-
-			// Second click - header should be visible
-			click(newBtn);
-			await waitForAsync(50);
-
-			stagingHeader = dom.window.document.getElementById("staging-header");
-			expect(stagingHeader?.style.display).toBe("flex");
-		});
-
-		test("switching between staged prompts retains form data", async () => {
-			const newBtn = dom.window.document.getElementById("new-prompt-btn");
-			if (!newBtn) throw new Error("New prompt button not found");
-
-			// Create first prompt
-			click(newBtn);
-			await waitForAsync(50);
-
-			// Fill first prompt via inputs
-			const slugInput = dom.window.document.getElementById(
-				"editor-slug",
-			) as HTMLInputElement;
-			const nameInput = dom.window.document.getElementById(
-				"editor-name",
-			) as HTMLInputElement;
-			input(slugInput, "first-prompt");
-			input(nameInput, "First Prompt");
-
-			// Create second prompt (should capture first)
-			click(newBtn);
-			await waitForAsync(50);
-
-			// Click back to first prompt (it's now the first in the list)
-			const stagingItems = dom.window.document.querySelectorAll(
-				".prompt-item.staging",
-			);
-			if (stagingItems.length < 2) {
-				throw new Error(
-					`Expected 2 staging items, found ${stagingItems.length}`,
-				);
-			}
-			const firstItem = stagingItems[0] as Element;
-			click(firstItem);
-			await waitForAsync(50);
-
-			// Check first prompt data is retained
-			const slugInput2 = dom.window.document.getElementById(
-				"editor-slug",
-			) as HTMLInputElement;
-			const nameInput2 = dom.window.document.getElementById(
-				"editor-name",
-			) as HTMLInputElement;
-			expect(slugInput2?.value).toBe("first-prompt");
-			expect(nameInput2?.value).toBe("First Prompt");
-		});
-
-		test("remove button removes individual staging item", async () => {
-			const newBtn = dom.window.document.getElementById("new-prompt-btn");
-			if (!newBtn) throw new Error("New prompt button not found");
-
-			// Create two prompts
-			click(newBtn);
-			await waitForAsync(50);
-			click(newBtn);
-			await waitForAsync(50);
-
-			// Click remove on first item
-			const removeBtn = dom.window.document.querySelector(
-				".prompt-item.staging .remove-staging",
-			);
-			if (!removeBtn) throw new Error("Remove button not found");
-			click(removeBtn);
-			await waitForAsync(50);
-
-			// Should have 1 staging item left
+			// Should have only 1 staging entry, not 2
 			const stagingItems = dom.window.document.querySelectorAll(
 				".prompt-item.staging",
 			);
 			expect(stagingItems.length).toBe(1);
+		});
+
+		test("second +New click shows editor for fresh prompt", async () => {
+			// First click
+			await dom.window.enterInsertMode();
+			await waitForAsync(50);
+
+			// Second click tears down first, creates fresh single entry
+			await dom.window.enterInsertMode();
+			await waitForAsync(100);
+
+			// Editor should still be visible with a fresh prompt
+			const promptEdit = dom.window.document.getElementById("prompt-edit");
+			expect(promptEdit?.style.display).toBe("block");
+		});
+
+		test("+New after filling form shows fresh empty editor", async () => {
+			// Create first prompt and fill it
+			await dom.window.enterInsertMode();
+			await waitForAsync(50);
+
+			const nameInput = dom.window.document.getElementById(
+				"editor-name",
+			) as HTMLInputElement;
+			input(nameInput, "First Prompt");
+			await waitForAsync(50);
+
+			// Click +New again — dirty state triggers confirm
+			const insertPromise = dom.window.enterInsertMode();
+			await waitForAsync(50);
+			resolveConfirmDialog(dom, true);
+			await insertPromise;
+			await waitForAsync(100);
+
+			// Editor should show fresh empty form
+			const nameInput2 = dom.window.document.getElementById(
+				"editor-name",
+			) as HTMLInputElement;
+			expect(nameInput2?.value).toBe("New Prompt");
 		});
 	});
 
@@ -1707,6 +1646,344 @@ describe("Prompts Module", () => {
 				const sections = dom.window.document.querySelectorAll(".tag-section");
 				expect(sections.length).toBe(0);
 			});
+		});
+	});
+
+	describe("Edit mode teardown on prompt selection", () => {
+		async function setupWithPrompts() {
+			const fetchMock = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+				"/api/prompts/tags": {
+					data: { purpose: [], domain: [], task: [] },
+				},
+				"/api/drafts/": { data: {} },
+			});
+			dom.window.fetch = fetchMock;
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+			return fetchMock;
+		}
+
+		test("TC-1.1a: selecting prompt B while editing A (clean) shows B in view mode", async () => {
+			await setupWithPrompts();
+
+			// Enter edit mode for code-review
+			await enterEditModeForPrompt(dom, "code-review");
+			expect(assertSinglePanel(dom)).toBe("edit");
+
+			// Select meeting-notes (no dirty state)
+			await dom.window.selectPrompt("meeting-notes");
+			await waitForAsync(100);
+
+			// Should show view mode for meeting-notes
+			expect(assertSinglePanel(dom)).toBe("view");
+			const slugEl = dom.window.document.getElementById("prompt-slug");
+			expect(slugEl?.textContent).toBe("meeting-notes");
+		});
+
+		test("TC-1.1b: edit form is fully removed after teardown", async () => {
+			await setupWithPrompts();
+
+			await enterEditModeForPrompt(dom, "code-review");
+			const promptEdit = dom.window.document.getElementById("prompt-edit");
+			expect(promptEdit?.style.display).toBe("block");
+
+			// Select another prompt (clean state)
+			await dom.window.selectPrompt("meeting-notes");
+			await waitForAsync(100);
+
+			expect(promptEdit?.style.display).toBe("none");
+		});
+
+		test("TC-1.2a: confirmation dialog appears when navigating with dirty state", async () => {
+			await setupWithPrompts();
+
+			await enterEditModeForPrompt(dom, "code-review");
+
+			// Make editor dirty by typing in name field
+			const nameInput = dom.window.document.getElementById(
+				"editor-name",
+			) as HTMLInputElement | null;
+			if (nameInput) input(nameInput, "Modified Name");
+			await waitForAsync(50);
+
+			// Start navigating — this will show the confirm dialog
+			const selectPromise = dom.window.selectPrompt("meeting-notes");
+
+			// Wait for dialog to appear
+			await waitForAsync(50);
+			const confirmModal = dom.window.document.getElementById("confirm-modal");
+			expect(confirmModal?.style.display).not.toBe("none");
+
+			// Resolve dialog to unblock
+			resolveConfirmDialog(dom, true);
+			await selectPromise;
+			await waitForAsync(100);
+		});
+
+		test("TC-1.2b: confirming discard tears down edit and shows new prompt", async () => {
+			await setupWithPrompts();
+
+			await enterEditModeForPrompt(dom, "code-review");
+
+			// Make dirty
+			const nameInput = dom.window.document.getElementById(
+				"editor-name",
+			) as HTMLInputElement | null;
+			if (nameInput) input(nameInput, "Modified");
+			await waitForAsync(50);
+
+			// Navigate away
+			const selectPromise = dom.window.selectPrompt("meeting-notes");
+			await waitForAsync(50);
+
+			// Confirm discard
+			resolveConfirmDialog(dom, true);
+			await selectPromise;
+			await waitForAsync(100);
+
+			expect(assertSinglePanel(dom)).toBe("view");
+			const slugEl = dom.window.document.getElementById("prompt-slug");
+			expect(slugEl?.textContent).toBe("meeting-notes");
+		});
+
+		test("TC-1.2c: canceling keeps user in edit mode", async () => {
+			await setupWithPrompts();
+
+			await enterEditModeForPrompt(dom, "code-review");
+
+			// Make dirty
+			const nameInput = dom.window.document.getElementById(
+				"editor-name",
+			) as HTMLInputElement | null;
+			if (nameInput) input(nameInput, "Modified");
+			await waitForAsync(50);
+
+			// Navigate away
+			const selectPromise = dom.window.selectPrompt("meeting-notes");
+			await waitForAsync(50);
+
+			// Cancel
+			resolveConfirmDialog(dom, false);
+			await selectPromise;
+			await waitForAsync(100);
+
+			// Should still be in edit mode
+			expect(assertSinglePanel(dom)).toBe("edit");
+		});
+
+		test("TC-1.4a: at most one panel visible after edit→select sequence", async () => {
+			await setupWithPrompts();
+
+			// Start in view
+			await dom.window.selectPrompt("code-review");
+			await waitForAsync(50);
+			expect(assertSinglePanel(dom)).toBe("view");
+
+			// Enter edit
+			await dom.window.enterEditMode();
+			await waitForAsync(100);
+			expect(assertSinglePanel(dom)).toBe("edit");
+
+			// Select another prompt
+			await dom.window.selectPrompt("meeting-notes");
+			await waitForAsync(100);
+			expect(assertSinglePanel(dom)).toBe("view");
+		});
+
+		test("TC-1.5a: draft cleared on discard via navigation", async () => {
+			const fetchMock = await setupWithPrompts();
+
+			await enterEditModeForPrompt(dom, "code-review");
+
+			// Make dirty so we trigger discard
+			const nameInput = dom.window.document.getElementById(
+				"editor-name",
+			) as HTMLInputElement | null;
+			if (nameInput) input(nameInput, "Modified");
+			await waitForAsync(50);
+
+			// Navigate away
+			const selectPromise = dom.window.selectPrompt("meeting-notes");
+			await waitForAsync(50);
+
+			// Confirm discard
+			resolveConfirmDialog(dom, true);
+			await selectPromise;
+			await waitForAsync(100);
+
+			// Verify DELETE /api/drafts/ was called
+			const deleteCalls = fetchMock.mock.calls.filter((call: unknown[]) => {
+				const url = String(call[0]);
+				const opts = call[1] as { method?: string } | undefined;
+				return url.includes("/api/drafts/") && opts?.method === "DELETE";
+			});
+			expect(deleteCalls.length).toBeGreaterThan(0);
+		});
+
+		test("TC-6.1a: rapid clicks during confirm dialog are ignored", async () => {
+			await setupWithPrompts();
+
+			await enterEditModeForPrompt(dom, "code-review");
+
+			// Make dirty
+			const nameInput = dom.window.document.getElementById(
+				"editor-name",
+			) as HTMLInputElement | null;
+			if (nameInput) input(nameInput, "Modified");
+			await waitForAsync(50);
+
+			// Rapid fire multiple selections
+			const p1 = dom.window.selectPrompt("meeting-notes");
+			const p2 = dom.window.selectPrompt("code-review");
+			await waitForAsync(50);
+
+			// Only one dialog should be visible
+			const confirmModals =
+				dom.window.document.querySelectorAll("#confirm-modal");
+			expect(confirmModals.length).toBe(1);
+
+			// Resolve to unblock
+			resolveConfirmDialog(dom, true);
+			await Promise.all([p1, p2]);
+			await waitForAsync(100);
+		});
+
+		test("TC-1.3a: clicking New while editing (clean) tears down edit and enters insert mode", async () => {
+			await setupWithPrompts();
+
+			// Enter edit mode for code-review
+			await enterEditModeForPrompt(dom, "code-review");
+			expect(assertSinglePanel(dom)).toBe("edit");
+
+			// Click New (no dirty state)
+			await dom.window.enterInsertMode();
+			await waitForAsync(100);
+
+			// Should be in new/edit mode with editor visible
+			expect(assertSinglePanel(dom)).toBe("edit");
+		});
+
+		test("TC-1.3b: clicking New while editing (dirty) shows confirm dialog", async () => {
+			await setupWithPrompts();
+
+			await enterEditModeForPrompt(dom, "code-review");
+
+			// Make dirty
+			const nameInput = dom.window.document.getElementById(
+				"editor-name",
+			) as HTMLInputElement | null;
+			if (nameInput) input(nameInput, "Modified Name");
+			await waitForAsync(50);
+
+			// Start entering insert mode — should show confirm
+			const insertPromise = dom.window.enterInsertMode();
+			await waitForAsync(50);
+
+			const confirmModal = dom.window.document.getElementById("confirm-modal");
+			expect(confirmModal?.style.display).not.toBe("none");
+
+			// Confirm discard to unblock
+			resolveConfirmDialog(dom, true);
+			await insertPromise;
+			await waitForAsync(100);
+		});
+
+		test("TC-1.3c: canceling confirm from New keeps user in edit mode", async () => {
+			await setupWithPrompts();
+
+			await enterEditModeForPrompt(dom, "code-review");
+
+			// Make dirty
+			const nameInput = dom.window.document.getElementById(
+				"editor-name",
+			) as HTMLInputElement | null;
+			if (nameInput) input(nameInput, "Modified");
+			await waitForAsync(50);
+
+			// Start entering insert mode
+			const insertPromise = dom.window.enterInsertMode();
+			await waitForAsync(50);
+
+			// Cancel
+			resolveConfirmDialog(dom, false);
+			await insertPromise;
+			await waitForAsync(100);
+
+			// Should still be in edit mode
+			expect(assertSinglePanel(dom)).toBe("edit");
+		});
+
+		test("TC-1.3e: clicking New while already in new mode (dirty) shows confirm", async () => {
+			await setupWithPrompts();
+
+			// Enter insert mode
+			await dom.window.enterInsertMode();
+			await waitForAsync(100);
+
+			// Make dirty by typing in the editor
+			const nameInput = dom.window.document.getElementById(
+				"editor-name",
+			) as HTMLInputElement | null;
+			if (nameInput) input(nameInput, "My New Prompt");
+			await waitForAsync(50);
+
+			// Click New again
+			const insertPromise = dom.window.enterInsertMode();
+			await waitForAsync(50);
+
+			// Confirm dialog should appear
+			const confirmModal = dom.window.document.getElementById("confirm-modal");
+			expect(confirmModal?.style.display).not.toBe("none");
+
+			// Confirm discard
+			resolveConfirmDialog(dom, true);
+			await insertPromise;
+			await waitForAsync(100);
+
+			// Should be in new mode with a fresh editor
+			expect(assertSinglePanel(dom)).toBe("edit");
+		});
+
+		test("TC-1.3f: clicking New while in new mode (clean) tears down silently", async () => {
+			await setupWithPrompts();
+
+			// Enter insert mode
+			await dom.window.enterInsertMode();
+			await waitForAsync(100);
+			expect(assertSinglePanel(dom)).toBe("edit");
+
+			// Click New again without making any changes
+			await dom.window.enterInsertMode();
+			await waitForAsync(100);
+
+			// Should still be in edit panel (fresh new prompt), no dialog shown
+			expect(assertSinglePanel(dom)).toBe("edit");
+		});
+
+		test("TC-1.3d: confirming discard from New enters insert mode", async () => {
+			await setupWithPrompts();
+
+			await enterEditModeForPrompt(dom, "code-review");
+
+			// Make dirty
+			const nameInput = dom.window.document.getElementById(
+				"editor-name",
+			) as HTMLInputElement | null;
+			if (nameInput) input(nameInput, "Modified");
+			await waitForAsync(50);
+
+			// Start entering insert mode
+			const insertPromise = dom.window.enterInsertMode();
+			await waitForAsync(50);
+
+			// Confirm discard
+			resolveConfirmDialog(dom, true);
+			await insertPromise;
+			await waitForAsync(100);
+
+			// Should be in edit panel (new prompt editor)
+			expect(assertSinglePanel(dom)).toBe("edit");
 		});
 	});
 });
