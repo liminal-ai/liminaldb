@@ -831,7 +831,7 @@ bun run prompts:sync</code></pre>
       if (state.slug && state.mode === 'view') {
         // Need to select the prompt - it might not be loaded yet
         if (prompts.length > 0) {
-          selectPrompt(state.slug, { trackHistory: false });
+          await selectPrompt(state.slug, { trackHistory: false });
         } else {
           // Prompts not loaded yet - store for after load
           selectedSlug = state.slug;
@@ -840,8 +840,8 @@ bun run prompts:sync</code></pre>
       } else if (state.slug && state.mode === 'edit') {
         // Edit mode - select prompt then enter edit mode
         if (prompts.length > 0) {
-          selectPrompt(state.slug, { trackHistory: false });
-          enterEditMode();
+          await selectPrompt(state.slug, { trackHistory: false });
+          await enterEditMode();
         } else {
           // Prompts not loaded yet - store for after load
           selectedSlug = state.slug;
@@ -850,7 +850,7 @@ bun run prompts:sync</code></pre>
       } else if (state.mode === 'new') {
         // Insert mode - enter if not already in it
         if (currentMode !== 'new') {
-          enterInsertMode();
+          await enterInsertMode();
         }
       } else if (state.mode === 'home' || state.mode === 'empty' || !state.slug) {
         enterHomeMode({ trackHistory: false });
@@ -1242,7 +1242,7 @@ bun run prompts:sync</code></pre>
           await loadPrompts();
 
           // If slug changed, select new slug
-          selectPrompt(data.slug, { trackHistory: true });
+          await selectPrompt(data.slug, { trackHistory: true });
         } else if (currentMode === 'new') {
           // Create new prompt
           const response = await fetch('/api/prompts', {
@@ -1264,7 +1264,7 @@ bun run prompts:sync</code></pre>
           await exitInsertMode();
           // Select the newly created prompt
           await loadPrompts();
-          selectPrompt(data.slug, { trackHistory: true });
+          await selectPrompt(data.slug, { trackHistory: true });
         }
       } catch (err) {
         console.error('Save failed:', err);
@@ -1587,7 +1587,7 @@ bun run prompts:sync</code></pre>
         if (selectedSlug) {
           const stillExists = prompts.some((prompt) => prompt.slug === selectedSlug);
           if (stillExists) {
-            selectPrompt(selectedSlug, { trackHistory: false });
+            await selectPrompt(selectedSlug, { trackHistory: false });
           }
         }
       } catch (err) {
@@ -2067,7 +2067,7 @@ bun run prompts:sync</code></pre>
 
         // Always select the prompt first so the slug header updates (test hook)
         if (draft.promptSlug) {
-          selectPrompt(draft.promptSlug, { trackHistory: false });
+          await selectPrompt(draft.promptSlug, { trackHistory: false });
         }
 
         if (draft.type === 'new') {
@@ -2387,7 +2387,7 @@ bun run prompts:sync</code></pre>
       if (selectedSlug && prompts.length > 0) {
         const prompt = prompts.find(p => p.slug === selectedSlug);
         if (prompt) {
-          selectPrompt(selectedSlug, { trackHistory: false });
+          await selectPrompt(selectedSlug, { trackHistory: false });
         }
       } else if (currentMode === 'home') {
         // Start in home mode (default state)
