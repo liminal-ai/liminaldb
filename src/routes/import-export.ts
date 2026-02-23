@@ -151,18 +151,6 @@ async function importPromptsHandler(
 			}
 		}
 
-		// Enforce MAX_PROMPTS limit
-		const totalAfterImport = existing.length + toCreate.length;
-		if (totalAfterImport > MAX_PROMPTS) {
-			const available = MAX_PROMPTS - existing.length;
-			return reply.code(400).send({
-				error: `Import would exceed the ${MAX_PROMPTS} prompt limit. You have ${existing.length} prompts and are trying to add ${toCreate.length}. You can import up to ${available} more.`,
-				created: 0,
-				skipped,
-				errors,
-			});
-		}
-
 		// Batch insert in chunks, retrying on duplicate slug race conditions
 		let created = 0;
 		for (let i = 0; i < toCreate.length; i += BATCH_SIZE) {

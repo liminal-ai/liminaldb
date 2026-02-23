@@ -395,32 +395,8 @@ describe("POST /api/prompts/import", () => {
 		expect(mockConvex.mutation).toHaveBeenCalledTimes(2);
 	});
 
-	test("returns 400 when import would exceed MAX_PROMPTS limit", async () => {
-		// Simulate 999 existing prompts
+	test("does not enforce MAX_PROMPTS at route layer before mutation", async () => {
 		const existingPrompts = Array.from({ length: 999 }, (_, i) =>
-			mockPromptDTO(`existing-${i}`),
-		);
-		mockConvex.query.mockResolvedValue(existingPrompts);
-
-		const yamlContent = yaml.dump({
-			prompts: [validPrompt("new-a"), validPrompt("new-b")],
-		});
-
-		const response = await app.inject({
-			method: "POST",
-			url: "/api/prompts/import",
-			headers: { authorization: `Bearer ${createTestJwt()}` },
-			payload: { yaml: yamlContent },
-		});
-
-		expect(response.statusCode).toBe(400);
-		const result = response.json();
-		expect(result.error).toMatch(/exceed.*1000.*limit/i);
-		expect(result.created).toBe(0);
-	});
-
-	test("allows import up to exactly MAX_PROMPTS", async () => {
-		const existingPrompts = Array.from({ length: 998 }, (_, i) =>
 			mockPromptDTO(`existing-${i}`),
 		);
 		mockConvex.query.mockResolvedValue(existingPrompts);
@@ -440,6 +416,7 @@ describe("POST /api/prompts/import", () => {
 		expect(response.statusCode).toBe(200);
 		const result = response.json();
 		expect(result.created).toBe(2);
+		expect(mockConvex.mutation).toHaveBeenCalledTimes(1);
 	});
 
 	test("returns 400 when model layer rejects with MAX_PROMPTS_EXCEEDED", async () => {
