@@ -441,4 +441,30 @@ describe("POST /api/prompts/import", () => {
 		const result = response.json();
 		expect(result.created).toBe(2);
 	});
+
+	test("returns 400 when model layer rejects with MAX_PROMPTS_EXCEEDED", async () => {
+		const existingPrompts = Array.from({ length: 998 }, (_, i) =>
+			mockPromptDTO(`existing-${i}`),
+		);
+		mockConvex.query.mockResolvedValue(existingPrompts);
+		mockConvex.mutation.mockRejectedValue(
+			new ConvexError({ code: "MAX_PROMPTS_EXCEEDED", maxPrompts: 1000 }),
+		);
+
+		const yamlContent = yaml.dump({
+			prompts: [validPrompt("new-a"), validPrompt("new-b")],
+		});
+
+		const response = await app.inject({
+			method: "POST",
+			url: "/api/prompts/import",
+			headers: { authorization: `Bearer ${createTestJwt()}` },
+			payload: { yaml: yamlContent },
+		});
+
+		expect(response.statusCode).toBe(400);
+		const result = response.json();
+		expect(result.error).toMatch(/1000.*limit/i);
+		expect(result.created).toBe(0);
+	});
 });

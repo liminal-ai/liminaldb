@@ -211,6 +211,70 @@ describe("insertPrompts", () => {
 		});
 	});
 
+	describe("max prompt limit", () => {
+		test("throws MAX_PROMPTS_EXCEEDED when user is already at limit", async () => {
+			const ctx = createMockCtx();
+			const userId = "user_123";
+
+			getQueryBuilder(ctx, "prompts").collect.mockResolvedValue(
+				Array.from({ length: 1000 }, (_, i) => ({ _id: `existing_${i}` })),
+			);
+
+			const input: Prompts.PromptInput[] = [
+				{
+					slug: "new-prompt",
+					name: "New Prompt",
+					description: "...",
+					content: "...",
+					tags: [],
+				},
+			];
+
+			try {
+				await Prompts.insertMany(asConvexCtx(ctx), userId, input);
+				throw new Error("Expected insertMany to throw");
+			} catch (error) {
+				expect(error).toBeInstanceOf(ConvexError);
+				const data = (error as { data?: unknown }).data as {
+					code?: string;
+					maxPrompts?: number;
+					currentCount?: number;
+					requestedCount?: number;
+				};
+				expect(data.code).toBe("MAX_PROMPTS_EXCEEDED");
+				expect(data.maxPrompts).toBe(1000);
+				expect(data.currentCount).toBe(1000);
+				expect(data.requestedCount).toBe(1);
+			}
+
+			expect(ctx.db.insert).not.toHaveBeenCalled();
+		});
+
+		test("allows insert when total reaches exactly max prompts", async () => {
+			const ctx = createMockCtx();
+			const userId = "user_123";
+
+			getQueryBuilder(ctx, "prompts").collect.mockResolvedValue(
+				Array.from({ length: 999 }, (_, i) => ({ _id: `existing_${i}` })),
+			);
+			getQueryBuilder(ctx, "prompts").unique.mockResolvedValue(null);
+			mockInsertSequence(ctx, ["prompt_1"]);
+
+			const input: Prompts.PromptInput[] = [
+				{
+					slug: "final-slot",
+					name: "Final Slot",
+					description: "...",
+					content: "...",
+					tags: [],
+				},
+			];
+
+			const result = await Prompts.insertMany(asConvexCtx(ctx), userId, input);
+			expect(result).toEqual(["prompt_1" as Id<"prompts">]);
+		});
+	});
+
 	describe("duplicate slug", () => {
 		test("throws error if slug already exists for user", async () => {
 			const ctx = createMockCtx();

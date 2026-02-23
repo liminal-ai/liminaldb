@@ -165,6 +165,33 @@ describe("MCP Tool Handlers - save_prompts", () => {
 		expect(result.content[0]?.text).toBe("Slug already exists");
 	});
 
+	test("returns max prompt limit message when limit is exceeded", async () => {
+		mockConvex.mutation.mockRejectedValue(
+			new ConvexError({ code: "MAX_PROMPTS_EXCEEDED", maxPrompts: 1000 }),
+		);
+
+		const server = createMcpServer();
+		const tool = getToolHandler(server, "save_prompts");
+
+		const result = await tool.handler(
+			{
+				prompts: [
+					{
+						slug: "test-slug",
+						name: "Test",
+						description: "Test",
+						content: "Test",
+						tags: [],
+					},
+				],
+			},
+			createMcpExtra("user_123"),
+		);
+
+		expect(result.isError).toBe(true);
+		expect(result.content[0]?.text).toBe("Prompt limit exceeded (1000 max)");
+	});
+
 	test("returns generic error on other failures", async () => {
 		mockConvex.mutation.mockRejectedValue(
 			new Error("Database connection failed"),

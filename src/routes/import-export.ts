@@ -178,7 +178,11 @@ async function importPromptsHandler(
 					break;
 				} catch (error) {
 					if (error instanceof ConvexError) {
-						const data = error.data as { code?: string; slug?: string };
+						const data = error.data as {
+							code?: string;
+							slug?: string;
+							maxPrompts?: number;
+						};
 						if (
 							(data.code === "DUPLICATE_SLUG" ||
 								data.code === "DUPLICATE_SLUG_IN_BATCH") &&
@@ -187,6 +191,15 @@ async function importPromptsHandler(
 							skipped.push(data.slug);
 							batch = batch.filter((p) => p.slug !== data.slug);
 							continue;
+						}
+						if (data.code === "MAX_PROMPTS_EXCEEDED") {
+							const maxPrompts = data.maxPrompts ?? MAX_PROMPTS;
+							return reply.code(400).send({
+								error: `Import would exceed the ${maxPrompts} prompt limit.`,
+								created,
+								skipped,
+								errors,
+							});
 						}
 					}
 					throw error;
