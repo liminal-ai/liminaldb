@@ -1337,7 +1337,10 @@ bun run prompts:sync</code></pre>
       }
 
       const toggle = document.getElementById('line-edit-toggle');
-      if (toggle) toggle.classList.toggle('active', lineEditEnabled);
+      if (toggle) {
+        toggle.classList.toggle('active', lineEditEnabled);
+        toggle.title = lineEditEnabled ? 'Disable line-by-line editing' : 'Enable line-by-line editing';
+      }
 
       const viewer = document.getElementById('promptViewer');
       if (viewer) viewer.classList.toggle('line-edit-mode', lineEditEnabled);
@@ -1355,7 +1358,7 @@ bun run prompts:sync</code></pre>
       const toggle = document.getElementById('line-edit-toggle');
       if (!toggle) return;
       toggle.disabled = false;
-      toggle.title = 'Enable line-by-line editing';
+      toggle.title = lineEditEnabled ? 'Disable line-by-line editing' : 'Enable line-by-line editing';
       if (lineEditEnabled) {
         toggle.classList.add('active');
         const viewer = document.getElementById('promptViewer');
