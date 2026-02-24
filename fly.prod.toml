@@ -1,7 +1,7 @@
-# Fly.io configuration for LiminalDB staging
+# Fly.io configuration for LiminalDB production
 # See https://fly.io/docs/reference/configuration/
 #
-# Required secrets (set via `fly secrets set`):
+# Required secrets (set via `fly secrets set -a liminaldb-prod`):
 # - WORKOS_CLIENT_ID
 # - WORKOS_API_KEY
 # - WORKOS_REDIRECT_URI
@@ -12,19 +12,19 @@
 # - MCP_RESOURCE_URL
 # - CORS_ALLOWED_ORIGINS
 
-app = 'promptdb-staging'
+app = 'liminaldb-prod'
 primary_region = 'iad'
 
 [env]
   NODE_ENV = 'production'
-  BASE_URL = 'https://promptdb-staging.fly.dev'
+  BASE_URL = 'https://liminaldb.com'
 
 [http_service]
   internal_port = 5001
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
   processes = ['app']
 
   [http_service.concurrency]

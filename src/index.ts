@@ -64,7 +64,7 @@ registerPreferencesRoutes(fastify);
 const start = async () => {
 	try {
 		await fastify.listen({ port: 5001, host: "0.0.0.0" });
-		fastify.log.info("PromptDB server running on port 5001");
+		fastify.log.info("LiminalDB server running on port 5001");
 
 		// Graceful shutdown for container deployments (Fly.io sends SIGTERM)
 		const shutdown = async (signal: string) => {

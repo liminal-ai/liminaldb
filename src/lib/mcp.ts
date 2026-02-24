@@ -174,7 +174,7 @@ const healthWidgetHtml = `<!DOCTYPE html>
               \${isOk ? '✓' : '✗'}
             </div>
             <div>
-              <div class="title">PromptDB Health Check</div>
+              <div class="title">LiminalDB Health Check</div>
               <div class="subtitle">\${new Date().toLocaleString()}</div>
             </div>
           </div>
@@ -279,10 +279,11 @@ export function createMcpServer(): McpServer {
 		"health_check",
 		{
 			title: "Health Check",
-			description: "Verify PromptDB stack connectivity with authenticated user",
+			description:
+				"Verify LiminalDB stack connectivity with authenticated user",
 			_meta: {
 				"openai/outputTemplate": "ui://widget/health",
-				"openai/toolInvocation/invoking": "Checking PromptDB health...",
+				"openai/toolInvocation/invoking": "Checking LiminalDB health...",
 				"openai/toolInvocation/invoked": "Health check complete.",
 			},
 		},
