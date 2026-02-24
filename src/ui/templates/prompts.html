@@ -661,14 +661,10 @@ bun run prompts:sync</code></pre>
       </header>
 
       <!-- Prompt Viewer Component -->
-      <div class="prompt-viewer view-rendered" id="promptViewer">
+      <div class="prompt-viewer view-semantic" id="promptViewer">
         <div class="prompt-viewer-header">
           <button class="copy-btn-primary" id="copy-btn" title="Copy to clipboard">Copy</button>
           <div class="prompt-viewer-actions">
-            <button class="prompt-viewer-btn active" data-view="rendered">Rendered</button>
-            <button class="prompt-viewer-btn" data-view="semantic">Semantic</button>
-            <button class="prompt-viewer-btn" data-view="plain">Plain</button>
-            <span class="prompt-viewer-separator">|</span>
             <button class="prompt-viewer-btn" id="line-edit-toggle" title="Enable line-by-line editing">Line Edit</button>
           </div>
         </div>
@@ -732,12 +728,10 @@ bun run prompts:sync</code></pre>
     let prompts = [];
     let selectedSlug = null;
     let currentMode = 'home'; // 'home' | 'view' | 'edit' | 'new'
-    let currentView = 'rendered';
     let lineEditEnabled = false;
     let currentHomeTab = 'home';
     let currentSubItem = null; // Selected item within a tab (e.g., 'claude-ai')
     try {
-      currentView = localStorage.getItem('promptViewMode') || 'rendered';
       lineEditEnabled = localStorage.getItem('lineEditEnabled') === 'true';
       currentHomeTab = localStorage.getItem('homeTab') || 'home';
     } catch (e) {
@@ -1294,31 +1288,20 @@ bun run prompts:sync</code></pre>
       }
     }
 
-    // Initialize view mode from localStorage
-    function initViewMode() {
-      const viewer = document.getElementById('promptViewer');
-      viewer.className = `prompt-viewer view-${currentView}`;
-      viewer.querySelectorAll('[data-view]').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.view === currentView);
-      });
-    }
-
-    // Display prompt content with current view mode
+    // Display prompt content in semantic view
     function displayPromptContent(content) {
       rawPrompt = content;
       const contentEl = document.getElementById('promptContent');
 
-      // Only enable line edit in semantic/plain views, not rendered
-      const effectiveLineEdit = lineEditEnabled && currentView !== 'rendered';
-      const { html, stats } = renderPrompt(content, currentView, { lineEdit: effectiveLineEdit });
+      const { html, stats } = renderPrompt(content, 'semantic', { lineEdit: lineEditEnabled });
       contentEl.innerHTML = html || '<span style="color: var(--text-muted)">No content</span>';
 
       document.getElementById('statTags').textContent = stats.tags;
       document.getElementById('statVars').textContent = stats.vars;
       document.getElementById('statChars').textContent = content.length;
 
-      // Set up line edit click handlers if enabled and not in rendered view
-      if (effectiveLineEdit) {
+      // Set up line edit click handlers if enabled
+      if (lineEditEnabled) {
         setupLineEditHandlers();
       }
     }
@@ -1342,12 +1325,9 @@ bun run prompts:sync</code></pre>
     }
 
     /**
-     * Toggle line edit mode (disabled in rendered view)
+     * Toggle line edit mode
      */
     function toggleLineEdit() {
-      // Line edit not available in rendered view
-      if (currentView === 'rendered') return;
-
       lineEditEnabled = !lineEditEnabled;
 
       try {
@@ -1357,7 +1337,10 @@ bun run prompts:sync</code></pre>
       }
 
       const toggle = document.getElementById('line-edit-toggle');
-      if (toggle) toggle.classList.toggle('active', lineEditEnabled);
+      if (toggle) {
+        toggle.classList.toggle('active', lineEditEnabled);
+        toggle.title = lineEditEnabled ? 'Disable line-by-line editing' : 'Enable line-by-line editing';
+      }
 
       const viewer = document.getElementById('promptViewer');
       if (viewer) viewer.classList.toggle('line-edit-mode', lineEditEnabled);
@@ -1374,26 +1357,12 @@ bun run prompts:sync</code></pre>
     function updateLineEditAvailability() {
       const toggle = document.getElementById('line-edit-toggle');
       if (!toggle) return;
-
-      if (currentView === 'rendered') {
-        // Disable line edit in rendered view
-        toggle.disabled = true;
-        toggle.classList.remove('active');
-        toggle.title = 'Line edit not available in Rendered view';
-
+      toggle.disabled = false;
+      toggle.title = lineEditEnabled ? 'Disable line-by-line editing' : 'Enable line-by-line editing';
+      if (lineEditEnabled) {
+        toggle.classList.add('active');
         const viewer = document.getElementById('promptViewer');
-        if (viewer) viewer.classList.remove('line-edit-mode');
-      } else {
-        // Enable line edit in plain/semantic views
-        toggle.disabled = false;
-        toggle.title = 'Enable line-by-line editing';
-
-        // Restore saved state
-        if (lineEditEnabled) {
-          toggle.classList.add('active');
-          const viewer = document.getElementById('promptViewer');
-          if (viewer) viewer.classList.add('line-edit-mode');
-        }
+        if (viewer) viewer.classList.add('line-edit-mode');
       }
     }
 
@@ -1748,24 +1717,6 @@ bun run prompts:sync</code></pre>
         console.error('Failed to copy:', err);
       }
     }
-
-    // View toggle buttons
-    document.getElementById('promptViewer').querySelectorAll('[data-view]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const viewer = document.getElementById('promptViewer');
-        viewer.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentView = btn.dataset.view;
-        try {
-          localStorage.setItem('promptViewMode', currentView);
-        } catch (e) {
-          // localStorage unavailable (private browsing, etc.)
-        }
-        viewer.className = `prompt-viewer view-${currentView}`;
-        updateLineEditAvailability();
-        if (rawPrompt) displayPromptContent(rawPrompt);
-      });
-    });
 
     // ============================================
     // DRAFT MANAGEMENT
@@ -2361,8 +2312,7 @@ bun run prompts:sync</code></pre>
       handleFavoriteToggle(selectedSlug, currentPromptFlags.favorited);
     });
 
-    // Initialize view mode and line edit
-    initViewMode();
+    // Initialize line edit
     initLineEditMode();
     updateLineEditAvailability();
 

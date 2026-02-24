@@ -1052,14 +1052,7 @@ describe("Prompts Module", () => {
 			click(firstItem);
 			await waitForAsync(50);
 
-			// Switch to semantic view and enable line edit
-			const semanticBtn = dom.window.document.querySelector(
-				'[data-view="semantic"]',
-			);
-			if (!semanticBtn) throw new Error("Semantic view button not found");
-			click(semanticBtn as Element);
-			await waitForAsync(50);
-
+			// Enable line edit (already in semantic view by default)
 			const toggle = dom.window.document.getElementById("line-edit-toggle");
 			if (!toggle) throw new Error("Line edit toggle not found");
 			click(toggle);
@@ -1114,11 +1107,7 @@ describe("Prompts Module", () => {
 			click(firstItem);
 			await waitForAsync(50);
 
-			const semanticBtn = dom.window.document.querySelector(
-				'[data-view="semantic"]',
-			);
-			if (!semanticBtn) throw new Error("Semantic view button not found");
-			click(semanticBtn as Element);
+			// Enable line edit (already in semantic view by default)
 			const toggle = dom.window.document.getElementById("line-edit-toggle");
 			if (!toggle) throw new Error("Line edit toggle not found");
 			click(toggle);
