@@ -8,6 +8,9 @@
 # Additional Secrets (beyond staging):
 # - CONVEX_PREVIEW_DEPLOY_KEY: Convex preview deploy key
 # - FLY_API_TOKEN: Fly.io deploy token (same org)
+#
+# WorkOS prerequisite: staging environment must have a wildcard redirect URI
+# pattern that covers preview-pr-*.fly.dev/auth/callback
 
 name: Preview
 
@@ -56,11 +59,25 @@ jobs:
       - name: Service tests
         run: bun run test:service
 
-      # Deploy Convex preview
+      # Deploy Convex preview and capture the preview URL
       - name: Deploy Convex Preview
-        run: npx convex deploy --preview-create "${{ github.head_ref }}"
+        id: convex-preview
+        run: |
+          OUTPUT=$(npx convex deploy \
+            --preview-create "$BRANCH_NAME" \
+            --cmd-url-env-var-name CONVEX_PREVIEW_URL \
+            --cmd 'echo "CONVEX_PREVIEW_URL=$CONVEX_PREVIEW_URL"' 2>&1)
+          echo "$OUTPUT"
+          PREVIEW_CONVEX_URL=$(echo "$OUTPUT" | grep "^CONVEX_PREVIEW_URL=" | tail -1 | cut -d= -f2)
+          if [ -n "$PREVIEW_CONVEX_URL" ]; then
+            echo "url=$PREVIEW_CONVEX_URL" >> "$GITHUB_OUTPUT"
+            echo "Captured Convex preview URL: $PREVIEW_CONVEX_URL"
+          else
+            echo "Warning: Could not capture Convex preview URL, falling back to staging"
+          fi
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_PREVIEW_DEPLOY_KEY }}
+          BRANCH_NAME: ${{ github.head_ref }}
 
       # Deploy Fly.io preview machine
       - uses: superfly/flyctl-actions/setup-flyctl@63da3ecc5e2793b98a3f2519b3d75d4f4c11cec2
@@ -113,11 +130,13 @@ jobs:
 
       - name: Comment preview URL on PR
         uses: actions/github-script@v7
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
         with:
           script: |
             const body = `### Preview Deployment\n\n` +
               `**URL:** ${process.env.PREVIEW_URL}\n` +
-              `**Convex:** preview branch \`${{ github.head_ref }}\`\n\n` +
+              `**Convex:** preview branch \`${process.env.BRANCH_NAME}\`\n\n` +
               `_Updated at ${new Date().toISOString()}_`;
 
             // Find existing comment
@@ -151,6 +170,7 @@ jobs:
     name: Cleanup Preview
     if: github.event.action == 'closed'
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    environment: staging
 
     steps:
       - uses: superfly/flyctl-actions/setup-flyctl@63da3ecc5e2793b98a3f2519b3d75d4f4c11cec2
