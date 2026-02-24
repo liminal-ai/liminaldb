@@ -220,7 +220,7 @@ export function registerMcpRoutes(
 					{
 						name: "health_check",
 						description:
-							"Verify PromptDB stack connectivity with authenticated user",
+							"Verify LiminalDB stack connectivity with authenticated user",
 					},
 				],
 				convex: convexStatus,

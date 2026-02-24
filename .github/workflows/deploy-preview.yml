@@ -1,0 +1,166 @@
+# Deploy preview environment for pull requests
+#
+# On PR open/sync: deploys Convex preview + Fly.io preview machine
+# On PR close: destroys Fly.io preview machine (Convex previews auto-expire)
+#
+# Uses GitHub Environment: staging (WorkOS staging reused for previews)
+#
+# Additional Secrets (beyond staging):
+# - CONVEX_PREVIEW_DEPLOY_KEY: Convex preview deploy key
+# - FLY_API_TOKEN: Fly.io deploy token (same org)
+
+name: Preview
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, closed]
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  FLY_APP: preview-pr-${{ github.event.pull_request.number }}
+  PREVIEW_URL: https://preview-pr-${{ github.event.pull_request.number }}.fly.dev
+
+jobs:
+  # ─── Deploy Preview ───────────────────────────────────────────────
+  deploy-preview:
+    name: Deploy Preview
+    if: github.event.action != 'closed'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    environment: staging
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Quality gates (fast-fail before deploying)
+      - name: Format check
+        run: bun run format:check
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Service tests
+        run: bun run test:service
+
+      # Deploy Convex preview
+      - name: Deploy Convex Preview
+        run: npx convex deploy --preview-create "${{ github.head_ref }}"
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_PREVIEW_DEPLOY_KEY }}
+
+      # Deploy Fly.io preview machine
+      - uses: superfly/flyctl-actions/setup-flyctl@63da3ecc5e2793b98a3f2519b3d75d4f4c11cec2
+
+      - name: Create or update Fly preview app
+        run: |
+          if ! flyctl apps list --json | grep -q "$FLY_APP"; then
+            flyctl apps create "$FLY_APP" --org praxen-ai
+          fi
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Set Fly preview secrets
+        run: |
+          flyctl secrets set -a "$FLY_APP" \
+            NODE_ENV=production \
+            WORKOS_CLIENT_ID="${{ secrets.WORKOS_CLIENT_ID }}" \
+            WORKOS_API_KEY="${{ secrets.WORKOS_API_KEY }}" \
+            WORKOS_REDIRECT_URI="${{ env.PREVIEW_URL }}/auth/callback" \
+            WORKOS_AUTH_SERVER_URL="${{ vars.WORKOS_AUTH_SERVER_URL }}" \
+            CONVEX_URL="${{ steps.convex-preview.outputs.url || vars.CONVEX_URL }}" \
+            CONVEX_API_KEY="${{ secrets.CONVEX_API_KEY }}" \
+            COOKIE_SECRET="${{ secrets.COOKIE_SECRET }}" \
+            MCP_RESOURCE_URL="${{ env.PREVIEW_URL }}" \
+            CORS_ALLOWED_ORIGINS="${{ env.PREVIEW_URL }}"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Deploy Fly preview
+        run: |
+          flyctl deploy --remote-only --app "$FLY_APP" \
+            --vm-memory 512 \
+            --vm-cpus 1 \
+            --ha=false
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Wait for preview readiness
+        run: |
+          for i in {1..30}; do
+            if curl -sf "$PREVIEW_URL/health" > /dev/null; then
+              echo "Preview ready"
+              exit 0
+            fi
+            echo "Waiting for preview... ($i/30)"
+            sleep 5
+          done
+          echo "Preview readiness check failed"
+          exit 1
+
+      - name: Comment preview URL on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = `### Preview Deployment\n\n` +
+              `**URL:** ${process.env.PREVIEW_URL}\n` +
+              `**Convex:** preview branch \`${{ github.head_ref }}\`\n\n` +
+              `_Updated at ${new Date().toISOString()}_`;
+
+            // Find existing comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.data.find(c =>
+              c.body.includes('### Preview Deployment')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  # ─── Cleanup on PR Close ─────────────────────────────────────────
+  cleanup-preview:
+    name: Cleanup Preview
+    if: github.event.action == 'closed'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@63da3ecc5e2793b98a3f2519b3d75d4f4c11cec2
+
+      - name: Destroy Fly preview app
+        run: |
+          if flyctl apps list --json | grep -q "$FLY_APP"; then
+            flyctl apps destroy "$FLY_APP" --yes
+          else
+            echo "Preview app $FLY_APP not found, skipping"
+          fi
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

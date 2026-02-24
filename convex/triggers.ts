@@ -1,5 +1,5 @@
 /**
- * Database Triggers for PromptDB
+ * Database Triggers for LiminalDB
  *
  * This module registers triggers that automatically sync denormalized fields
  * when underlying data changes. Triggers run within the same transaction

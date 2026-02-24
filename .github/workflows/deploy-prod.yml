@@ -1,0 +1,137 @@
+# Deploy to production on version tag push
+#
+# Trigger: push a tag matching v*.*.* to main
+#   git tag v1.0.0 && git push --tags
+#
+# Uses GitHub Environment: production
+#
+# Environment Variables (non-sensitive):
+# - CONVEX_URL: Convex production deployment URL
+# - TEST_USER_EMAIL: Test user email
+# - TEST_BASE_URL: Production server URL (https://liminaldb.com)
+#
+# Environment Secrets (sensitive):
+# - CONVEX_DEPLOY_KEY: Convex production deployment key
+# - CONVEX_API_KEY: Convex API key for auth
+# - FLY_API_TOKEN: Fly.io deploy token
+# - WORKOS_CLIENT_ID: WorkOS production client ID
+# - WORKOS_API_KEY: WorkOS production API key
+# - TEST_USER_PASSWORD: Test user password
+
+name: Deploy Production
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    name: Quality Gates
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Format check
+        run: bun run format:check
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Service tests
+        run: bun run test:service
+
+  deploy-convex:
+    name: Deploy Convex
+    needs: quality
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Deploy to Convex
+        run: npx convex deploy
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+
+  deploy-fly:
+    name: Deploy Fly.io
+    needs: [quality, deploy-convex]
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pinned to specific commit - v1.5 tag doesn't work with subfolder syntax
+      - uses: superfly/flyctl-actions/setup-flyctl@63da3ecc5e2793b98a3f2519b3d75d4f4c11cec2
+
+      - name: Deploy to Fly.io
+        run: flyctl deploy --remote-only --config fly.prod.toml
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  integration-tests:
+    name: Integration Tests
+    needs: deploy-fly
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Wait for deployment readiness
+        run: |
+          for i in {1..30}; do
+            if curl -sf ${{ vars.TEST_BASE_URL }}/health > /dev/null; then
+              echo "Deployment ready"
+              exit 0
+            fi
+            echo "Waiting for deployment... ($i/30)"
+            sleep 5
+          done
+          echo "Deployment readiness check failed"
+          exit 1
+
+      - name: Run integration tests
+        run: bun run test:integration
+        env:
+          TEST_BASE_URL: ${{ vars.TEST_BASE_URL }}
+          CONVEX_URL: ${{ vars.CONVEX_URL }}
+          CONVEX_API_KEY: ${{ secrets.CONVEX_API_KEY }}
+          TEST_USER_EMAIL: ${{ vars.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
+          WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}
