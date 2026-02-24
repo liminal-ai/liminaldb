@@ -32,4 +32,5 @@ context-to-clean.txt
 transcript.txt
 data-load/
 
-.beads/issues.jsonl
+# Research outputs (local only)
+.research/
