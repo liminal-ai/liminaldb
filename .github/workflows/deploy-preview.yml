@@ -34,6 +34,9 @@ jobs:
     if: github.event.action != 'closed'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     environment: staging
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
@@ -75,6 +78,17 @@ jobs:
           else
             echo "Warning: Could not capture Convex preview URL, falling back to staging"
           fi
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_PREVIEW_DEPLOY_KEY }}
+          BRANCH_NAME: ${{ github.head_ref }}
+
+      # Set CONVEX_API_KEY on the preview deployment so it can validate
+      # requests from the Fly preview app. Preview deployments don't
+      # inherit env vars from the parent deployment.
+      - name: Set Convex preview env vars
+        run: |
+          npx convex env set CONVEX_API_KEY "${{ secrets.CONVEX_API_KEY }}" \
+            --preview-name "$BRANCH_NAME"
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_PREVIEW_DEPLOY_KEY }}
           BRANCH_NAME: ${{ github.head_ref }}

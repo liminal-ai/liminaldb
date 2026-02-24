@@ -836,7 +836,10 @@ select {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: var(--space-lg);
+  padding: var(--space-xl);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
 }
 
 .editor-form {
@@ -873,13 +876,13 @@ select {
 
 .form-row.content-row {
   flex: 1;
-  min-height: 200px;
+  min-height: 320px;
 }
 
 .form-row.content-row textarea {
   flex: 1;
   resize: none;
-  min-height: 180px;
+  min-height: 300px;
 }
 
 .field-hint {
@@ -936,9 +939,13 @@ select {
   display: flex;
   gap: var(--space-md);
   justify-content: flex-end;
-  padding-top: var(--space-lg);
   border-top: 1px solid var(--border-subtle);
-  margin-top: var(--space-lg);
+  flex-shrink: 0;
+  background: var(--bg-deep);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  /* Negative margins match .prompt-editor padding to create full-width footer */
+  margin: var(--space-lg) calc(-1 * var(--space-xl)) calc(-1 * var(--space-xl));
+  padding: var(--space-lg) var(--space-xl);
 }
 
 /* Tag modal */
