@@ -279,7 +279,8 @@ export function createMcpServer(): McpServer {
 		"health_check",
 		{
 			title: "Health Check",
-			description: "Verify LiminalDB stack connectivity with authenticated user",
+			description:
+				"Verify LiminalDB stack connectivity with authenticated user",
 			_meta: {
 				"openai/outputTemplate": "ui://widget/health",
 				"openai/toolInvocation/invoking": "Checking LiminalDB health...",
