@@ -943,6 +943,7 @@ select {
   flex-shrink: 0;
   background: var(--bg-deep);
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  /* Negative margins match .prompt-editor padding to create full-width footer */
   margin: var(--space-lg) calc(-1 * var(--space-xl)) calc(-1 * var(--space-xl));
   padding: var(--space-lg) var(--space-xl);
 }
