@@ -1,6 +1,6 @@
 /**
  * Service tests for prompt viewer functionality in prompts.html
- * Tests view mode toggling, copy button, and content rendering
+ * Tests semantic-only view mode, copy button, and content rendering
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import {
@@ -34,95 +34,15 @@ describe("Prompts Module - Prompt Viewer", () => {
 		setupClipboard(dom);
 	});
 
-	describe("view mode toggling", () => {
-		it("has view mode buttons", async () => {
-			const renderedBtn = dom.window.document.querySelector(
-				'[data-view="rendered"]',
-			);
-			const semanticBtn = dom.window.document.querySelector(
-				'[data-view="semantic"]',
-			);
-			const plainBtn = dom.window.document.querySelector('[data-view="plain"]');
-
-			expect(renderedBtn).not.toBeNull();
-			expect(semanticBtn).not.toBeNull();
-			expect(plainBtn).not.toBeNull();
+	describe("view mode (semantic only)", () => {
+		it("has no mode selector buttons in DOM", async () => {
+			const modeButtons = dom.window.document.querySelectorAll("[data-view]");
+			expect(modeButtons.length).toBe(0);
 		});
 
-		it("rendered button is active by default", async () => {
-			const renderedBtn = assertElement(
-				dom.window.document.querySelector('[data-view="rendered"]'),
-				"Expected rendered button to exist",
-			);
-			expect(renderedBtn.classList.contains("active")).toBe(true);
-		});
-
-		it("clicking semantic activates it and deactivates rendered", async () => {
-			const semanticBtn = assertElement(
-				dom.window.document.querySelector('[data-view="semantic"]'),
-				"Expected semantic button to exist",
-			);
-			const renderedBtn = assertElement(
-				dom.window.document.querySelector('[data-view="rendered"]'),
-				"Expected rendered button to exist",
-			);
-
-			click(semanticBtn);
-			await waitForAsync(50);
-
-			expect(semanticBtn.classList.contains("active")).toBe(true);
-			expect(renderedBtn.classList.contains("active")).toBe(false);
-		});
-
-		it("clicking plain activates it", async () => {
-			const plainBtn = assertElement(
-				dom.window.document.querySelector('[data-view="plain"]'),
-				"Expected plain button to exist",
-			);
-
-			click(plainBtn);
-			await waitForAsync(50);
-
-			expect(plainBtn.classList.contains("active")).toBe(true);
-		});
-
-		it("plain view renders raw text without semantic spans", async () => {
-			dom.window.loadPrompts();
-			await waitForAsync(100);
-
-			const firstItem = assertElement(
-				dom.window.document.querySelector(".prompt-item"),
-				"Expected prompt item to exist",
-			);
-			click(firstItem);
-			await waitForAsync(100);
-
-			const plainBtn = assertElement(
-				dom.window.document.querySelector('[data-view="plain"]'),
-				"Expected plain button to exist",
-			);
-			click(plainBtn);
-			await waitForAsync(50);
-
-			const contentEl = assertElement(
-				dom.window.document.getElementById("promptContent"),
-				"Expected promptContent element to exist",
-			);
-			expect(contentEl.innerHTML).not.toContain("<span");
-		});
-
-		it("stores view mode in localStorage", async () => {
-			const semanticBtn = assertElement(
-				dom.window.document.querySelector('[data-view="semantic"]'),
-				"Expected semantic button to exist",
-			);
-
-			click(semanticBtn);
-			await waitForAsync(50);
-
-			expect(dom.window.localStorage.getItem("promptViewMode")).toBe(
-				"semantic",
-			);
+		it("viewer defaults to semantic mode", async () => {
+			const viewer = dom.window.document.getElementById("promptViewer");
+			expect(viewer?.classList.contains("view-semantic")).toBe(true);
 		});
 	});
 
@@ -239,52 +159,15 @@ describe("Prompts Module - Prompt Viewer", () => {
 	 * TC-6.6: Line Edit Mode
 	 */
 	describe("TC-6.6: Line Edit Mode", () => {
-		it("line edit toggle is disabled in rendered view by default", async () => {
-			// Rendered is the default view
-			const toggle = dom.window.document.getElementById("line-edit-toggle");
+		it("line edit toggle is enabled by default", async () => {
+			const toggle = dom.window.document.getElementById(
+				"line-edit-toggle",
+			) as HTMLButtonElement;
 			expect(toggle).not.toBeNull();
-			// Rendered view should have line edit disabled
-			expect((toggle as HTMLButtonElement)?.disabled).toBe(true);
-		});
-
-		it("line edit toggle is enabled when switching to plain view", async () => {
-			const plainBtn = assertElement(
-				dom.window.document.querySelector('[data-view="plain"]'),
-				"Expected plain button to exist",
-			);
-			click(plainBtn);
-			await waitForAsync(50);
-
-			const toggle = dom.window.document.getElementById(
-				"line-edit-toggle",
-			) as HTMLButtonElement;
-			expect(toggle.disabled).toBe(false);
-		});
-
-		it("line edit toggle is enabled when switching to semantic view", async () => {
-			const semanticBtn = assertElement(
-				dom.window.document.querySelector('[data-view="semantic"]'),
-				"Expected semantic button to exist",
-			);
-			click(semanticBtn);
-			await waitForAsync(50);
-
-			const toggle = dom.window.document.getElementById(
-				"line-edit-toggle",
-			) as HTMLButtonElement;
 			expect(toggle.disabled).toBe(false);
 		});
 
 		it("clicking line edit toggle activates line edit mode", async () => {
-			// Switch to plain view first (line edit disabled in rendered)
-			const plainBtn = assertElement(
-				dom.window.document.querySelector('[data-view="plain"]'),
-				"Expected plain button to exist",
-			);
-			click(plainBtn);
-			await waitForAsync(50);
-
-			// Click line edit toggle
 			const toggle = dom.window.document.getElementById(
 				"line-edit-toggle",
 			) as HTMLButtonElement;
@@ -311,14 +194,6 @@ describe("Prompts Module - Prompt Viewer", () => {
 			click(firstItem);
 			await waitForAsync(100);
 
-			// Switch to plain view
-			const plainBtn = assertElement(
-				dom.window.document.querySelector('[data-view="plain"]'),
-				"Expected plain button to exist",
-			);
-			click(plainBtn);
-			await waitForAsync(50);
-
 			// Enable line edit
 			const toggle = dom.window.document.getElementById(
 				"line-edit-toggle",
@@ -343,14 +218,6 @@ describe("Prompts Module - Prompt Viewer", () => {
 			);
 			click(firstItem);
 			await waitForAsync(100);
-
-			// Switch to plain view
-			const plainBtn = assertElement(
-				dom.window.document.querySelector('[data-view="plain"]'),
-				"Expected plain button to exist",
-			);
-			click(plainBtn);
-			await waitForAsync(50);
 
 			// Enable line edit
 			const toggle = dom.window.document.getElementById(
