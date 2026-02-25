@@ -1914,6 +1914,30 @@ bun run prompts:sync</code></pre>
       console.error('Save failed:', error);
     }
 
+    /**
+     * Fetch unfiltered prompt list and send to shell for export dialog.
+     * Separate from the message listener to keep it synchronous.
+     */
+    async function fetchUnfilteredPromptList() {
+      try {
+        const res = await fetch('/api/prompts', { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const allPrompts = await res.json();
+        const list = Array.isArray(allPrompts) ? allPrompts : [];
+        window.parent.postMessage({
+          type: 'portlet:prompt-list',
+          prompts: list.map(p => ({
+            slug: p.slug,
+            name: p.name,
+            tags: p.tags,
+            pinned: p.pinned
+          }))
+        }, window.location.origin);
+      } catch (err) {
+        console.error('Failed to fetch prompt list for export:', err);
+      }
+    }
+
     // Handle messages from shell
     window.addEventListener('message', (e) => {
       // Only accept messages from same origin (shell)
@@ -1949,16 +1973,7 @@ bun run prompts:sync</code></pre>
           } else if (payload.action === 'refresh-prompts') {
             loadPrompts(currentQuery, currentTags);
           } else if (payload.action === 'get-prompt-list') {
-            // Send full prompt list to shell for export dialog
-            window.parent.postMessage({
-              type: 'portlet:prompt-list',
-              prompts: prompts.map(p => ({
-                slug: p.slug,
-                name: p.name,
-                tags: p.tags,
-                pinned: p.pinned
-              }))
-            }, window.location.origin);
+            fetchUnfilteredPromptList();
           }
           break;
       }

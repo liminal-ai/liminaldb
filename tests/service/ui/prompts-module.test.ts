@@ -219,7 +219,7 @@ describe("Prompts Module", () => {
 	describe("TC-3.1: New Prompt navigates to editor", () => {
 		test("clicking New Prompt enters insert mode", async () => {
 			// Trigger new prompt via exposed function (button moved to shell footer)
-			dom.window.enterInsertMode();
+			await dom.window.enterInsertMode();
 
 			// Editor should be visible
 			const promptEdit = dom.window.document.getElementById("prompt-edit");
@@ -239,7 +239,7 @@ describe("Prompts Module", () => {
 			await waitForAsync(100);
 
 			// Trigger new prompt via exposed function (button moved to shell footer)
-			dom.window.enterInsertMode();
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 
 			// Home module should be hidden
@@ -255,7 +255,7 @@ describe("Prompts Module", () => {
 	describe("TC-6.1: Insert Mode - Single Prompt", () => {
 		test("form shows empty/default values for new prompt", async () => {
 			// Trigger new prompt via exposed function (button moved to shell footer)
-			dom.window.enterInsertMode();
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 
 			// Form fields should be empty or have default values
@@ -282,7 +282,7 @@ describe("Prompts Module", () => {
 
 			// Enter insert mode
 			// Trigger new prompt via exposed function (button moved to shell footer)
-			dom.window.enterInsertMode();
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 
 			// Fill form via input helper
@@ -321,7 +321,7 @@ describe("Prompts Module", () => {
 		test("validation errors display inline on form fields", async () => {
 			// Enter insert mode
 			// Trigger new prompt via exposed function (button moved to shell footer)
-			dom.window.enterInsertMode();
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 
 			// Leave all fields empty - should trigger validation
@@ -353,7 +353,7 @@ describe("Prompts Module", () => {
 
 			// Enter insert mode
 			// Trigger new prompt via exposed function (button moved to shell footer)
-			dom.window.enterInsertMode();
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 
 			// Click discard button (inside editor)
@@ -561,7 +561,7 @@ describe("Prompts Module", () => {
 
 			// Enter insert mode
 			// Trigger new prompt via exposed function (button moved to shell footer)
-			dom.window.enterInsertMode();
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 
 			// Discard via button (not by clicking prompt)
@@ -589,7 +589,7 @@ describe("Prompts Module", () => {
 		beforeEach(async () => {
 			// Enter insert mode for each test
 			// Trigger new prompt via exposed function (button moved to shell footer)
-			dom.window.enterInsertMode();
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 		});
 
@@ -1172,7 +1172,7 @@ describe("Prompts Module", () => {
 			await waitForAsync(100);
 
 			// Trigger new prompt via exposed function (button moved to shell footer)
-			dom.window.enterInsertMode();
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 
 			const slugInput = dom.window.document.getElementById(
@@ -1207,9 +1207,9 @@ describe("Prompts Module", () => {
 			await waitForAsync(100);
 
 			// Trigger new prompt via exposed function (button moved to shell footer)
-			dom.window.enterInsertMode();
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
-			dom.window.enterInsertMode();
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 
 			const draftCalls = (
