@@ -15,9 +15,6 @@
 </head>
 <body class="module prompts-module">
   <aside class="sidebar">
-    <div class="sidebar-header">
-      <!-- Actions moved to shell footer; sidebar is browse-only -->
-    </div>
     <!-- Primary sidebar: Prompt list (shown on Home tab or when viewing prompts) -->
     <div id="prompt-list" class="prompt-list">
       <!-- Populated by JavaScript -->
@@ -100,7 +97,7 @@
             <section class="docs-section">
               <h2>Your First Prompt</h2>
               <ol class="docs-steps">
-                <li>Click <strong>+ New</strong> in the sidebar</li>
+                <li>Click <strong>+ New</strong> in the footer</li>
                 <li>Fill in the details:
                   <ul>
                     <li><strong>Slug</strong>: A short identifier (e.g., <code>code-review</code>)</li>
@@ -924,7 +921,6 @@ bun run prompts:sync</code></pre>
         // Show integration nav
         if (promptList) promptList.style.display = 'none';
         if (integrationNav) integrationNav.style.display = 'block';
-        if (newPromptBtn) newPromptBtn.style.display = 'none';
         renderIntegrationNav(tabId);
         // Auto-select first item
         selectIntegrationItem(integrationNavs[tabId][0].id);
@@ -932,7 +928,6 @@ bun run prompts:sync</code></pre>
         // Full-width content (getting-started, help)
         if (promptList) promptList.style.display = 'none';
         if (integrationNav) integrationNav.style.display = 'none';
-        if (newPromptBtn) newPromptBtn.style.display = 'none';
       }
     }
 
@@ -1920,7 +1915,7 @@ bun run prompts:sync</code></pre>
      */
     async function fetchUnfilteredPromptList() {
       try {
-        const res = await fetch('/api/prompts', { credentials: 'same-origin' });
+        const res = await fetch('/api/prompts?limit=1000', { credentials: 'same-origin' });
         if (!res.ok) return;
         const allPrompts = await res.json();
         const list = Array.isArray(allPrompts) ? allPrompts : [];

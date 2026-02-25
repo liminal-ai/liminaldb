@@ -490,14 +490,6 @@ body {
   border-right: 1px solid var(--border-subtle);
 }
 
-.sidebar-header {
-  display: none;
-}
-
-.sidebar-header .btn-icon:first-of-type {
-  margin-left: auto;
-}
-
 .content {
   flex: 1;
   overflow: auto;
