@@ -647,13 +647,13 @@ bun run prompts:sync</code></pre>
         <div class="prompt-header-top">
           <h1 id="prompt-slug" class="prompt-slug"></h1>
           <div class="prompt-header-controls">
-            <button id="pin-toggle" class="pin-toggle" title="Pin prompt" aria-pressed="false">
+            <button id="pin-toggle" class="pin-toggle" title="Pin prompt" aria-label="Pin prompt" aria-pressed="false">
               <svg class="pin-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>
               </svg>
             </button>
             <button id="edit-btn" class="btn-secondary btn-sm">Edit</button>
-            <button id="delete-btn" class="btn-danger-subtle btn-sm" title="Delete prompt">
+            <button id="delete-btn" class="btn-danger-subtle btn-sm" title="Delete prompt" aria-label="Delete prompt">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
               </svg>
@@ -2199,7 +2199,9 @@ bun run prompts:sync</code></pre>
       if (pinButton) {
         pinButton.classList.toggle('active', pinned);
         pinButton.setAttribute('aria-pressed', String(pinned));
-        pinButton.title = pinned ? 'Unpin prompt' : 'Pin prompt';
+        const label = pinned ? 'Unpin prompt' : 'Pin prompt';
+        pinButton.title = label;
+        pinButton.setAttribute('aria-label', label);
       }
       // List indicator is handled by loadPrompts() re-render after API call
     }
