@@ -25,6 +25,11 @@ export function registerImportExportRoutes(fastify: FastifyInstance): void {
 		exportPromptsHandler,
 	);
 	fastify.post(
+		"/api/prompts/import/preview",
+		{ preHandler: authMiddleware, bodyLimit: 5 * 1024 * 1024 },
+		importPreviewHandler,
+	);
+	fastify.post(
 		"/api/prompts/import",
 		{ preHandler: authMiddleware, bodyLimit: 5 * 1024 * 1024 },
 		importPromptsHandler,
@@ -45,11 +50,20 @@ async function exportPromptsHandler(
 	}
 
 	try {
-		const prompts = await convex.query(api.prompts.listPromptsRanked, {
+		const allPrompts = await convex.query(api.prompts.listPromptsRanked, {
 			apiKey: config.convexApiKey,
 			userId,
 			limit: MAX_PROMPTS,
 		});
+
+		// Filter by slugs if provided
+		const slugsParam = request.query as Record<string, unknown>;
+		const slugsRaw = slugsParam?.slugs;
+		let prompts = allPrompts;
+		if (slugsRaw) {
+			const slugSet = new Set(Array.isArray(slugsRaw) ? slugsRaw : [slugsRaw]);
+			prompts = allPrompts.filter((p) => slugSet.has(p.slug));
+		}
 
 		// Map to export shape — strip metadata fields
 		const exportPrompts = prompts.map((p) => {
@@ -88,10 +102,10 @@ async function exportPromptsHandler(
 }
 
 /**
- * POST /api/prompts/import
- * Import prompts from a YAML string. Skips duplicates.
+ * POST /api/prompts/import/preview
+ * Parse YAML and check for duplicates without writing anything.
  */
-async function importPromptsHandler(
+async function importPreviewHandler(
 	request: FastifyRequest,
 	reply: FastifyReply,
 ): Promise<void> {
@@ -100,7 +114,6 @@ async function importPromptsHandler(
 		return reply.code(401).send({ error: "Not authenticated" });
 	}
 
-	// Validate request body
 	let body: { yaml: string };
 	try {
 		body = YamlImportRequestSchema.parse(request.body);
@@ -114,8 +127,67 @@ async function importPromptsHandler(
 		throw error;
 	}
 
-	// Parse and validate YAML content
 	const { valid, errors } = parseAndValidateYamlImport(body.yaml);
+
+	try {
+		const existing = await convex.query(api.prompts.listPromptsRanked, {
+			apiKey: config.convexApiKey,
+			userId,
+			limit: MAX_PROMPTS,
+		});
+		const existingSlugs = new Set(existing.map((p) => p.slug));
+
+		const prompts = valid.map((p) => ({
+			slug: p.slug,
+			name: p.name,
+			description: p.description,
+			tags: p.tags,
+			duplicate: existingSlugs.has(p.slug),
+		}));
+
+		return reply.code(200).send({ prompts, errors });
+	} catch (error) {
+		request.log.error({ err: error, userId }, "Failed to preview import");
+		return reply.code(500).send({ error: "Failed to preview import" });
+	}
+}
+
+/**
+ * POST /api/prompts/import
+ * Import prompts from a YAML string. Skips duplicates.
+ * Optionally filter to specific slugs via body.slugs array.
+ */
+async function importPromptsHandler(
+	request: FastifyRequest,
+	reply: FastifyReply,
+): Promise<void> {
+	const userId = request.user?.id;
+	if (!userId) {
+		return reply.code(401).send({ error: "Not authenticated" });
+	}
+
+	// Validate request body
+	let body: { yaml: string; slugs?: string[] };
+	try {
+		body = YamlImportRequestSchema.parse(request.body);
+	} catch (error) {
+		if (error instanceof ZodError) {
+			const firstIssue = error.issues[0];
+			return reply
+				.code(400)
+				.send({ error: firstIssue?.message ?? "Validation failed" });
+		}
+		throw error;
+	}
+
+	// Parse and validate YAML content
+	const parsed = parseAndValidateYamlImport(body.yaml);
+	const errors = parsed.errors;
+
+	// Filter to selected slugs if provided
+	const valid = body.slugs
+		? parsed.valid.filter((p) => body.slugs!.includes(p.slug))
+		: parsed.valid;
 
 	if (valid.length === 0) {
 		return reply.code(400).send({

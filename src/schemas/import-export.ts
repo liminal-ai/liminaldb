@@ -7,6 +7,7 @@ export const YamlImportRequestSchema = z.object({
 		.string()
 		.min(1, "YAML content required")
 		.max(5_000_000, "YAML too large (max 5MB)"),
+	slugs: z.array(z.string()).optional(),
 });
 
 export type YamlImportRequest = z.infer<typeof YamlImportRequestSchema>;
