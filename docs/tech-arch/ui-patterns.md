@@ -131,7 +131,7 @@ broadcastToPortlet(message) // Send state/commands to iframe
 
 Shell-level modal for bulk import and export. Two tabs:
 
-**Export tab:** Requests prompt list from portlet via `shell:action` / `portlet:prompt-list`, renders checklist with select-all and search filter, calls `/api/prompts/export?slugs=...` for selective download.
+**Export tab:** Requests prompt list from portlet via `shell:action` / `portlet:prompt-list`, renders checklist with select-all and search filter, calls `/api/prompts/export?slugs=a&slugs=b` (repeated param) for selective download.
 
 **Import tab:** Drop zone + file picker, previews via `POST /api/prompts/import/preview`, renders checklist with duplicates dimmed/disabled, imports selected via `POST /api/prompts/import` with `slugs` filter.
 
@@ -863,6 +863,7 @@ interface Prompt {
   description?: string;
   content: string;
   tags: string[];
+  pinned: boolean;
   userId: string;
   _creationTime: number;
 }
