@@ -218,11 +218,8 @@ describe("Prompts Module", () => {
 
 	describe("TC-3.1: New Prompt navigates to editor", () => {
 		test("clicking New Prompt enters insert mode", async () => {
-			const newBtn = dom.window.document.getElementById("new-prompt-btn");
-			if (!newBtn) {
-				throw new Error("New prompt button not found");
-			}
-			click(newBtn);
+			// Trigger new prompt via exposed function (button moved to shell footer)
+			await dom.window.enterInsertMode();
 
 			// Editor should be visible
 			const promptEdit = dom.window.document.getElementById("prompt-edit");
@@ -241,12 +238,8 @@ describe("Prompts Module", () => {
 			dom.window.loadPrompts();
 			await waitForAsync(100);
 
-			// Click new prompt button
-			const newBtn = dom.window.document.getElementById("new-prompt-btn");
-			if (!newBtn) {
-				throw new Error("New prompt button not found");
-			}
-			click(newBtn);
+			// Trigger new prompt via exposed function (button moved to shell footer)
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 
 			// Home module should be hidden
@@ -261,9 +254,8 @@ describe("Prompts Module", () => {
 
 	describe("TC-6.1: Insert Mode - Single Prompt", () => {
 		test("form shows empty/default values for new prompt", async () => {
-			const newBtn = dom.window.document.getElementById("new-prompt-btn");
-			if (!newBtn) throw new Error("New prompt button not found");
-			click(newBtn);
+			// Trigger new prompt via exposed function (button moved to shell footer)
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 
 			// Form fields should be empty or have default values
@@ -289,9 +281,8 @@ describe("Prompts Module", () => {
 			dom.window.fetch = fetchMock;
 
 			// Enter insert mode
-			const newBtn = dom.window.document.getElementById("new-prompt-btn");
-			if (!newBtn) throw new Error("New prompt button not found");
-			click(newBtn);
+			// Trigger new prompt via exposed function (button moved to shell footer)
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 
 			// Fill form via input helper
@@ -329,9 +320,8 @@ describe("Prompts Module", () => {
 
 		test("validation errors display inline on form fields", async () => {
 			// Enter insert mode
-			const newBtn = dom.window.document.getElementById("new-prompt-btn");
-			if (!newBtn) throw new Error("New prompt button not found");
-			click(newBtn);
+			// Trigger new prompt via exposed function (button moved to shell footer)
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 
 			// Leave all fields empty - should trigger validation
@@ -362,9 +352,8 @@ describe("Prompts Module", () => {
 			await waitForAsync(100);
 
 			// Enter insert mode
-			const newBtn = dom.window.document.getElementById("new-prompt-btn");
-			if (!newBtn) throw new Error("New prompt button not found");
-			click(newBtn);
+			// Trigger new prompt via exposed function (button moved to shell footer)
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 
 			// Click discard button (inside editor)
@@ -388,9 +377,6 @@ describe("Prompts Module", () => {
 
 	describe("TC-6.2: Insert Mode - New Prompt Reset", () => {
 		test("second +New click resets to single staging entry", async () => {
-			const newBtn = dom.window.document.getElementById("new-prompt-btn");
-			if (!newBtn) throw new Error("New prompt button not found");
-
 			// Click +New twice (second click tears down clean first, starts fresh)
 			await dom.window.enterInsertMode();
 			await waitForAsync(50);
@@ -574,9 +560,8 @@ describe("Prompts Module", () => {
 			await waitForAsync(100);
 
 			// Enter insert mode
-			const newBtn = dom.window.document.getElementById("new-prompt-btn");
-			if (!newBtn) throw new Error("New prompt button not found");
-			click(newBtn);
+			// Trigger new prompt via exposed function (button moved to shell footer)
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 
 			// Discard via button (not by clicking prompt)
@@ -603,9 +588,8 @@ describe("Prompts Module", () => {
 	describe("TC-6.7: Editor Toolbar", () => {
 		beforeEach(async () => {
 			// Enter insert mode for each test
-			const newBtn = dom.window.document.getElementById("new-prompt-btn");
-			if (!newBtn) throw new Error("New prompt button not found");
-			click(newBtn);
+			// Trigger new prompt via exposed function (button moved to shell footer)
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 		});
 
@@ -1187,9 +1171,8 @@ describe("Prompts Module", () => {
 			dom.window.loadPrompts();
 			await waitForAsync(100);
 
-			const newBtn = dom.window.document.getElementById("new-prompt-btn");
-			if (!newBtn) throw new Error("New prompt button not found");
-			click(newBtn);
+			// Trigger new prompt via exposed function (button moved to shell footer)
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 
 			const slugInput = dom.window.document.getElementById(
@@ -1223,11 +1206,10 @@ describe("Prompts Module", () => {
 			dom.window.loadPrompts();
 			await waitForAsync(100);
 
-			const newBtn = dom.window.document.getElementById("new-prompt-btn");
-			if (!newBtn) throw new Error("New prompt button not found");
-			click(newBtn);
+			// Trigger new prompt via exposed function (button moved to shell footer)
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
-			click(newBtn);
+			await dom.window.enterInsertMode();
 			await waitForAsync(50);
 
 			const draftCalls = (
@@ -1236,39 +1218,6 @@ describe("Prompts Module", () => {
 				([url]) => typeof url === "string" && url.includes("/api/drafts/new:"),
 			);
 			expect(draftCalls.length).toBeGreaterThanOrEqual(2);
-		});
-
-		test("TC-35: clicking indicator navigates to draft", async () => {
-			dom.window.fetch = mockFetch({
-				"/api/prompts": { data: mockPrompts },
-				// openDraft fetches list and filters (no single-get endpoint)
-				"/api/drafts": {
-					data: [
-						{
-							draftId: "edit:code-review",
-							type: "edit",
-							promptSlug: "code-review",
-							data: mockPrompts[0],
-						},
-					],
-				},
-			});
-
-			dom.window.loadPrompts();
-			await waitForAsync(100);
-
-			// Simulate shell:drafts:open message and assert draft opens in portlet
-			postMessage(dom, {
-				type: "shell:drafts:open",
-				draftId: "edit:code-review",
-			});
-			await waitForAsync(100);
-
-			// In green phase, this should open the draft and show the slug
-			// For red phase, we expect it to fail (stub doesn't implement)
-			const slugEl = dom.window.document.getElementById("prompt-slug");
-			// Test will fail because openDraft() is a stub
-			expect(slugEl?.textContent).toBe("code-review");
 		});
 
 		test("TC-38: save failure preserves draft", async () => {
@@ -1319,40 +1268,6 @@ describe("Prompts Module", () => {
 					(opts as RequestInit | undefined)?.method === "DELETE",
 			);
 			expect(deleteDraftCalls.length).toBe(0);
-		});
-
-		test("TC-40: warning shown near expiration", async () => {
-			dom.window.fetch = mockFetch({
-				"/api/prompts": { data: mockPrompts },
-				// openDraft fetches list and filters (no single-get endpoint)
-				"/api/drafts": {
-					data: [
-						{
-							draftId: "edit:code-review",
-							type: "edit",
-							promptSlug: "code-review",
-							data: mockPrompts[0],
-							expiresAt: Date.now() + 60 * 60 * 1000, // 1 hour (within 2 hour warning window)
-						},
-					],
-				},
-			});
-
-			dom.window.loadPrompts();
-			await waitForAsync(100);
-
-			postMessage(dom, {
-				type: "shell:drafts:open",
-				draftId: "edit:code-review",
-			});
-			await waitForAsync(100);
-
-			// In green phase, checkDraftExpiration() should show the warning
-			// For red phase, we expect it to fail (stub doesn't implement)
-			const warning = dom.window.document.querySelector(
-				".draft-expiry-warning",
-			);
-			expect(warning).not.toBeNull();
 		});
 	});
 

@@ -35,7 +35,7 @@ Shell (shell.html)
 │  │                                                           │  │
 │  │   PORTLET (iframe src="/_m/prompts")                      │  │
 │  │   ┌─────────────┬───────────────────────────────────────┐ │  │
-│  │   │ [+ New]     │  COMPONENT (prompt-viewer.js)         │ │  │
+│  │   │             │  COMPONENT (prompt-viewer.js)         │ │  │
 │  │   │             │  ┌─────────────────────────────────┐  │ │  │
 │  │   │ Prompt A    │  │ [Edit] [Copy] [Rend][Sem][Plain]│  │ │  │
 │  │   │ Prompt B ◀  │  │                                 │  │ │  │
@@ -51,6 +51,9 @@ Shell (shell.html)
 │  │   - edit: prompt-editor.js with existing data             │  │
 │  │   - new:  prompt-editor.js with empty form (batch staging)│  │
 │  │                                                           │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ 42 prompts          [+ New]          [Import / Export]     │  │
 │  └───────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -75,8 +78,10 @@ Browser URL ──→ Shell ──→ iframe src ──→ Portlet ──→ API
 | Browser history (pushState/popstate) | Portlet internal DOM |
 | URL parsing and construction | Component state |
 | Header chrome (search, tags, branding) | Data fetching |
-| Portlet loading/switching | Form validation |
-| Cross-portlet event routing | Business logic |
+| Footer chrome (+ New, status, Import/Export) | Form validation |
+| Transfer dialog (export/import modal) | Business logic |
+| Portlet loading/switching | |
+| Cross-portlet event routing | |
 
 ### Implementation: `src/ui/templates/shell.html`
 
@@ -113,6 +118,22 @@ broadcastToPortlet(message) // Send state/commands to iframe
 | Tag filter | Dropdown picker, selected tags as dismissable pills |
 | Branding | **LIMINAL**DB (bold/regular weight) |
 | User | Email display from auth context |
+
+### Footer Features
+
+| Feature | Implementation |
+|---------|----------------|
+| + New | Sends `shell:action` with `action: 'new-prompt'` to portlet |
+| Status | Prompt count from `portlet:prompt-count` message |
+| Import / Export | Opens transfer dialog (tabbed modal in shell) |
+
+### Transfer Dialog
+
+Shell-level modal for bulk import and export. Two tabs:
+
+**Export tab:** Requests prompt list from portlet via `shell:action` / `portlet:prompt-list`, renders checklist with select-all and search filter, calls `/api/prompts/export?slugs=a&slugs=b` (repeated param) for selective download.
+
+**Import tab:** Drop zone + file picker, previews via `POST /api/prompts/import/preview`, renders checklist with duplicates dimmed/disabled, imports selected via `POST /api/prompts/import` with `slugs` filter.
 
 ---
 
@@ -210,7 +231,7 @@ let stagingPrompts = [];  // Array of { tempId, data }
 ```
 
 **Key behaviors:**
-- Clicking "+ New" creates a new staging entry
+- "+ New" in the shell footer triggers `enterInsertMode()` via `shell:action` message
 - Form data is captured to staging array before switching entries
 - "Save All" posts all staged prompts in batch
 - "Discard All" clears staging and exits insert mode
@@ -455,6 +476,8 @@ tagSelector.attachHandlers(tagPickerDropdown, (tag) => toggleTag(tag), { style: 
 | `portlet:ready` | Portlet loaded, ready for state | `{}` |
 | `history:push` | Navigation event, add to history | `{ state, trackHistory? }` |
 | `portlet:dirty` | Unsaved changes state changed | `{ dirty: boolean }` |
+| `portlet:prompt-count` | Prompt count for footer status | `{ count: number }` |
+| `portlet:prompt-list` | Full prompt list for export dialog | `{ prompts: { slug, name, tags, pinned }[] }` |
 
 ### Shell → Portlet
 
@@ -462,6 +485,7 @@ tagSelector.attachHandlers(tagPickerDropdown, (tag) => toggleTag(tag), { style: 
 |---------|---------|---------|
 | `shell:state` | Restore/set portlet state | `{ slug?, mode? }` |
 | `shell:filter` | Search + tag filter changed | `{ query, tags: string[] }` |
+| `shell:action` | Action dispatch from shell footer/dialog | `{ action: 'new-prompt' \| 'refresh-prompts' \| 'get-prompt-list' }` |
 
 ### Example Flow
 
@@ -615,6 +639,11 @@ Styles for user feedback patterns:
 | `.staging-header` | Batch insert controls (Save All / Discard All) |
 | `.staging-item` | Sidebar item for staged prompts |
 | `.editor-toolbar` | Floating toolbar for text selection actions |
+| `.shell-footer`, `.shell-footer-btn` | Pinned footer bar with action buttons |
+| `.transfer-dialog`, `.transfer-dialog-content` | Import/Export modal overlay and content |
+| `.transfer-tab`, `.transfer-tab-panel` | Tabbed navigation within transfer dialog |
+| `.transfer-item`, `.transfer-item-duplicate` | Checklist rows (duplicate items dimmed) |
+| `.import-drop-zone`, `.import-drop-zone.drag-over` | File drop target with drag state |
 
 ### Adding Themes
 
@@ -785,51 +814,7 @@ if (typeof markdownit === 'undefined') {
 
 Drafts persist in Redis (24h TTL) and survive browser refresh.
 
-### Shell Integration
-
-The shell header shows a draft indicator when unsaved drafts exist:
-
-```html
-<div id="draft-indicator" class="draft-indicator hidden">
-  <span class="draft-icon"></span>
-  <span id="draft-count">0</span> unsaved
-</div>
-```
-
-### Draft Polling
-
-Shell polls for drafts every 15 seconds:
-
-```javascript
-// Start on load
-startDraftPolling();
-
-async function fetchDraftSummary() {
-  const response = await fetch('/api/drafts/summary', { credentials: 'include' });
-  const summary = await response.json();
-  updateDraftIndicator(summary);
-}
-
-// Poll every 15s
-draftPollingInterval = setInterval(fetchDraftSummary, 15000);
-```
-
-### Draft Summary Response
-
-```typescript
-{
-  count: number;           // Total active drafts
-  latestDraftId: string;   // Most recent draft ID
-  hasExpiringSoon: boolean; // Any draft < 2h TTL remaining
-}
-```
-
-### Message Protocol (Drafts)
-
-| Message | Direction | Purpose | Payload |
-|---------|-----------|---------|---------|
-| `portlet:drafts` | Portlet → Shell | Draft count changed | `{ count, latestDraftId }` |
-| `shell:drafts:open` | Shell → Portlet | Open specific draft | `{ draftId }` |
+> **Note:** The shell-side draft indicator (header badge, polling, `portlet:drafts`/`shell:drafts:open` messages) has been removed. Draft persistence still works at the portlet and API layers — the shell no longer displays draft status.
 
 ### Portlet Draft Behavior
 
@@ -841,18 +826,7 @@ When editing a prompt:
 
 ### Cross-Tab Sync
 
-Drafts sync across tabs via:
-1. Redis as shared storage (any tab's save is visible to others)
-2. Shell polling picks up changes from other tabs
-3. Portlet can request fresh draft list on focus
-
-### Visual States
-
-| State | Indicator |
-|-------|-----------|
-| No drafts | Hidden |
-| 1+ drafts | Shows count badge |
-| Draft expiring soon (<2h) | Yellow/warning style via `.expiring-soon` class |
+Drafts sync across tabs via Redis as shared storage (any tab's save is visible to others).
 
 ---
 
@@ -870,6 +844,9 @@ The UI fetches data from REST endpoints. Full API documentation is in the route 
 | `/api/prompts/:slug` | GET | Get single prompt | `Prompt` |
 | `/api/prompts/:slug` | DELETE | Delete prompt | `{ deleted: boolean }` |
 | `/api/prompts/:slug` | PUT | Update prompt | `{ prompt: Prompt }` |
+| `/api/prompts/export` | GET | Export prompts as YAML (optional `?slugs=`) | YAML file download |
+| `/api/prompts/import/preview` | POST | Preview import (parse + duplicate check) | `{ prompts, errors }` |
+| `/api/prompts/import` | POST | Import prompts from YAML (optional `slugs` filter) | `{ created, skipped, errors }` |
 | `/api/drafts` | GET | List user's drafts | `Draft[]` |
 | `/api/drafts` | POST | Create/update draft | `{ id: string }` |
 | `/api/drafts/summary` | GET | Draft count and status | `{ count, latestDraftId, hasExpiringSoon }` |
@@ -886,6 +863,7 @@ interface Prompt {
   description?: string;
   content: string;
   tags: string[];
+  pinned: boolean;
   userId: string;
   _creationTime: number;
 }
@@ -897,8 +875,11 @@ interface Prompt {
 |----------|-------|---------|
 | `/api/prompts` | `?q=text` | Search by name/description |
 | `/api/prompts` | `?tags=tag1,tag2` | Filter by tags (max 20, each max 50 chars) |
+| `/api/prompts/export` | `?slugs=a&slugs=b` | Filter export to specific slugs (repeated param) |
+| `/api/prompts/import` | body: `{ yaml, slugs? }` | Filter import to specific slugs |
+| `/api/prompts/import/preview` | body: `{ yaml }` | Parse YAML, returns prompts with duplicate flags |
 
-> **See also:** `src/routes/prompts.ts` for full implementation details.
+> **See also:** `src/routes/prompts.ts` and `src/routes/import-export.ts` for full implementation details.
 
 ---
 
@@ -1041,6 +1022,9 @@ app.get('/_m/prompts', serveModule);
 | `/api/prompts` | API | Yes | List/create prompts | Active |
 | `/api/prompts/tags` | API | Yes | List unique tags | Active |
 | `/api/prompts/:slug` | API | Yes | Get/delete/update prompt | Active |
+| `/api/prompts/export` | API | Yes | Export prompts as YAML (optional slug filter) | Active |
+| `/api/prompts/import/preview` | API | Yes | Preview import (parse + duplicate check) | Active |
+| `/api/prompts/import` | API | Yes | Import prompts from YAML (optional slug filter) | Active |
 | `/api/drafts` | API | Yes | List/create drafts | Active |
 | `/api/drafts/summary` | API | Yes | Draft count and status | Active |
 | `/api/drafts/:id` | API | Yes | Get/delete draft | Active |
@@ -1049,7 +1033,7 @@ app.get('/_m/prompts', serveModule);
 
 | File | Type | Purpose | Status |
 |------|------|---------|--------|
-| `src/ui/templates/shell.html` | Shell | Outer chrome, history management | Active |
+| `src/ui/templates/shell.html` | Shell | Outer chrome, history, footer, transfer dialog | Active |
 | `src/ui/templates/prompts.html` | Portlet | Prompt list, viewer, editor, insert mode | Active |
 | `src/ui/templates/prompt-editor.html` | Portlet | Create form (standalone) | Legacy - superseded by prompts.html |
 | `public/shared/themes/base.css` | Styles | Structural CSS, modal, toast | Active |
@@ -1106,7 +1090,10 @@ The following standalone demo UIs live under `public/widgets/` and are not part 
 src/
 ├── routes/
 │   ├── app.ts              # App routes (shell serving)
-│   └── prompts.ts          # API routes
+│   ├── prompts.ts          # API routes
+│   └── import-export.ts    # Import/export + preview routes
+├── schemas/
+│   └── import-export.ts    # YAML import validation schemas
 ├── ui/
 │   └── templates/
 │       ├── shell.html      # Shell
@@ -1135,4 +1122,4 @@ docs/tech-arch/
 
 ---
 
-*Last updated: January 2025*
+*Last updated: February 2026*

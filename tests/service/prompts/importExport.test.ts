@@ -444,4 +444,269 @@ describe("POST /api/prompts/import", () => {
 		expect(result.error).toMatch(/1000.*limit/i);
 		expect(result.created).toBe(0);
 	});
+
+	test("filters import to selected slugs when body.slugs provided", async () => {
+		mockConvex.query.mockResolvedValue([]);
+		mockConvex.mutation.mockResolvedValue(["id_1"]);
+
+		const yamlContent = yaml.dump({
+			prompts: [
+				validPrompt("keep-me"),
+				validPrompt("skip-me"),
+				validPrompt("also-skip"),
+			],
+		});
+
+		const response = await app.inject({
+			method: "POST",
+			url: "/api/prompts/import",
+			headers: { authorization: `Bearer ${createTestJwt()}` },
+			payload: { yaml: yamlContent, slugs: ["keep-me"] },
+		});
+
+		expect(response.statusCode).toBe(200);
+		const result = response.json();
+		expect(result.created).toBe(1);
+		// Only "keep-me" should have been sent to mutation
+		const mutationCall = mockConvex.mutation.mock.calls[0]!;
+		const prompts = (mutationCall[1] as { prompts: { slug: string }[] })
+			.prompts;
+		expect(prompts).toHaveLength(1);
+		expect(prompts[0]!.slug).toBe("keep-me");
+	});
+
+	test("body.slugs filter combined with duplicate detection", async () => {
+		mockConvex.query.mockResolvedValue([mockPromptDTO("already-exists")]);
+		mockConvex.mutation.mockResolvedValue(["id_1"]);
+
+		const yamlContent = yaml.dump({
+			prompts: [
+				validPrompt("already-exists"),
+				validPrompt("new-one"),
+				validPrompt("not-selected"),
+			],
+		});
+
+		const response = await app.inject({
+			method: "POST",
+			url: "/api/prompts/import",
+			headers: { authorization: `Bearer ${createTestJwt()}` },
+			payload: {
+				yaml: yamlContent,
+				slugs: ["already-exists", "new-one"],
+			},
+		});
+
+		expect(response.statusCode).toBe(200);
+		const result = response.json();
+		expect(result.created).toBe(1);
+		expect(result.skipped).toContain("already-exists");
+	});
+});
+
+describe("GET /api/prompts/export with slug filter", () => {
+	let app: ReturnType<typeof Fastify>;
+
+	beforeEach(async () => {
+		app = Fastify();
+		registerImportExportRoutes(app);
+		await app.ready();
+		mockConvex.query.mockClear();
+		mockConvex.mutation.mockClear();
+	});
+
+	afterEach(async () => {
+		await app.close();
+	});
+
+	test("exports only requested slugs when ?slugs= provided", async () => {
+		mockConvex.query.mockResolvedValue([
+			mockPromptDTO("alpha"),
+			mockPromptDTO("beta"),
+			mockPromptDTO("gamma"),
+		]);
+
+		const response = await app.inject({
+			method: "GET",
+			url: "/api/prompts/export?slugs=alpha&slugs=gamma",
+			headers: { authorization: `Bearer ${createTestJwt()}` },
+		});
+
+		expect(response.statusCode).toBe(200);
+		const doc = yaml.load(response.body) as {
+			prompts: { slug: string }[];
+		};
+		expect(doc.prompts).toHaveLength(2);
+		const slugs = doc.prompts.map((p) => p.slug);
+		expect(slugs).toContain("alpha");
+		expect(slugs).toContain("gamma");
+		expect(slugs).not.toContain("beta");
+	});
+
+	test("single slug param works (not array)", async () => {
+		mockConvex.query.mockResolvedValue([
+			mockPromptDTO("alpha"),
+			mockPromptDTO("beta"),
+		]);
+
+		const response = await app.inject({
+			method: "GET",
+			url: "/api/prompts/export?slugs=alpha",
+			headers: { authorization: `Bearer ${createTestJwt()}` },
+		});
+
+		expect(response.statusCode).toBe(200);
+		const doc = yaml.load(response.body) as {
+			prompts: { slug: string }[];
+		};
+		expect(doc.prompts).toHaveLength(1);
+		expect(doc.prompts[0]!.slug).toBe("alpha");
+	});
+
+	test("exports all prompts when no slugs param", async () => {
+		mockConvex.query.mockResolvedValue([
+			mockPromptDTO("alpha"),
+			mockPromptDTO("beta"),
+		]);
+
+		const response = await app.inject({
+			method: "GET",
+			url: "/api/prompts/export",
+			headers: { authorization: `Bearer ${createTestJwt()}` },
+		});
+
+		expect(response.statusCode).toBe(200);
+		const doc = yaml.load(response.body) as {
+			prompts: { slug: string }[];
+		};
+		expect(doc.prompts).toHaveLength(2);
+	});
+});
+
+describe("POST /api/prompts/import/preview", () => {
+	let app: ReturnType<typeof Fastify>;
+
+	beforeEach(async () => {
+		app = Fastify();
+		registerImportExportRoutes(app);
+		await app.ready();
+		mockConvex.query.mockClear();
+		mockConvex.mutation.mockClear();
+	});
+
+	afterEach(async () => {
+		await app.close();
+	});
+
+	test("returns 401 without auth token", async () => {
+		const response = await app.inject({
+			method: "POST",
+			url: "/api/prompts/import/preview",
+			payload: { yaml: "prompts: []" },
+		});
+		expect(response.statusCode).toBe(401);
+	});
+
+	test("returns 400 with empty yaml body", async () => {
+		const response = await app.inject({
+			method: "POST",
+			url: "/api/prompts/import/preview",
+			headers: { authorization: `Bearer ${createTestJwt()}` },
+			payload: { yaml: "" },
+		});
+		expect(response.statusCode).toBe(400);
+	});
+
+	test("returns parsed prompts with duplicate flags", async () => {
+		mockConvex.query.mockResolvedValue([mockPromptDTO("existing-slug")]);
+
+		const yamlContent = yaml.dump({
+			prompts: [validPrompt("existing-slug"), validPrompt("new-slug")],
+		});
+
+		const response = await app.inject({
+			method: "POST",
+			url: "/api/prompts/import/preview",
+			headers: { authorization: `Bearer ${createTestJwt()}` },
+			payload: { yaml: yamlContent },
+		});
+
+		expect(response.statusCode).toBe(200);
+		const result = response.json();
+		expect(result.prompts).toHaveLength(2);
+
+		const existing = result.prompts.find(
+			(p: { slug: string }) => p.slug === "existing-slug",
+		);
+		const newOne = result.prompts.find(
+			(p: { slug: string }) => p.slug === "new-slug",
+		);
+		expect(existing.duplicate).toBe(true);
+		expect(newOne.duplicate).toBe(false);
+	});
+
+	test("returns validation errors for invalid prompts", async () => {
+		mockConvex.query.mockResolvedValue([]);
+
+		const yamlContent = yaml.dump({
+			prompts: [
+				validPrompt("good-one"),
+				{ slug: "BAD", name: "", description: "", content: "", tags: [] },
+			],
+		});
+
+		const response = await app.inject({
+			method: "POST",
+			url: "/api/prompts/import/preview",
+			headers: { authorization: `Bearer ${createTestJwt()}` },
+			payload: { yaml: yamlContent },
+		});
+
+		expect(response.statusCode).toBe(200);
+		const result = response.json();
+		expect(result.prompts).toHaveLength(1);
+		expect(result.prompts[0].slug).toBe("good-one");
+		expect(result.errors.length).toBeGreaterThan(0);
+	});
+
+	test("does not write anything to Convex", async () => {
+		mockConvex.query.mockResolvedValue([]);
+
+		const yamlContent = yaml.dump({
+			prompts: [validPrompt("preview-only")],
+		});
+
+		const response = await app.inject({
+			method: "POST",
+			url: "/api/prompts/import/preview",
+			headers: { authorization: `Bearer ${createTestJwt()}` },
+			payload: { yaml: yamlContent },
+		});
+
+		expect(response.statusCode).toBe(200);
+		expect(mockConvex.mutation).not.toHaveBeenCalled();
+	});
+
+	test("returns prompt metadata fields (slug, name, description, tags)", async () => {
+		mockConvex.query.mockResolvedValue([]);
+
+		const yamlContent = yaml.dump({
+			prompts: [validPrompt("detail-check")],
+		});
+
+		const response = await app.inject({
+			method: "POST",
+			url: "/api/prompts/import/preview",
+			headers: { authorization: `Bearer ${createTestJwt()}` },
+			payload: { yaml: yamlContent },
+		});
+
+		expect(response.statusCode).toBe(200);
+		const prompt = response.json().prompts[0];
+		expect(prompt).toHaveProperty("slug", "detail-check");
+		expect(prompt).toHaveProperty("name");
+		expect(prompt).toHaveProperty("description");
+		expect(prompt).toHaveProperty("tags");
+		expect(prompt).toHaveProperty("duplicate", false);
+	});
 });

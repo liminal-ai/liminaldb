@@ -15,20 +15,6 @@
 </head>
 <body class="module prompts-module">
   <aside class="sidebar">
-    <div class="sidebar-header">
-      <button id="new-prompt-btn" class="btn-primary">+ New</button>
-      <button id="btn-import-yaml" class="btn-icon" title="Import from YAML">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-      </button>
-      <button id="btn-export-yaml" class="btn-icon" title="Export as YAML">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-        </svg>
-      </button>
-      <input type="file" id="yaml-file-input" accept=".yaml,.yml" style="display: none;">
-    </div>
     <!-- Primary sidebar: Prompt list (shown on Home tab or when viewing prompts) -->
     <div id="prompt-list" class="prompt-list">
       <!-- Populated by JavaScript -->
@@ -86,7 +72,7 @@
             </div>
 
             <div class="landing-cta">
-              <button id="cta-new-prompt" class="btn-primary btn-lg">+ Create Your First Prompt</button>
+              <button id="cta-new-prompt" class="btn-primary btn-lg">+ Create Prompt</button>
               <span class="cta-hint">or press <kbd>Cmd</kbd>+<kbd>K</kbd> to search</span>
             </div>
 
@@ -111,7 +97,7 @@
             <section class="docs-section">
               <h2>Your First Prompt</h2>
               <ol class="docs-steps">
-                <li>Click <strong>+ New</strong> in the sidebar</li>
+                <li>Click <strong>+ New</strong> in the footer</li>
                 <li>Fill in the details:
                   <ul>
                     <li><strong>Slug</strong>: A short identifier (e.g., <code>code-review</code>)</li>
@@ -671,11 +657,6 @@ bun run prompts:sync</code></pre>
             <button class="prompt-viewer-btn" id="line-edit-toggle" title="Enable line-by-line editing">Line Edit</button>
           </div>
         </div>
-        <!-- Draft expiration warning (hidden by default, shown by checkDraftExpiration) -->
-        <div class="draft-expiry-warning" style="display: none;">
-          <span class="warning-icon">⚠️</span>
-          <span class="warning-text">This draft will expire soon</span>
-        </div>
         <div class="prompt-viewer-content" id="promptContent"></div>
         <div class="prompt-viewer-stats">
           <span class="prompt-viewer-stat">tags <span class="prompt-viewer-stat-value" id="statTags">0</span></span>
@@ -781,7 +762,6 @@ bun run prompts:sync</code></pre>
     let currentDraft = null;
     let draftDebounceTimer = null;
     const DRAFT_DEBOUNCE_MS = 500;
-    const EXPIRY_WARNING_MS = 2 * 60 * 60 * 1000; // 2 hours
 
     // Initialize modal component (from modal.js)
     initModal();
@@ -932,18 +912,15 @@ bun run prompts:sync</code></pre>
     function updateSidebarForTab(tabId) {
       const promptList = document.getElementById('prompt-list');
       const integrationNav = document.getElementById('integration-nav');
-      const newPromptBtn = document.getElementById('new-prompt-btn');
 
       if (tabId === 'home') {
         // Show prompts list
         if (promptList) promptList.style.display = 'block';
         if (integrationNav) integrationNav.style.display = 'none';
-        if (newPromptBtn) newPromptBtn.style.display = 'block';
       } else if (integrationNavs[tabId]) {
         // Show integration nav
         if (promptList) promptList.style.display = 'none';
         if (integrationNav) integrationNav.style.display = 'block';
-        if (newPromptBtn) newPromptBtn.style.display = 'none';
         renderIntegrationNav(tabId);
         // Auto-select first item
         selectIntegrationItem(integrationNavs[tabId][0].id);
@@ -951,7 +928,6 @@ bun run prompts:sync</code></pre>
         // Full-width content (getting-started, help)
         if (promptList) promptList.style.display = 'none';
         if (integrationNav) integrationNav.style.display = 'none';
-        if (newPromptBtn) newPromptBtn.style.display = 'none';
       }
     }
 
@@ -1070,7 +1046,6 @@ bun run prompts:sync</code></pre>
       
       // Create draft entry for new prompt
       handleNewPrompt();
-      // Note: notifyShellOfDrafts() will be called from saveToDraft() in green phase
     }
 
     /**
@@ -1556,6 +1531,12 @@ bun run prompts:sync</code></pre>
           renderPromptList(prompts);
         }
 
+        // Broadcast prompt count to shell footer
+        window.parent.postMessage({
+          type: 'portlet:prompt-count',
+          count: prompts.length
+        }, window.location.origin);
+
         if (selectedSlug) {
           const stillExists = prompts.some((prompt) => prompt.slug === selectedSlug);
           if (stillExists) {
@@ -1656,10 +1637,8 @@ bun run prompts:sync</code></pre>
       // Restore sidebar to show prompt list
       const promptList = document.getElementById('prompt-list');
       const integrationNav = document.getElementById('integration-nav');
-      const newPromptBtn = document.getElementById('new-prompt-btn');
       if (promptList) promptList.style.display = 'block';
       if (integrationNav) integrationNav.style.display = 'none';
-      if (newPromptBtn) newPromptBtn.style.display = 'block';
 
       const slugEl = document.getElementById("prompt-slug");
       const descEl = document.getElementById("prompt-description");
@@ -1773,17 +1752,6 @@ bun run prompts:sync</code></pre>
       return 'edit';
     }
 
-    async function fetchDraftSummaryForShell() {
-      if (typeof fetch !== 'function') return null;
-      try {
-        const response = await fetch('/api/drafts/summary', { credentials: 'same-origin' });
-        if (!response.ok) return null;
-        return await response.json();
-      } catch {
-        return null;
-      }
-    }
-
     /**
      * Save current editor state to draft storage.
      * @param {Partial<Draft>|null} [override] - Optional override for draft properties
@@ -1826,11 +1794,6 @@ bun run prompts:sync</code></pre>
         if (response.ok) {
           const saved = await response.json();
           currentDraft = { ...payload, ...saved, draftId };
-          // Only fetch summary + notify when embedded in the shell.
-          if (window.parent && window.parent !== window) {
-            const summary = await fetchDraftSummaryForShell();
-            if (summary) notifyShellOfDrafts(summary);
-          }
         } else {
           // Preserve local draft id even if server rejected, to avoid losing work
           currentDraft = { ...payload, draftId };
@@ -1907,11 +1870,9 @@ bun run prompts:sync</code></pre>
         method: 'DELETE',
         credentials: 'same-origin',
       })
-        .then(async (res) => {
+        .then((res) => {
           if (res.ok) {
             currentDraft = null;
-            const summary = await fetchDraftSummaryForShell();
-            if (summary) notifyShellOfDrafts(summary);
           }
         })
         .catch(() => {});
@@ -1930,11 +1891,9 @@ bun run prompts:sync</code></pre>
         method: 'DELETE',
         credentials: 'same-origin',
       })
-        .then(async (res) => {
+        .then((res) => {
           if (res.ok) {
             currentDraft = null;
-            const summary = await fetchDraftSummaryForShell();
-            if (summary) notifyShellOfDrafts(summary);
           }
         })
         .catch((err) => console.warn('Draft cleanup failed:', err));
@@ -1951,102 +1910,26 @@ bun run prompts:sync</code></pre>
     }
 
     /**
-     * Check draft expiration and show warning if expiring soon.
-     * Shows warning when draft expires within 2 hours.
-     *
-     * @param {Draft} draft - The draft object to check for expiration
-     * @returns {void}
+     * Fetch unfiltered prompt list and send to shell for export dialog.
+     * Separate from the message listener to keep it synchronous.
      */
-    function checkDraftExpiration(draft) {
-      const warningEl = document.querySelector('.draft-expiry-warning');
-      if (!warningEl) return;
-      if (!draft || typeof draft.expiresAt !== 'number') {
-        warningEl.style.display = 'none';
-        return;
-      }
-      const remaining = draft.expiresAt - Date.now();
-      warningEl.style.display = remaining < EXPIRY_WARNING_MS ? 'block' : 'none';
-    }
-
-    /**
-     * Notify shell of draft changes.
-     * Sends draft summary to shell for indicator updates.
-     * Called after draft create/update/delete operations.
-     *
-     * @param {{count: number, latestDraftId: string|null, nextExpiryAt?: number, hasExpiringSoon: boolean}} summary - Draft summary from API
-     * @returns {void}
-     */
-    function notifyShellOfDrafts(summary) {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({
-          type: 'portlet:drafts',
-          count: summary.count,
-          latestDraftId: summary.latestDraftId,
-          nextExpiryAt: summary.nextExpiryAt,
-          hasExpiringSoon: summary.hasExpiringSoon
-        }, window.location.origin);
-      }
-    }
-
-    /**
-     * Open draft from shell request.
-     * Fetches draft list from API and finds matching draft, then restores the editor state.
-     *
-     * @param {string} draftId - Draft ID in format "edit:{slug}" or "new:{tempId}"
-     * @returns {Promise<void>}
-     */
-    async function openDraft(draftId) {
-      if (typeof fetch !== 'function') return;
-      if (!draftId) return;
+    async function fetchUnfilteredPromptList() {
       try {
-        // Fetch list and filter (no GET /api/drafts/:draftId endpoint)
-        const response = await fetch('/api/drafts', {
-          credentials: 'same-origin',
-        });
-        if (!response.ok) return;
-        const drafts = await response.json();
-        const draft = drafts.find(d => d.draftId === draftId);
-        if (!draft) return;
-        currentDraft = draft;
-
-        // Always select the prompt first so the slug header updates (test hook)
-        if (draft.promptSlug) {
-          await selectPrompt(draft.promptSlug, { trackHistory: false });
-        }
-
-        if (draft.type === 'new') {
-          // Extract tempId from draftId (format: "new:temp_...")
-          const tempId = draft.draftId.replace(/^new:/, '');
-
-          // Save current list state
-          const listEl = document.getElementById('prompt-list');
-          savedListState = {
-            query: currentQuery,
-            tags: [...currentTags],
-            scrollTop: listEl ? listEl.scrollTop : 0
-          };
-
-          // Create single staging entry with matching tempId
-          stagingPrompts = [{
-            tempId: tempId,
-            data: draft.data
-          }];
-          selectedStagingId = tempId;
-          currentMode = 'new';
-
-          renderStagingList();
-          await showEditor(draft.data);
-          isDirty = false;
-        } else {
-          // Edit draft: show editor with draft data
-          selectedSlug = draft.promptSlug || selectedSlug;
-          currentMode = 'edit';
-          await showEditor(draft.data);
-        }
-
-        checkDraftExpiration(draft);
+        const res = await fetch('/api/prompts?limit=1000', { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const allPrompts = await res.json();
+        const list = Array.isArray(allPrompts) ? allPrompts : [];
+        window.parent.postMessage({
+          type: 'portlet:prompt-list',
+          prompts: list.map(p => ({
+            slug: p.slug,
+            name: p.name,
+            tags: p.tags,
+            pinned: p.pinned
+          }))
+        }, window.location.origin);
       } catch (err) {
-        console.error('Failed to open draft:', err);
+        console.error('Failed to fetch prompt list for export:', err);
       }
     }
 
@@ -2073,14 +1956,20 @@ bun run prompts:sync</code></pre>
           restoreState(payload.state);
           break;
 
-        case 'shell:drafts:open':
-          // Request to open specific draft
-          openDraft(payload.draftId);
-          break;
-
         case 'shell:theme':
           // Theme change from shell - update portlet theme
           applyTheme(payload.theme);
+          break;
+
+        case 'shell:action':
+          // Actions triggered from shell footer
+          if (payload.action === 'new-prompt') {
+            enterInsertMode();
+          } else if (payload.action === 'refresh-prompts') {
+            loadPrompts(currentQuery, currentTags);
+          } else if (payload.action === 'get-prompt-list') {
+            fetchUnfilteredPromptList();
+          }
           break;
       }
     });
@@ -2103,11 +1992,6 @@ bun run prompts:sync</code></pre>
         themeStylesheet.href = `/shared/themes/${themeId}.css`;
       }
     }
-
-    // New prompt - enter insert mode
-    document.getElementById('new-prompt-btn').addEventListener('click', async () => {
-      await enterInsertMode();
-    });
 
     // Edit button
     document.getElementById('edit-btn').addEventListener('click', () => {
@@ -2314,76 +2198,6 @@ bun run prompts:sync</code></pre>
       // Tell shell we're ready to receive state
       notifyShellReady();
     }
-
-    // ============================================
-    // IMPORT / EXPORT
-    // ============================================
-
-    // Export handler
-    document.getElementById('btn-export-yaml')?.addEventListener('click', async () => {
-      try {
-        const response = await fetch('/api/prompts/export', { credentials: 'include' });
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.error || `Export failed (${response.status})`);
-        }
-
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = response.headers.get('content-disposition')
-          ?.match(/filename="(.+)"/)?.[1] || 'liminaldb-prompts.yaml';
-        a.click();
-        URL.revokeObjectURL(url);
-        showToast('Prompts exported successfully', { type: 'success' });
-      } catch (err) {
-        showToast(err.message || 'Failed to export prompts', { type: 'error' });
-      }
-    });
-
-    // Import handler
-    document.getElementById('btn-import-yaml')?.addEventListener('click', () => {
-      document.getElementById('yaml-file-input')?.click();
-    });
-
-    document.getElementById('yaml-file-input')?.addEventListener('change', async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      e.target.value = '';
-
-      try {
-        const yamlContent = await file.text();
-        const response = await fetch('/api/prompts/import', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ yaml: yamlContent }),
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          showToast(result.error || 'Import failed', { type: 'error' });
-          return;
-        }
-
-        let msg = `Imported ${result.created} prompt${result.created !== 1 ? 's' : ''}`;
-        if (result.skipped.length > 0) {
-          msg += `, ${result.skipped.length} skipped (duplicate)`;
-        }
-        if (result.errors.length > 0) {
-          msg += `, ${result.errors.length} invalid`;
-        }
-        const toastType = result.created > 0 || result.skipped.length > 0 ? 'success' : 'error';
-        showToast(msg, { type: toastType });
-
-        // Refresh prompt list
-        await loadPrompts(currentQuery, currentTags);
-      } catch (err) {
-        showToast('Failed to import file', { type: 'error' });
-      }
-    });
 
     if (!navigator.userAgent.includes("jsdom")) {
       if (document.readyState === "loading") {

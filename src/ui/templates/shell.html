@@ -10,6 +10,8 @@
 <body class="shell">
   <script src="/js/utils.js"></script>
   <script src="/js/components/tag-selector.js"></script>
+  <script src="/js/components/toast.js"></script>
+  <div id="toast-container" class="toast-container"></div>
   <header class="shell-header">
     <div class="search-group">
       <input type="search" id="search-input" class="search-input" placeholder="Search prompts..." />
@@ -20,10 +22,6 @@
       <div class="filter-tags" id="filter-tags"></div>
     </div>
     <div class="logo"><strong>LIMINAL</strong>DB</div>
-    <div id="draft-indicator" class="draft-indicator hidden">
-      <span class="draft-icon"></span>
-      <span id="draft-count">0</span> unsaved
-    </div>
     <div class="theme-picker hidden" id="theme-picker">
       <button class="theme-picker-btn" id="theme-picker-btn" aria-haspopup="true" aria-expanded="false">Theme</button>
       <div class="theme-picker-dropdown" id="theme-picker-dropdown" role="menu">
@@ -49,6 +47,68 @@
     ></iframe>
   </main>
 
+  <footer class="shell-footer">
+    <span id="footer-status" class="shell-footer-status"></span>
+    <button id="footer-new-btn" class="shell-footer-btn shell-footer-btn-accent">+ New</button>
+    <button id="footer-transfer-btn" class="shell-footer-btn shell-footer-btn-ghost">Import / Export</button>
+  </footer>
+
+  <!-- Transfer Dialog (Import / Export) -->
+  <div id="transfer-dialog" class="transfer-dialog" style="display: none;">
+    <div class="transfer-dialog-content">
+      <div class="transfer-dialog-header">
+        <div class="transfer-tabs">
+          <button class="transfer-tab active" data-tab="export">Export</button>
+          <button class="transfer-tab" data-tab="import">Import</button>
+        </div>
+        <button class="transfer-close" aria-label="Close">&times;</button>
+      </div>
+
+      <!-- Export Tab -->
+      <div id="transfer-tab-export" class="transfer-tab-panel active">
+        <div class="transfer-toolbar">
+          <label class="transfer-select-all">
+            <input type="checkbox" id="export-select-all" checked> Select all
+          </label>
+          <input type="search" id="export-search" class="transfer-search" placeholder="Filter prompts...">
+          <span id="export-count" class="transfer-count"></span>
+        </div>
+        <div id="export-list" class="transfer-list">
+          <div class="transfer-loading">Loading prompts...</div>
+        </div>
+        <div class="transfer-actions">
+          <button class="btn btn-secondary btn-sm" id="transfer-cancel-export">Cancel</button>
+          <button class="btn btn-primary btn-sm" id="transfer-do-export">Export</button>
+        </div>
+      </div>
+
+      <!-- Import Tab -->
+      <div id="transfer-tab-import" class="transfer-tab-panel">
+        <div id="import-drop-zone" class="import-drop-zone">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Drop a YAML file or <button class="import-browse-link" id="import-browse-btn">browse</button></span>
+          <input type="file" id="import-file-input" accept=".yaml,.yml" style="display: none;">
+        </div>
+        <div id="import-preview" style="display: none;">
+          <div class="transfer-toolbar">
+            <label class="transfer-select-all">
+              <input type="checkbox" id="import-select-all" checked> Select all
+            </label>
+            <input type="search" id="import-search" class="transfer-search" placeholder="Filter prompts...">
+            <span id="import-count" class="transfer-count"></span>
+          </div>
+          <div id="import-list" class="transfer-list"></div>
+          <div class="transfer-actions">
+            <button class="btn btn-secondary btn-sm" id="transfer-cancel-import">Cancel</button>
+            <button class="btn btn-primary btn-sm" id="transfer-do-import">Import</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     window.__AUTH__ = {
       userId: "{{userId}}",
@@ -67,8 +127,6 @@
     let selectedTags = [];
     let debounceTimer;
     let portletDirty = false;
-    let draftPollingInterval = null;
-    let currentDraftSummary = { count: 0, latestDraftId: null, hasExpiringSoon: false };
 
     // ============================================
     // HISTORY / ROUTER
@@ -315,9 +373,14 @@
           portletDirty = payload.dirty === true;
           break;
 
-        case 'portlet:drafts':
-          // Draft updates from portlet
-          updateDraftIndicator(payload);
+        case 'portlet:prompt-count':
+          // Prompt count update from portlet
+          updateFooterStatus(payload.count);
+          break;
+
+        case 'portlet:prompt-list':
+          // Full prompt list for export dialog
+          renderExportList(payload.prompts || []);
           break;
       }
     });
@@ -325,78 +388,6 @@
     // ============================================
     // DRAFT INDICATOR
     // ============================================
-
-    /**
-     * Start polling for drafts
-     */
-    function startDraftPolling() {
-      // Initial fetch
-      fetchDraftSummary();
-
-      // Poll every 15 seconds
-      draftPollingInterval = setInterval(fetchDraftSummary, 15000);
-    }
-
-    async function fetchDraftSummary() {
-      try {
-        const response = await window.fetch('/api/drafts/summary', {
-          credentials: 'same-origin'
-        });
-        if (!response.ok) return;
-        const summary = await response.json();
-        updateDraftIndicator(summary);
-      } catch (e) {
-        console.error('Draft polling failed:', e);
-      }
-    }
-
-    /**
-     * Update draft indicator UI
-     * 
-     * Shows/hides indicator based on draft count.
-     * Updates count display and handles expiring soon state.
-     */
-    function updateDraftIndicator(summary) {
-      if (!summary || typeof summary.count !== 'number') return;
-      currentDraftSummary = {
-        count: summary.count ?? 0,
-        latestDraftId: summary.latestDraftId ?? null,
-        hasExpiringSoon: summary.hasExpiringSoon === true,
-      };
-
-      const indicator = document.getElementById('draft-indicator');
-      const countEl = document.getElementById('draft-count');
-      if (!indicator || !countEl) return;
-
-      if (currentDraftSummary.count > 0) {
-        indicator.classList.remove('hidden');
-        countEl.textContent = String(currentDraftSummary.count);
-        indicator.classList.toggle('expiring-soon', currentDraftSummary.hasExpiringSoon);
-      } else {
-        indicator.classList.add('hidden');
-        countEl.textContent = '0';
-        indicator.classList.remove('expiring-soon');
-      }
-    }
-
-    /**
-     * Handle click on draft indicator
-     * 
-     * Navigates to the latest draft or opens draft management UI.
-     */
-    const draftIndicator = document.getElementById('draft-indicator');
-    if (draftIndicator) {
-      draftIndicator.addEventListener('click', () => {
-        const draftId = currentDraftSummary?.latestDraftId;
-        if (!draftId) return;
-        if (moduleFrame && moduleFrame.contentWindow) {
-          moduleFrame.contentWindow.postMessage({
-            type: 'shell:drafts:open',
-            draftId
-          }, window.location.origin);
-        }
-      });
-    }
 
     // ============================================
     // THEME PICKER
@@ -563,11 +554,382 @@
       }
     });
 
+    // ============================================
+    // SHELL FOOTER
+    // ============================================
+
+    const footerNewBtn = document.getElementById('footer-new-btn');
+    const footerTransferBtn = document.getElementById('footer-transfer-btn');
+    const footerStatus = document.getElementById('footer-status');
+
+    // "+ New" sends action to portlet
+    if (footerNewBtn) {
+      footerNewBtn.addEventListener('click', () => {
+        if (moduleFrame && moduleFrame.contentWindow) {
+          moduleFrame.contentWindow.postMessage({
+            type: 'shell:action',
+            action: 'new-prompt'
+          }, window.location.origin);
+        }
+      });
+    }
+
+    // Update footer status with prompt count
+    function updateFooterStatus(count) {
+      if (footerStatus) {
+        footerStatus.textContent = count != null
+          ? `${count} prompt${count !== 1 ? 's' : ''}`
+          : '';
+      }
+    }
+
+    // ============================================
+    // TRANSFER DIALOG (IMPORT / EXPORT)
+    // ============================================
+
+    const transferDialog = document.getElementById('transfer-dialog');
+    const transferTabs = transferDialog?.querySelectorAll('.transfer-tab');
+    const transferPanels = transferDialog?.querySelectorAll('.transfer-tab-panel');
+    const transferClose = transferDialog?.querySelector('.transfer-close');
+
+    let cachedPromptList = []; // Cached from portlet for export
+
+    function openTransferDialog(tab = 'export') {
+      if (!transferDialog) return;
+      transferDialog.style.display = 'flex';
+      switchTransferTab(tab);
+
+      if (tab === 'export') {
+        // Request prompt list from portlet
+        if (moduleFrame && moduleFrame.contentWindow) {
+          moduleFrame.contentWindow.postMessage({
+            type: 'shell:action',
+            action: 'get-prompt-list'
+          }, window.location.origin);
+        }
+      }
+    }
+
+    function closeTransferDialog() {
+      if (!transferDialog) return;
+      transferDialog.style.display = 'none';
+      // Reset import state
+      const dropZone = document.getElementById('import-drop-zone');
+      const preview = document.getElementById('import-preview');
+      if (dropZone) dropZone.style.display = '';
+      if (preview) preview.style.display = 'none';
+      const fileInput = document.getElementById('import-file-input');
+      if (fileInput) fileInput.value = '';
+      // Clear search filters and pending state
+      const exportSearch = document.getElementById('export-search');
+      const importSearch = document.getElementById('import-search');
+      if (exportSearch) exportSearch.value = '';
+      if (importSearch) importSearch.value = '';
+      pendingImportYaml = '';
+    }
+
+    function switchTransferTab(tabName) {
+      transferTabs?.forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+      transferPanels?.forEach(p => {
+        p.classList.toggle('active', p.id === `transfer-tab-${tabName}`);
+      });
+    }
+
+    // Tab clicks
+    transferTabs?.forEach(tab => {
+      tab.addEventListener('click', () => switchTransferTab(tab.dataset.tab));
+    });
+
+    // Close button + click outside + Escape
+    transferClose?.addEventListener('click', closeTransferDialog);
+    transferDialog?.addEventListener('click', (e) => {
+      if (e.target === transferDialog) closeTransferDialog();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && transferDialog?.style.display === 'flex') {
+        closeTransferDialog();
+      }
+    });
+
+    // Open dialog from footer button
+    if (footerTransferBtn) {
+      footerTransferBtn.addEventListener('click', () => openTransferDialog('export'));
+    }
+
+    // Cancel buttons
+    document.getElementById('transfer-cancel-export')?.addEventListener('click', closeTransferDialog);
+    document.getElementById('transfer-cancel-import')?.addEventListener('click', closeTransferDialog);
+
+    // --- Export ---
+
+    function renderExportList(prompts) {
+      cachedPromptList = prompts || [];
+      const list = document.getElementById('export-list');
+      const selectAll = document.getElementById('export-select-all');
+      if (!list) return;
+
+      list.innerHTML = prompts.map(p => `
+        <label class="transfer-item" data-slug="${escapeHtml(p.slug)}">
+          <input type="checkbox" checked>
+          <div class="transfer-item-info">
+            <span class="transfer-item-name">${escapeHtml(p.name)}</span>
+            <span class="transfer-item-slug">${escapeHtml(p.slug)}</span>
+          </div>
+          ${p.pinned ? '<span class="transfer-item-pin">📌</span>' : ''}
+        </label>
+      `).join('');
+
+      if (selectAll) selectAll.checked = true;
+      updateExportCount();
+
+      // Checkbox changes update count
+      list.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', updateExportCount);
+      });
+    }
+
+    function updateExportCount() {
+      const checked = document.querySelectorAll('#export-list input[type="checkbox"]:checked').length;
+      const total = document.querySelectorAll('#export-list input[type="checkbox"]').length;
+      const countEl = document.getElementById('export-count');
+      const btn = document.getElementById('transfer-do-export');
+      if (countEl) countEl.textContent = `${checked} of ${total} selected`;
+      if (btn) {
+        btn.textContent = `Export ${checked} prompt${checked !== 1 ? 's' : ''}`;
+        btn.disabled = checked === 0;
+      }
+    }
+
+    // Filter within export list
+    document.getElementById('export-search')?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      document.querySelectorAll('#export-list .transfer-item').forEach(item => {
+        const name = item.querySelector('.transfer-item-name')?.textContent?.toLowerCase() || '';
+        const slug = item.dataset.slug?.toLowerCase() || '';
+        item.style.display = (name.includes(q) || slug.includes(q)) ? '' : 'none';
+      });
+    });
+
+    // Select all toggle for export
+    document.getElementById('export-select-all')?.addEventListener('change', (e) => {
+      document.querySelectorAll('#export-list input[type="checkbox"]').forEach(cb => {
+        cb.checked = e.target.checked;
+      });
+      updateExportCount();
+    });
+
+    // Do export
+    document.getElementById('transfer-do-export')?.addEventListener('click', async () => {
+      const checkedSlugs = [];
+      document.querySelectorAll('#export-list .transfer-item').forEach(item => {
+        if (item.querySelector('input[type="checkbox"]')?.checked) {
+          checkedSlugs.push(item.dataset.slug);
+        }
+      });
+      if (checkedSlugs.length === 0) return;
+
+      try {
+        const total = document.querySelectorAll('#export-list .transfer-item').length;
+        const isAll = checkedSlugs.length === total;
+        let exportUrl = '/api/prompts/export';
+        if (!isAll) {
+          const params = new URLSearchParams();
+          checkedSlugs.forEach(s => params.append('slugs', s));
+          exportUrl += `?${params}`;
+        }
+        const response = await fetch(exportUrl, { credentials: 'include' });
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || `Export failed (${response.status})`);
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = response.headers.get('content-disposition')
+          ?.match(/filename="(.+)"/)?.[1] || 'liminaldb-prompts.yaml';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast(`Exported ${checkedSlugs.length} prompt${checkedSlugs.length !== 1 ? 's' : ''}`, { type: 'success' });
+        closeTransferDialog();
+      } catch (err) {
+        showToast(err.message || 'Failed to export prompts', { type: 'error' });
+      }
+    });
+
+    // --- Import ---
+
+    const importDropZone = document.getElementById('import-drop-zone');
+    const importFileInput = document.getElementById('import-file-input');
+    const importBrowseBtn = document.getElementById('import-browse-btn');
+
+    importBrowseBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      importFileInput?.click();
+    });
+
+    // Drag and drop
+    importDropZone?.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      importDropZone.classList.add('drag-over');
+    });
+    importDropZone?.addEventListener('dragleave', () => {
+      importDropZone.classList.remove('drag-over');
+    });
+    importDropZone?.addEventListener('drop', (e) => {
+      e.preventDefault();
+      importDropZone.classList.remove('drag-over');
+      const file = e.dataTransfer?.files[0];
+      if (file && (file.name.endsWith('.yaml') || file.name.endsWith('.yml'))) {
+        previewImportFile(file);
+      }
+    });
+
+    importFileInput?.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (file) previewImportFile(file);
+    });
+
+    async function previewImportFile(file) {
+      try {
+        const yamlContent = await file.text();
+        const response = await fetch('/api/prompts/import/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ yaml: yamlContent }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          showToast(result.error || 'Failed to parse file', { type: 'error' });
+          return;
+        }
+        renderImportPreview(result, yamlContent);
+      } catch (err) {
+        showToast('Failed to parse file', { type: 'error' });
+      }
+    }
+
+    let pendingImportYaml = '';
+
+    function renderImportPreview(result, yamlContent) {
+      pendingImportYaml = yamlContent;
+      const dropZone = document.getElementById('import-drop-zone');
+      const preview = document.getElementById('import-preview');
+      const list = document.getElementById('import-list');
+      const selectAll = document.getElementById('import-select-all');
+      if (!preview || !list) return;
+
+      if (dropZone) dropZone.style.display = 'none';
+      preview.style.display = '';
+
+      const prompts = result.prompts || [];
+      list.innerHTML = prompts.map(p => {
+        const isDuplicate = p.duplicate === true;
+        return `
+          <label class="transfer-item ${isDuplicate ? 'transfer-item-duplicate' : ''}" data-slug="${escapeHtml(p.slug)}">
+            <input type="checkbox" ${isDuplicate ? '' : 'checked'} ${isDuplicate ? 'disabled' : ''}>
+            <div class="transfer-item-info">
+              <span class="transfer-item-name">${escapeHtml(p.name)}</span>
+              <span class="transfer-item-slug">${escapeHtml(p.slug)}${isDuplicate ? ' (already exists)' : ''}</span>
+            </div>
+          </label>
+        `;
+      }).join('');
+
+      if (result.errors && result.errors.length > 0) {
+        list.innerHTML += result.errors.map(err => `
+          <div class="transfer-item transfer-item-error">
+            <span class="transfer-item-slug">${escapeHtml(err)}</span>
+          </div>
+        `).join('');
+      }
+
+      if (selectAll) selectAll.checked = true;
+      updateImportCount();
+
+      list.querySelectorAll('input[type="checkbox"]:not(:disabled)').forEach(cb => {
+        cb.addEventListener('change', updateImportCount);
+      });
+    }
+
+    function updateImportCount() {
+      const checked = document.querySelectorAll('#import-list input[type="checkbox"]:checked:not(:disabled)').length;
+      const total = document.querySelectorAll('#import-list input[type="checkbox"]:not(:disabled)').length;
+      const countEl = document.getElementById('import-count');
+      const btn = document.getElementById('transfer-do-import');
+      if (countEl) countEl.textContent = `${checked} of ${total} selected`;
+      if (btn) {
+        btn.textContent = `Import ${checked} prompt${checked !== 1 ? 's' : ''}`;
+        btn.disabled = checked === 0;
+      }
+    }
+
+    // Filter within import list
+    document.getElementById('import-search')?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      document.querySelectorAll('#import-list .transfer-item').forEach(item => {
+        const name = item.querySelector('.transfer-item-name')?.textContent?.toLowerCase() || '';
+        const slug = item.dataset.slug?.toLowerCase() || '';
+        item.style.display = (name.includes(q) || slug.includes(q)) ? '' : 'none';
+      });
+    });
+
+    // Select all toggle for import
+    document.getElementById('import-select-all')?.addEventListener('change', (e) => {
+      document.querySelectorAll('#import-list input[type="checkbox"]:not(:disabled)').forEach(cb => {
+        cb.checked = e.target.checked;
+      });
+      updateImportCount();
+    });
+
+    // Do import
+    document.getElementById('transfer-do-import')?.addEventListener('click', async () => {
+      const selectedSlugs = [];
+      document.querySelectorAll('#import-list .transfer-item:not(.transfer-item-duplicate)').forEach(item => {
+        if (item.querySelector('input[type="checkbox"]')?.checked) {
+          selectedSlugs.push(item.dataset.slug);
+        }
+      });
+      if (selectedSlugs.length === 0) return;
+
+      try {
+        const response = await fetch('/api/prompts/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ yaml: pendingImportYaml, slugs: selectedSlugs }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          showToast(result.error || 'Import failed', { type: 'error' });
+          return;
+        }
+
+        let msg = `Imported ${result.created} prompt${result.created !== 1 ? 's' : ''}`;
+        if (result.skipped?.length > 0) {
+          msg += `, ${result.skipped.length} skipped`;
+        }
+        showToast(msg, { type: 'success' });
+
+        // Tell portlet to refresh
+        if (moduleFrame && moduleFrame.contentWindow) {
+          moduleFrame.contentWindow.postMessage({
+            type: 'shell:action',
+            action: 'refresh-prompts'
+          }, window.location.origin);
+        }
+        closeTransferDialog();
+      } catch (err) {
+        showToast('Failed to import prompts', { type: 'error' });
+      }
+    });
+
     // Initialize
     (async function init() {
       initHistoryState();
       loadTags();
-      startDraftPolling();
       await loadThemePreference();
       updateThemeSelectionUI(currentTheme);
     })();
