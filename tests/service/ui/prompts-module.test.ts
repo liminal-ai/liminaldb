@@ -869,69 +869,7 @@ describe("Prompts Module", () => {
 			expect(pinToggle.getAttribute("aria-pressed")).toBe("false");
 		});
 
-		test("TC-22: clicking star icon favorites prompt", async () => {
-			const fetchMock = mockFetch({
-				"/api/prompts": { data: mockPrompts },
-				"/api/prompts/code-review/flags": { data: { updated: true } },
-			});
-			dom.window.fetch = fetchMock;
-
-			dom.window.loadPrompts();
-			await waitForAsync(100);
-
-			const firstItem = dom.window.document.querySelector(".prompt-item");
-			if (!firstItem) throw new Error("Prompt item not found");
-			firstItem.dispatchEvent(
-				new dom.window.MouseEvent("click", { bubbles: true }),
-			);
-			await waitForAsync(50);
-
-			const starToggle = dom.window.document.getElementById("favorite-toggle");
-			if (!starToggle) throw new Error("Favorite toggle not found");
-			starToggle.dispatchEvent(
-				new dom.window.MouseEvent("click", { bubbles: true }),
-			);
-
-			expect(fetchMock).toHaveBeenCalledWith(
-				expect.stringContaining("/api/prompts/code-review/flags"),
-				expect.objectContaining({ method: "PATCH" }),
-			);
-			expect(starToggle.getAttribute("aria-pressed")).toBe("true");
-		});
-
-		test("TC-23: clicking star on favorited prompt unfavorites", async () => {
-			const fetchMock = mockFetch({
-				"/api/prompts": {
-					data: [{ ...mockPrompts[0], favorited: true }, mockPrompts[1]],
-				},
-				"/api/prompts/code-review/flags": { data: { updated: true } },
-			});
-			dom.window.fetch = fetchMock;
-
-			dom.window.loadPrompts();
-			await waitForAsync(100);
-
-			const firstItem = dom.window.document.querySelector(".prompt-item");
-			if (!firstItem) throw new Error("Prompt item not found");
-			firstItem.dispatchEvent(
-				new dom.window.MouseEvent("click", { bubbles: true }),
-			);
-			await waitForAsync(50);
-
-			const starToggle = dom.window.document.getElementById("favorite-toggle");
-			if (!starToggle) throw new Error("Favorite toggle not found");
-			starToggle.dispatchEvent(
-				new dom.window.MouseEvent("click", { bubbles: true }),
-			);
-
-			expect(fetchMock).toHaveBeenCalledWith(
-				expect.stringContaining("/api/prompts/code-review/flags"),
-				expect.objectContaining({ method: "PATCH" }),
-			);
-			expect(starToggle.getAttribute("aria-pressed")).toBe("false");
-		});
-
-		test("TC-24: pin/favorite changes reflect immediately", async () => {
+		test("TC-24: pin changes reflect immediately", async () => {
 			const fetchMock = mockFetch({
 				"/api/prompts": { data: mockPrompts },
 				"/api/prompts/code-review/flags": { data: { updated: true } },
@@ -973,21 +911,114 @@ describe("Prompts Module", () => {
 			if (!pinnedItem) throw new Error("Prompt item not found");
 			expect(pinnedItem.querySelector(".prompt-pin")).not.toBeNull();
 		});
+	});
 
-		test("TC-26: favorited prompt shows star icon in list", async () => {
+	describe("UI Delete Prompt", () => {
+		test("TC-D1: clicking delete shows confirmation and sends DELETE on confirm", async () => {
 			const fetchMock = mockFetch({
-				"/api/prompts": {
-					data: [{ ...mockPrompts[0], favorited: true }, mockPrompts[1]],
-				},
+				"/api/prompts": { data: mockPrompts },
+				"/api/prompts/code-review": { data: { deleted: true } },
 			});
 			dom.window.fetch = fetchMock;
 
 			dom.window.loadPrompts();
 			await waitForAsync(100);
 
-			const favItem = dom.window.document.querySelector(".prompt-item");
-			if (!favItem) throw new Error("Prompt item not found");
-			expect(favItem.querySelector(".prompt-star")).not.toBeNull();
+			// Select a prompt
+			const firstItem = dom.window.document.querySelector(".prompt-item");
+			if (!firstItem) throw new Error("Prompt item not found");
+			click(firstItem);
+			await waitForAsync(50);
+
+			// Click delete
+			const deleteBtn = dom.window.document.getElementById("delete-btn");
+			if (!deleteBtn) throw new Error("Delete button not found");
+			click(deleteBtn);
+			await waitForAsync(50);
+
+			// Confirm modal should be visible
+			const confirmModal = dom.window.document.getElementById("confirm-modal");
+			expect(confirmModal?.style.display).toBe("flex");
+
+			// Confirm the deletion
+			resolveConfirmDialog(dom, true);
+			await waitForAsync(100);
+
+			// Should have called DELETE
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.stringContaining("/api/prompts/code-review"),
+				expect.objectContaining({ method: "DELETE" }),
+			);
+		});
+
+		test("TC-D2: canceling delete confirmation does not call API", async () => {
+			const fetchMock = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+			});
+			dom.window.fetch = fetchMock;
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const firstItem = dom.window.document.querySelector(".prompt-item");
+			if (!firstItem) throw new Error("Prompt item not found");
+			click(firstItem);
+			await waitForAsync(50);
+
+			const deleteBtn = dom.window.document.getElementById("delete-btn");
+			if (!deleteBtn) throw new Error("Delete button not found");
+			click(deleteBtn);
+			await waitForAsync(50);
+
+			// Cancel
+			resolveConfirmDialog(dom, false);
+			await waitForAsync(50);
+
+			// Should NOT have called DELETE
+			const deleteCalls = (
+				fetchMock as ReturnType<typeof vi.fn>
+			).mock.calls.filter(
+				(args: unknown[]) =>
+					(args[1] as RequestInit | undefined)?.method === "DELETE",
+			);
+			expect(deleteCalls).toHaveLength(0);
+		});
+
+		test("TC-D3: after delete, next prompt in list is selected", async () => {
+			const fetchMock = mockFetch({
+				"/api/prompts": { data: mockPrompts },
+				"/api/prompts/code-review": { data: { deleted: true } },
+			});
+			dom.window.fetch = fetchMock;
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			// Select first prompt
+			const firstItem = dom.window.document.querySelector(".prompt-item");
+			if (!firstItem) throw new Error("Prompt item not found");
+			click(firstItem);
+			await waitForAsync(50);
+
+			// Delete it
+			const deleteBtn = dom.window.document.getElementById("delete-btn");
+			if (!deleteBtn) throw new Error("Delete button not found");
+			click(deleteBtn);
+			await waitForAsync(50);
+
+			// After confirm, loadPrompts re-fetches — mock returns only the second prompt
+			fetchMock.mockClear();
+			const postDeleteMock = mockFetch({
+				"/api/prompts": { data: [mockPrompts[1]] },
+			});
+			dom.window.fetch = postDeleteMock;
+
+			resolveConfirmDialog(dom, true);
+			await waitForAsync(200);
+
+			// The remaining prompt should be selected
+			const slugEl = dom.window.document.getElementById("prompt-slug");
+			expect(slugEl?.textContent).toBe("meeting-notes");
 		});
 	});
 

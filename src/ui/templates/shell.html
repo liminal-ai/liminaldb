@@ -35,7 +35,10 @@
         <div class="theme-picker-item" data-theme="dark-3" role="menuitem">Dark 3</div>
       </div>
     </div>
-    <div class="user-info">{{email}}</div>
+    <div class="user-info">
+      <span class="user-email">{{email}}</span>
+      <a href="/auth/logout" class="sign-out-link">Sign out</a>
+    </div>
   </header>
 
   <main class="shell-main">
@@ -301,9 +304,10 @@
           break;
 
         case 'portlet:ready':
-          // Portlet loaded and ready - send initial state
+          // Portlet loaded and ready - send initial state and current theme
           const initialState = parseUrlState();
           sendStateToPortlet(initialState);
+          broadcastThemeToPortlet(currentTheme);
           break;
 
         case 'portlet:dirty':

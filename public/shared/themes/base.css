@@ -137,8 +137,25 @@ body {
 }
 
 .shell-header .user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
   font-size: var(--text-sm);
   color: var(--text-muted);
+}
+
+.shell-header .sign-out-link {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-decoration: none;
+  opacity: 0.6;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
+}
+
+.shell-header .sign-out-link:hover {
+  opacity: 1;
+  color: var(--text-primary);
 }
 
 .shell-main {
@@ -821,6 +838,73 @@ select {
 
 .prompt-header-top h1 {
   margin: 0;
+}
+
+.prompt-header-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* Pin toggle */
+.pin-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  opacity: 0.4;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pin-toggle:hover {
+  opacity: 0.8;
+  border-color: var(--border-subtle);
+  background: var(--bg-elevated);
+}
+
+.pin-toggle.active {
+  opacity: 1;
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  background: var(--accent-glow);
+}
+
+.pin-toggle .pin-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.pin-toggle.active .pin-icon {
+  fill: var(--accent);
+}
+
+/* Delete button (subtle danger) */
+.btn-danger-subtle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xs) var(--space-sm);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  opacity: 0.4;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-danger-subtle:hover {
+  opacity: 1;
+  color: var(--error);
+  border-color: var(--error);
+  background: color-mix(in srgb, var(--error) 10%, transparent);
 }
 
 .prompt-edit {
