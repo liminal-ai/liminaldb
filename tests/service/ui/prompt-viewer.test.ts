@@ -22,6 +22,7 @@ describe("Prompts Module - Prompt Viewer", () => {
 		name: "Test Prompt",
 		description: "A test prompt",
 		content: "# Header\n\nHello {{name}}, this is **bold** and `code`.",
+		mergeFields: ["name"],
 		tags: ["test"],
 		parameters: [],
 	};

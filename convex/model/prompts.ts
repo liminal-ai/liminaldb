@@ -3,6 +3,7 @@ import type { Id } from "../_generated/dataModel";
 import { ConvexError } from "convex/values";
 import { validateGlobalTag, getTagId, getTagsByDimension } from "./tags";
 import { getRankingConfig, rerank } from "./ranking";
+import { extractMergeFields } from "./merge";
 import {
 	assertCanRead,
 	assertCanInsert,
@@ -43,6 +44,7 @@ export interface PromptDTO {
 	name: string;
 	description: string;
 	content: string;
+	mergeFields: string[];
 	tags: string[]; // Maps from storage `tagNames`
 	parameters?: {
 		name: string;
@@ -305,6 +307,7 @@ export async function getBySlug(
 		name: prompt.name,
 		description: prompt.description,
 		content: prompt.content,
+		mergeFields: extractMergeFields(prompt.content),
 		tags: prompt.tagNames,
 		parameters: prompt.parameters,
 	};
@@ -349,6 +352,7 @@ export async function listByUser(
 			name: prompt.name,
 			description: prompt.description,
 			content: prompt.content,
+			mergeFields: extractMergeFields(prompt.content),
 			tags: prompt.tagNames,
 			parameters: prompt.parameters,
 		}));
@@ -366,6 +370,7 @@ export async function listByUser(
 		name: prompt.name,
 		description: prompt.description,
 		content: prompt.content,
+		mergeFields: extractMergeFields(prompt.content),
 		tags: prompt.tagNames,
 		parameters: prompt.parameters,
 	}));
@@ -685,6 +690,7 @@ function toDTOv2(prompt: {
 		name: prompt.name,
 		description: prompt.description,
 		content: prompt.content,
+		mergeFields: extractMergeFields(prompt.content),
 		tags: prompt.tagNames,
 		parameters: prompt.parameters,
 		pinned: prompt.pinned ?? false,

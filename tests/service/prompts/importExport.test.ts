@@ -46,6 +46,7 @@ function mockPromptDTO(slug: string) {
 		name: `Prompt ${slug}`,
 		description: `Description for ${slug}`,
 		content: `Content for ${slug}`,
+		mergeFields: [],
 		tags: ["code"],
 		pinned: false,
 		favorited: true,

@@ -208,6 +208,7 @@ describe("MCP Tools - get_prompt", () => {
 			name: "Test",
 			description: "...",
 			content: "...",
+			mergeFields: [],
 			tags: [],
 		});
 
@@ -483,6 +484,7 @@ describe("MCP Tools - update_prompt", () => {
 			name: "Old",
 			description: "Old",
 			content: "Old",
+			mergeFields: [],
 			tags: [],
 		});
 
