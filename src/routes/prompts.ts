@@ -6,10 +6,12 @@ import {
 	CreatePromptsRequestSchema,
 	type CreatePromptsRequest,
 	FlagsPatchSchema,
+	MergeRequestSchema,
 	PromptInputSchema,
 	type PromptInput,
 	SlugSchema,
 } from "../schemas/prompts";
+import { mergeContent } from "../lib/merge";
 import { convex } from "../lib/convex";
 import { api } from "../../convex/_generated/api";
 import { config } from "../lib/config";
@@ -58,6 +60,11 @@ export function registerPromptRoutes(fastify: FastifyInstance): void {
 		"/api/prompts/:slug/flags",
 		{ preHandler: authMiddleware },
 		patchPromptFlagsHandler,
+	);
+	fastify.post(
+		"/api/prompts/:slug/merge",
+		{ preHandler: authMiddleware },
+		mergePromptHandler,
 	);
 	fastify.post(
 		"/api/prompts/:slug/usage",
@@ -206,6 +213,73 @@ async function patchPromptFlagsHandler(
 		}
 		request.log.error({ err: error, slug, userId }, "Failed to update flags");
 		return reply.code(500).send({ error: "Failed to update flags" });
+	}
+}
+
+/**
+ * POST /api/prompts/:slug/merge
+ * Merge values into a prompt template and return the result.
+ */
+async function mergePromptHandler(
+	request: FastifyRequest,
+	reply: FastifyReply,
+): Promise<void> {
+	const userId = request.user?.id;
+	if (!userId) {
+		return reply.code(401).send({ error: "Not authenticated" });
+	}
+
+	const { slug } = request.params as { slug: string };
+	const slugError = validateSlugParam(slug);
+	if (slugError) {
+		return reply.code(400).send({ error: slugError });
+	}
+
+	let values: Record<string, string>;
+	try {
+		const body = MergeRequestSchema.parse(request.body);
+		values = body.values;
+	} catch (error) {
+		if (error instanceof ZodError) {
+			const issues = error.issues ?? [];
+			const firstIssue = issues[0];
+			const errorMessage = firstIssue?.message ?? "Validation failed";
+			return reply.code(400).send({ error: errorMessage });
+		}
+		throw error;
+	}
+
+	try {
+		const prompt = await convex.query(api.prompts.getPromptBySlug, {
+			apiKey: config.convexApiKey,
+			userId,
+			slug,
+		});
+
+		if (!prompt) {
+			return reply.code(404).send({ error: "Prompt not found" });
+		}
+
+		const result = mergeContent(prompt.content, values);
+
+		// Fire-and-forget usage tracking (only on successful merge)
+		void convex
+			.mutation(api.prompts.trackPromptUse, {
+				apiKey: config.convexApiKey,
+				userId,
+				slug,
+			})
+			.catch((err) => {
+				request.log.warn(
+					{ err, slug, userId },
+					"Failed to track prompt usage after merge",
+				);
+			});
+
+		return reply.code(200).send(result);
+	} catch (error) {
+		request.log.error({ err: error, slug, userId }, "Failed to merge prompt");
+		return reply.code(500).send({ error: "Failed to merge prompt" });
 	}
 }
 
