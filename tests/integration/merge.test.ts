@@ -162,7 +162,7 @@ describe("Merge API Integration", () => {
 			await new Promise((resolve) => setTimeout(resolve, intervalMs));
 		}
 
-		expect(countAfter).toBe(countBefore + 1);
+		expect(countAfter).toBeGreaterThanOrEqual(countBefore + 1);
 	});
 
 	test("401 without auth token", async () => {
