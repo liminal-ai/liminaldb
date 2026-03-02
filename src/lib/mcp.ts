@@ -9,6 +9,7 @@ import {
 	SlugSchema,
 	GLOBAL_TAG_NAMES,
 } from "../schemas/prompts";
+import { mergeContent } from "./merge";
 import {
 	VALID_THEMES,
 	VALID_SURFACES,
@@ -530,6 +531,105 @@ export function createMcpServer(): McpServer {
 						{
 							type: "text" as const,
 							text: "Failed to get prompt",
+						},
+					],
+					isError: true,
+				};
+			}
+		},
+	);
+
+	// Register merge_prompt tool
+	server.registerTool(
+		"merge_prompt",
+		{
+			title: "Merge Prompt",
+			description:
+				"Fill {{fieldName}} merge fields in a prompt template with provided values. " +
+				"Call get_prompt first to discover available mergeFields, then provide a " +
+				"values dictionary mapping field names to replacement strings. Returns the " +
+				"merged content, all merge fields, and any unfilled fields.",
+			inputSchema: {
+				slug: SlugSchema.describe("The prompt slug"),
+				values: z
+					.record(z.string(), z.string())
+					.describe("Dictionary of field name to value"),
+			},
+		},
+		async (args, extra) => {
+			const userId = extractMcpUserId(extra);
+
+			if (!userId) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Not authenticated",
+						},
+					],
+					isError: true,
+				};
+			}
+
+			try {
+				const prompt = await convex.query(api.prompts.getPromptBySlug, {
+					apiKey: config.convexApiKey,
+					userId,
+					slug: args.slug,
+				});
+
+				if (!prompt) {
+					return {
+						content: [
+							{
+								type: "text" as const,
+								text: "Prompt not found",
+							},
+						],
+						isError: true,
+					};
+				}
+
+				const result = mergeContent(prompt.content, args.values);
+
+				// Fire-and-forget usage tracking
+				void convex
+					.mutation(api.prompts.trackPromptUse, {
+						apiKey: config.convexApiKey,
+						userId,
+						slug: args.slug,
+					})
+					.catch((err) => {
+						const logger = extractMcpLogger(extra);
+						logger.error(
+							{ err, slug: args.slug },
+							"[MCP] merge_prompt trackPromptUse failed",
+						);
+					});
+
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: JSON.stringify({
+								content: result.content,
+								mergeFields: result.mergeFields,
+								unfilledFields: result.unfilledFields,
+							}),
+						},
+					],
+				};
+			} catch (error) {
+				const logger = extractMcpLogger(extra);
+				logger.error(
+					{ err: error, slug: args.slug, userId },
+					"[MCP] merge_prompt error",
+				);
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "Failed to merge prompt",
 						},
 					],
 					isError: true,
