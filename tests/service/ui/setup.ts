@@ -80,6 +80,7 @@ export async function loadTemplate(templateName: string): Promise<JSDOM> {
 		await injectToast(dom);
 		await injectTagSelector(dom);
 		await injectPromptViewer(dom);
+		await injectMergeMode(dom);
 		await injectPromptEditor(dom);
 	}
 
@@ -460,6 +461,16 @@ export async function injectPromptViewer(dom: JSDOM): Promise<void> {
 	);
 	const viewerContent = await readFile(viewerPath, "utf8");
 	dom.window.eval(viewerContent);
+}
+
+/**
+ * Load merge-mode.js into jsdom for testing.
+ * @param dom - The JSDOM instance
+ */
+export async function injectMergeMode(dom: JSDOM): Promise<void> {
+	const path = resolve(__dirname, "../../../public/js/components/merge-mode.js");
+	const content = await readFile(path, "utf8");
+	dom.window.eval(content);
 }
 
 /**

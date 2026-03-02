@@ -655,6 +655,7 @@ bun run prompts:sync</code></pre>
           <button class="copy-btn-primary" id="copy-btn" title="Copy to clipboard">Copy</button>
           <div class="prompt-viewer-actions">
             <button class="prompt-viewer-btn" id="line-edit-toggle" title="Enable line-by-line editing">Line Edit</button>
+            <button class="prompt-viewer-btn" id="merge-toggle" title="Enter merge mode" style="display: none;">Merge</button>
           </div>
         </div>
         <div class="prompt-viewer-content" id="promptContent"></div>
@@ -686,6 +687,7 @@ bun run prompts:sync</code></pre>
   <script src="/js/components/toast.js"></script>
   <script src="/js/components/tag-selector.js"></script>
   <script src="/js/components/prompt-viewer.js"></script>
+  <script src="/js/components/merge-mode.js"></script>
   <script src="/js/components/prompt-editor.js"></script>
   <script>
     /**
@@ -711,8 +713,10 @@ bun run prompts:sync</code></pre>
     // State
     let prompts = [];
     let selectedSlug = null;
-    let currentMode = 'home'; // 'home' | 'view' | 'edit' | 'new'
+    let currentMode = 'home'; // 'home' | 'view' | 'merge' | 'edit' | 'new'
     let lineEditEnabled = false;
+    let mergeActive = false;
+    let preMergeLineEdit = false;
     let currentHomeTab = 'home';
     let currentSubItem = null; // Selected item within a tab (e.g., 'claude-ai')
     try {
@@ -1502,6 +1506,14 @@ bun run prompts:sync</code></pre>
         rawPrompt = newContent;
         editingLineIndex = null;
 
+        // Re-extract merge fields from updated content
+        const fieldMatches = newContent.match(/\{\{([a-zA-Z_][a-zA-Z0-9_]*)\}\}/g) || [];
+        prompt.mergeFields = [...new Set(fieldMatches.map(m => m.slice(2, -2)))];
+        const mergeToggle = document.getElementById('merge-toggle');
+        if (mergeToggle) {
+          mergeToggle.style.display = prompt.mergeFields.length > 0 ? '' : 'none';
+        }
+
         if (lineEl) {
           lineEl.classList.remove('editing');
           lineEl.textContent = newValue;
@@ -1638,7 +1650,7 @@ bun run prompts:sync</code></pre>
 
     // Select prompt
     async function selectPrompt(slug, { trackHistory = true } = {}) {
-      // Guard: tear down edit/new mode if active
+      // Guard: tear down edit/new mode if active (check before merge exit to preserve currentMode)
       if (currentMode === 'edit' || currentMode === 'new') {
         if (isNavigating) return;
         isNavigating = true;
@@ -1648,6 +1660,17 @@ bun run prompts:sync</code></pre>
         } finally {
           isNavigating = false;
         }
+      }
+
+      // Guard: check merge mode dirty state
+      if (mergeActive && window.mergeMode && window.mergeMode.isMergeDirty()) {
+        const ok = window.confirm('You have unsaved merge field values. Discard?');
+        if (!ok) return;
+      }
+
+      // Exit merge mode if active
+      if (mergeActive) {
+        exitMergeViewMode();
       }
 
       const prompt = prompts.find((item) => item.slug === slug);
@@ -1698,38 +1721,170 @@ bun run prompts:sync</code></pre>
       // Use prompt viewer to display content
       displayPromptContent(prompt.content || '');
 
+      // Show/hide merge toggle based on merge fields
+      const mergeToggle = document.getElementById('merge-toggle');
+      if (mergeToggle) {
+        mergeToggle.style.display = (prompt.mergeFields && prompt.mergeFields.length > 0) ? '' : 'none';
+      }
+
       // Notify shell for history tracking
       if (trackHistory) {
         notifyShellStateChange(true);
       }
     }
 
+    function showCopyFeedback() {
+      const copyBtn = document.getElementById('copy-btn');
+      if (!copyBtn) return;
+      const originalText = copyBtn.textContent;
+      copyBtn.textContent = '✓ Copied!';
+      copyBtn.classList.add('copied');
+      setTimeout(() => {
+        copyBtn.textContent = originalText;
+        copyBtn.classList.remove('copied');
+      }, 1200);
+    }
+
     // Copy to clipboard
     async function copyContent() {
       if (!rawPrompt) return;
 
+      // Merge mode copy: use merge endpoint
+      if (mergeActive && window.mergeMode) {
+        const values = window.mergeMode.getMergeValues();
+        try {
+          const response = await fetch(`/api/prompts/${selectedSlug}/merge`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ values }),
+          });
+
+          if (!response.ok) throw new Error('Merge failed');
+
+          const result = await response.json();
+          await navigator.clipboard.writeText(result.content);
+
+          // Show unfilled warning if needed
+          if (result.unfilledFields && result.unfilledFields.length > 0) {
+            showToast(`Copied with unfilled fields: ${result.unfilledFields.join(', ')}`, { type: 'warning' });
+          }
+
+          // Reset dirty flag
+          window.mergeMode.resetMergeDirty();
+          showCopyFeedback();
+        } catch (_err) {
+          showToast('Failed to copy merged content', { type: 'error' });
+        }
+        return;
+      }
+
       try {
         await navigator.clipboard.writeText(rawPrompt);
-        const copyBtn = document.getElementById("copy-btn");
-        if (!copyBtn) return;
-        const originalText = copyBtn.textContent;
-        copyBtn.textContent = "✓ Copied!";
-        copyBtn.classList.add("copied");
-        setTimeout(() => {
-          copyBtn.textContent = originalText;
-          copyBtn.classList.remove("copied");
-        }, 1200);
+        showCopyFeedback();
 
         // Track usage after successful copy
         if (selectedSlug) {
           fetch(`/api/prompts/${selectedSlug}/usage`, {
-            method: "POST",
+            method: 'POST',
             keepalive: true,
           }).catch(() => {}); // fire-and-forget
         }
       } catch (err) {
         console.error('Failed to copy:', err);
       }
+    }
+
+    async function enterMergeViewMode() {
+      if (mergeActive) return true;
+
+      // Save-before-switch: save active line edit first
+      if (editingLineIndex !== null) {
+        const saved = await saveCurrentLineEdit();
+        if (!saved) return false;
+      }
+
+      // Store pre-merge line edit state
+      preMergeLineEdit = lineEditEnabled;
+      mergeActive = true;
+      currentMode = 'merge';
+
+      // Hide authoring controls
+      const editBtn = document.getElementById('edit-btn');
+      const lineEditToggle = document.getElementById('line-edit-toggle');
+      const mergeToggle = document.getElementById('merge-toggle');
+      if (editBtn) editBtn.style.display = 'none';
+      if (lineEditToggle) lineEditToggle.style.display = 'none';
+      if (mergeToggle) mergeToggle.classList.add('active');
+
+      // Add merge-mode class to viewer
+      const viewer = document.getElementById('promptViewer');
+      if (viewer) {
+        viewer.classList.remove('view-semantic', 'line-edit-mode');
+        viewer.classList.add('view-rendered', 'merge-mode');
+      }
+
+      // Enter merge mode renderer
+      const prompt = prompts.find(p => p.slug === selectedSlug);
+      if (prompt && window.mergeMode && window.promptViewer && window.promptViewer.renderMarkdown) {
+        window.mergeMode.enterMergeMode(
+          selectedSlug,
+          rawPrompt,
+          prompt.mergeFields || [],
+          window.promptViewer.renderMarkdown,
+        );
+      }
+
+      return true;
+    }
+
+    function exitMergeViewMode() {
+      if (!mergeActive) return;
+
+      mergeActive = false;
+      currentMode = 'view';
+
+      // Clean up merge mode
+      if (window.mergeMode) {
+        window.mergeMode.exitMergeMode();
+      }
+
+      // Restore authoring controls
+      const editBtn = document.getElementById('edit-btn');
+      const lineEditToggle = document.getElementById('line-edit-toggle');
+      const mergeToggle = document.getElementById('merge-toggle');
+      if (editBtn) editBtn.style.display = '';
+      if (lineEditToggle) lineEditToggle.style.display = '';
+      if (mergeToggle) mergeToggle.classList.remove('active');
+
+      // Restore viewer state
+      lineEditEnabled = preMergeLineEdit;
+      const viewer = document.getElementById('promptViewer');
+      if (viewer) {
+        viewer.classList.remove('view-rendered', 'merge-mode', 'line-edit-mode');
+        viewer.classList.add('view-semantic');
+        if (lineEditEnabled) {
+          viewer.classList.add('line-edit-mode');
+        }
+      }
+
+      // Re-display content in normal mode
+      displayPromptContent(rawPrompt);
+    }
+
+    async function toggleMergeMode() {
+      if (mergeActive) {
+        // Dirty check
+        if (window.mergeMode && window.mergeMode.isMergeDirty()) {
+          const ok = window.confirm('You have unsaved merge field values. Discard?');
+          if (!ok) return;
+        }
+        exitMergeViewMode();
+        return;
+      }
+
+      const entered = await enterMergeViewMode();
+      if (!entered) return;
     }
 
     // ============================================
@@ -2016,6 +2171,9 @@ bun run prompts:sync</code></pre>
     // Line edit toggle
     document.getElementById('line-edit-toggle').addEventListener('click', toggleLineEdit);
 
+    // Merge mode toggle
+    document.getElementById('merge-toggle').addEventListener('click', toggleMergeMode);
+
     // Copy button
     document.getElementById('copy-btn').addEventListener('click', copyContent);
 
@@ -2194,6 +2352,9 @@ bun run prompts:sync</code></pre>
     window.teardownEditMode = teardownEditMode;
     window.enterHomeMode = enterHomeMode;
     window.switchHomeTab = switchHomeTab;
+    window.enterMergeViewMode = enterMergeViewMode;
+    window.exitMergeViewMode = exitMergeViewMode;
+    window.toggleMergeMode = toggleMergeMode;
 
     async function init() {
       await loadPrompts();
