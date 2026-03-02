@@ -1365,10 +1365,10 @@ bun run prompts:sync</code></pre>
     /**
      * Start editing a specific line
      */
-    function startLineEdit(lineIndex, lineEl) {
-      // If already editing another line, save it first
+    async function startLineEdit(lineIndex, lineEl) {
+      // If already editing another line, save it first (await to prevent re-entrancy)
       if (editingLineIndex !== null && editingLineIndex !== lineIndex) {
-        saveCurrentLineEdit();
+        await saveCurrentLineEdit();
       }
 
       editingLineIndex = lineIndex;
@@ -1424,17 +1424,19 @@ bun run prompts:sync</code></pre>
     /**
      * Save the currently editing line
      */
-    function saveCurrentLineEdit() {
+    async function saveCurrentLineEdit() {
       const contentEl = document.getElementById('promptContent');
-      if (!contentEl || editingLineIndex === null) return;
+      if (!contentEl || editingLineIndex === null) return true;
 
       const editingEl = contentEl.querySelector('.editable-line.editing');
-      if (!editingEl) return;
+      if (!editingEl) return true;
 
       const input = editingEl.querySelector('.line-edit-input');
       if (input) {
-        saveLineEdit(editingLineIndex, input.value);
+        return saveLineEdit(editingLineIndex, input.value);
       }
+
+      return true;
     }
 
     /**
@@ -1455,7 +1457,7 @@ bun run prompts:sync</code></pre>
         } else {
           displayPromptContent(rawPrompt);
         }
-        return;
+        return true;
       }
 
       // Update local content
@@ -1465,6 +1467,7 @@ bun run prompts:sync</code></pre>
       // Get current prompt data
       const prompt = prompts.find(p => p.slug === selectedSlug);
       if (!prompt) {
+        showToast('Failed to save line edit', { type: 'error' });
         editingLineIndex = null;
         if (lineEl) {
           lineEl.classList.remove('editing');
@@ -1472,22 +1475,61 @@ bun run prompts:sync</code></pre>
         } else {
           displayPromptContent(rawPrompt);
         }
-        return;
+        return false;
       }
 
-      // Save to draft (line edit → draft, not immediate save)
-      handleLineEdit('content', newContent);
+      // Persist to Convex immediately via PUT /api/prompts/:slug
+      try {
+        const response = await fetch('/api/prompts/' + selectedSlug, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            slug: selectedSlug,
+            name: prompt.name,
+            description: prompt.description,
+            content: newContent,
+            tags: prompt.tags || [],
+          }),
+        });
 
-      // Do NOT write through to /api/prompts here. Line edits are draft-only until explicit Save.
-      prompt.content = newContent;
-      rawPrompt = newContent;
-      editingLineIndex = null;
+        if (!response.ok) {
+          throw new Error('Failed to save');
+        }
 
-      if (lineEl) {
-        lineEl.classList.remove('editing');
-        lineEl.textContent = newValue;
-      } else {
-        displayPromptContent(newContent);
+        // Success: update local state
+        prompt.content = newContent;
+        rawPrompt = newContent;
+        editingLineIndex = null;
+
+        if (lineEl) {
+          lineEl.classList.remove('editing');
+          lineEl.textContent = newValue;
+        } else {
+          displayPromptContent(newContent);
+        }
+
+        // Clear any existing draft for this slug (fire-and-forget)
+        const draftId = 'edit:' + selectedSlug;
+        fetch('/api/drafts/' + draftId, {
+          method: 'DELETE',
+          credentials: 'same-origin',
+        }).catch(function() {});
+
+        return true;
+      } catch (err) {
+        // Failure: show error toast, restore previous content
+        showToast('Failed to save line edit', { type: 'error' });
+
+        editingLineIndex = null;
+        if (lineEl) {
+          lineEl.classList.remove('editing');
+          lineEl.textContent = oldValue;
+        } else {
+          displayPromptContent(rawPrompt);
+        }
+
+        return false;
       }
     }
 
@@ -1805,36 +1847,9 @@ bun run prompts:sync</code></pre>
     }
 
     /**
-     * Line edit → draft (not immediate save)
-     * 
-     * Note: Line edits create/update drafts but don't immediately save to Convex.
-     * The draft accumulates changes until user clicks Save.
-     * 
-     * Draft ID: "edit:${selectedSlug}"
+     * handleLineEdit() removed — line edits now persist directly to Convex
+     * via saveLineEdit(). See Story 5 (promptdb-utq fix).
      */
-    function handleLineEdit(field, value) {
-      if (!selectedSlug) return;
-      const prompt = prompts.find(p => p.slug === selectedSlug);
-      if (!prompt) return;
-
-      const updated = {
-        slug: prompt.slug,
-        name: prompt.name,
-        description: prompt.description,
-        content: prompt.content,
-        tags: prompt.tags || [],
-      };
-      updated[field] = value;
-
-      // Ensure line edits all accumulate into the same draft for a slug
-      const draftId = `edit:${selectedSlug}`;
-      currentDraft = { draftId, type: 'edit', promptSlug: selectedSlug, data: updated };
-
-      // Line edits should persist quickly so refresh doesn't lose them.
-      // Tests expect this to happen without waiting for the full debounce window.
-      clearTimeout(draftDebounceTimer);
-      saveToDraft({ draftId, type: 'edit', promptSlug: selectedSlug, data: updated });
-    }
 
     /**
      * +New creates draft entry

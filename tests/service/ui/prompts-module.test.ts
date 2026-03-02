@@ -1050,7 +1050,7 @@ describe("Prompts Module", () => {
 			vi.useRealTimers();
 		});
 
-		test("TC-28: line edit saves to draft", async () => {
+		test("TC-28: line edit persists via PUT /api/prompts/:slug", async () => {
 			dom.window.fetch = mockFetch({
 				"/api/prompts": { data: mockPrompts },
 				"/api/prompts/code-review": { data: mockPrompts[0] }, // Mock the PUT endpoint
@@ -1090,14 +1090,18 @@ describe("Prompts Module", () => {
 			const fetchCalls = (
 				dom.window.fetch as unknown as ReturnType<typeof vi.fn>
 			).mock.calls;
-			expect(
-				fetchCalls.some(
-					([url, opts]) =>
-						typeof url === "string" &&
-						url.includes("/api/drafts/edit:code-review") &&
-						(opts as RequestInit | undefined)?.method === "PUT",
-				),
-			).toBe(true);
+			const promptPutCall = fetchCalls.find(
+				([url, opts]) =>
+					typeof url === "string" &&
+					url.includes("/api/prompts/code-review") &&
+					(opts as RequestInit | undefined)?.method === "PUT",
+			);
+			expect(promptPutCall).toBeDefined();
+
+			const putOptions = promptPutCall?.[1] as RequestInit | undefined;
+			if (!putOptions?.body) throw new Error("Expected PUT body");
+			const putBody = JSON.parse(putOptions.body as string);
+			expect(putBody.content).toContain("Updated line");
 		});
 
 		test("TC-29: multiple line edits accumulate in same draft", async () => {

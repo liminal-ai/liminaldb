@@ -9,6 +9,7 @@ import {
 	mockPrompts,
 	setupClipboard,
 	click,
+	blur,
 	waitForAsync,
 	assertElement,
 } from "./setup";
@@ -237,6 +238,109 @@ describe("Prompts Module - Prompt Viewer", () => {
 			// Should have input/textarea
 			const input = contentEl?.querySelector(".line-edit-input");
 			expect(input).not.toBeNull();
+		});
+
+		it("line edit save persists via PUT /api/prompts/:slug", async () => {
+			const fetchMock = mockFetch({
+				"/api/prompts/test-prompt": { data: { slug: "test-prompt" } },
+				"/api/prompts": { data: [promptWithContent, ...mockPrompts] },
+				"/api/drafts/": { data: {} },
+			});
+			dom.window.fetch = fetchMock;
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const firstItem = assertElement(
+				dom.window.document.querySelector(".prompt-item"),
+				"Expected prompt item to exist",
+			);
+			click(firstItem);
+			await waitForAsync(100);
+
+			const toggle = dom.window.document.getElementById(
+				"line-edit-toggle",
+			) as HTMLButtonElement;
+			click(toggle);
+			await waitForAsync(50);
+
+			const contentEl = dom.window.document.getElementById("promptContent");
+			const firstLine = contentEl?.querySelector(".editable-line");
+			if (!firstLine) throw new Error("No editable line found");
+			click(firstLine);
+			await waitForAsync(50);
+
+			const textarea = contentEl?.querySelector(
+				".line-edit-input",
+			) as HTMLTextAreaElement;
+			if (!textarea) throw new Error("No textarea found");
+			textarea.value = "Modified line content";
+
+			blur(textarea);
+			await waitForAsync(200);
+
+			const putCalls = fetchMock.mock.calls.filter((call: unknown[]) => {
+				const opts = call[1] as RequestInit | undefined;
+				return opts?.method === "PUT";
+			});
+			expect(putCalls.length).toBeGreaterThan(0);
+
+			const firstPutCall = putCalls[0];
+			if (!firstPutCall) throw new Error("Expected PUT call");
+			const putOptions = firstPutCall[1] as RequestInit | undefined;
+			if (!putOptions?.body) throw new Error("Expected PUT body");
+			const putBody = JSON.parse(putOptions.body as string);
+			expect(putBody.content).toContain("Modified line content");
+		});
+
+		it("line edit save failure shows error toast and reverts content", async () => {
+			const fetchMock = mockFetch({
+				"/api/prompts/test-prompt": {
+					ok: false,
+					status: 500,
+					data: { error: "Server error" },
+				},
+				"/api/prompts": { data: [promptWithContent, ...mockPrompts] },
+			});
+			dom.window.fetch = fetchMock;
+
+			dom.window.loadPrompts();
+			await waitForAsync(100);
+
+			const firstItem = assertElement(
+				dom.window.document.querySelector(".prompt-item"),
+				"Expected prompt item to exist",
+			);
+			click(firstItem);
+			await waitForAsync(100);
+
+			const toggle = dom.window.document.getElementById(
+				"line-edit-toggle",
+			) as HTMLButtonElement;
+			click(toggle);
+			await waitForAsync(50);
+
+			const contentEl = dom.window.document.getElementById("promptContent");
+			const firstLine = contentEl?.querySelector(".editable-line");
+			if (!firstLine) throw new Error("No editable line found");
+			const originalText = firstLine.textContent || "";
+			click(firstLine);
+			await waitForAsync(50);
+
+			const textarea = contentEl?.querySelector(
+				".line-edit-input",
+			) as HTMLTextAreaElement;
+			if (!textarea) throw new Error("No textarea found");
+			textarea.value = "This should not persist";
+
+			blur(textarea);
+			await waitForAsync(200);
+
+			const toastEl = dom.window.document.querySelector(".toast-error, .toast.error");
+			expect(toastEl).not.toBeNull();
+
+			const updatedLine = contentEl?.querySelector(".editable-line");
+			expect(updatedLine?.textContent).toBe(originalText);
 		});
 	});
 });
