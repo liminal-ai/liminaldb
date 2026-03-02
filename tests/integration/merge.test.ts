@@ -12,6 +12,24 @@ describe("Merge API Integration", () => {
 	let authToken: string;
 	const testSlug = `merge-test-${Date.now()}`;
 
+	async function getUsageCountFromList(slug: string): Promise<number> {
+		const listRes = await fetch(`${baseUrl}/api/prompts`, {
+			headers: { Authorization: `Bearer ${authToken}` },
+		});
+		expect(listRes.status).toBe(200);
+
+		const prompts = (await listRes.json()) as Array<{
+			slug: string;
+			usageCount?: number;
+		}>;
+		const prompt = prompts.find((item) => item.slug === slug);
+		if (!prompt) {
+			throw new Error(`Prompt not found in list response: ${slug}`);
+		}
+
+		return prompt.usageCount ?? 0;
+	}
+
 	beforeAll(async () => {
 		requireTestAuth();
 		baseUrl = getTestBaseUrl();
@@ -117,15 +135,10 @@ describe("Merge API Integration", () => {
 	});
 
 	test("usage count incremented after merge", async () => {
-		// Get current usage count
-		const before = await fetch(`${baseUrl}/api/prompts/${testSlug}`, {
-			headers: { Authorization: `Bearer ${authToken}` },
-		});
-		const promptBefore = (await before.json()) as { usageCount: number };
-		const countBefore = promptBefore.usageCount;
+		const countBefore = await getUsageCountFromList(testSlug);
 
 		// Perform merge
-		await fetch(`${baseUrl}/api/prompts/${testSlug}/merge`, {
+		const mergeRes = await fetch(`${baseUrl}/api/prompts/${testSlug}/merge`, {
 			method: "POST",
 			headers: {
 				Authorization: `Bearer ${authToken}`,
@@ -133,16 +146,23 @@ describe("Merge API Integration", () => {
 			},
 			body: JSON.stringify({ values: { code: "test" } }),
 		});
+		expect(mergeRes.status).toBe(200);
 
-		// Small delay for fire-and-forget to complete
-		await new Promise((resolve) => setTimeout(resolve, 500));
+		// Bounded retry for async fire-and-forget usage tracking.
+		const timeoutMs = 3000;
+		const intervalMs = 100;
+		const deadline = Date.now() + timeoutMs;
+		let countAfter = countBefore;
 
-		// Check usage count increased
-		const after = await fetch(`${baseUrl}/api/prompts/${testSlug}`, {
-			headers: { Authorization: `Bearer ${authToken}` },
-		});
-		const promptAfter = (await after.json()) as { usageCount: number };
-		expect(promptAfter.usageCount).toBe(countBefore + 1);
+		while (Date.now() < deadline) {
+			countAfter = await getUsageCountFromList(testSlug);
+			if (countAfter >= countBefore + 1) {
+				break;
+			}
+			await new Promise((resolve) => setTimeout(resolve, intervalMs));
+		}
+
+		expect(countAfter).toBe(countBefore + 1);
 	});
 
 	test("401 without auth token", async () => {

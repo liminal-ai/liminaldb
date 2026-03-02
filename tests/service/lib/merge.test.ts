@@ -39,12 +39,13 @@ describe("merge field regex consistency", () => {
 	}));
 
 	test("all 3 locations define the same regex", () => {
-		const first = regexes[0]!;
-		for (let i = 1; i < regexes.length; i++) {
-			const entry = regexes[i]!;
-			expect(entry.source, `${entry.label} (${entry.file})`).toBe(
-				first.source,
-			);
+		const [first, ...rest] = regexes;
+		if (!first) {
+			throw new Error("Expected at least one regex source");
+		}
+
+		for (const entry of rest) {
+			expect(entry.source, `${entry.label} (${entry.file})`).toBe(first.source);
 		}
 	});
 });

@@ -43,7 +43,8 @@ const promptWithDuplicates: PromptItem = {
 	slug: "dup-test",
 	name: "Duplicate Test",
 	description: "A test prompt with duplicate fields",
-	content: "{{language}} is great. I love {{language}}. Use {{language}} always.",
+	content:
+		"{{language}} is great. I love {{language}}. Use {{language}} always.",
 	mergeFields: ["language"],
 	tags: ["test"],
 	parameters: [],
@@ -78,7 +79,10 @@ describe("Prompts Module - Merge Mode", () => {
 
 	function configureFetch(
 		prompts: PromptItem[],
-		extraResponses: Record<string, { ok?: boolean; status?: number; data: unknown }> = {},
+		extraResponses: Record<
+			string,
+			{ ok?: boolean; status?: number; data: unknown }
+		> = {},
 	) {
 		const promptData = prompts.map((prompt) => ({
 			...prompt,
@@ -99,7 +103,10 @@ describe("Prompts Module - Merge Mode", () => {
 	async function loadAndSelect(
 		prompts: PromptItem[],
 		slug: string,
-		extraResponses: Record<string, { ok?: boolean; status?: number; data: unknown }> = {},
+		extraResponses: Record<
+			string,
+			{ ok?: boolean; status?: number; data: unknown }
+		> = {},
 	) {
 		const fetchMock = configureFetch(prompts, extraResponses);
 		dom.window.loadPrompts();
@@ -126,14 +133,48 @@ describe("Prompts Module - Merge Mode", () => {
 
 	it("TC-3.1a: merge button visible for prompts with merge fields", async () => {
 		await loadAndSelect([promptWithMergeFields], "merge-test");
-		const mergeToggle = assertElement(dom.window.document.getElementById("merge-toggle"));
+		const mergeToggle = assertElement(
+			dom.window.document.getElementById("merge-toggle"),
+		);
 		expect(mergeToggle.style.display).not.toBe("none");
 	});
 
 	it("TC-3.1b: merge button hidden for prompts without merge fields", async () => {
 		await loadAndSelect([promptWithoutMergeFields], "no-merge");
-		const mergeToggle = assertElement(dom.window.document.getElementById("merge-toggle"));
+		const mergeToggle = assertElement(
+			dom.window.document.getElementById("merge-toggle"),
+		);
 		expect(mergeToggle.style.display).toBe("none");
+	});
+
+	it("merge mode entry fails gracefully when renderer dependency is missing", async () => {
+		await loadAndSelect([promptWithMergeFields], "merge-test");
+
+		(dom.window.promptViewer as { renderMarkdown?: unknown }).renderMarkdown =
+			undefined;
+
+		const mergeToggle = assertElement(
+			dom.window.document.getElementById("merge-toggle"),
+		);
+		click(mergeToggle);
+		await waitForAsync(120);
+
+		const viewer = assertElement(
+			dom.window.document.getElementById("promptViewer"),
+		);
+		const editBtn = assertElement(dom.window.document.getElementById("edit-btn"));
+		const lineEditToggle = assertElement(
+			dom.window.document.getElementById("line-edit-toggle"),
+		);
+		const errorToast = assertElement(
+			dom.window.document.querySelector(".toast-error .toast-message"),
+		);
+
+		expect(viewer.classList.contains("merge-mode")).toBe(false);
+		expect(mergeToggle.classList.contains("active")).toBe(false);
+		expect(editBtn.style.display).toBe("");
+		expect(lineEditToggle.style.display).toBe("");
+		expect(errorToast.textContent).toContain("Merge mode is temporarily unavailable");
 	});
 
 	it("TC-3.2a: content renders as markdown in merge mode", async () => {
@@ -152,8 +193,12 @@ describe("Prompts Module - Merge Mode", () => {
 
 		await enterMergeMode();
 
-		const viewer = assertElement(dom.window.document.getElementById("promptViewer"));
-		const contentEl = assertElement(dom.window.document.getElementById("promptContent"));
+		const viewer = assertElement(
+			dom.window.document.getElementById("promptViewer"),
+		);
+		const contentEl = assertElement(
+			dom.window.document.getElementById("promptContent"),
+		);
 		expect(viewer.classList.contains("view-rendered")).toBe(true);
 		expect(contentEl.querySelector("h1")?.textContent).toBe("Header");
 		dom.window.promptViewer.renderMarkdown = originalRender;
@@ -163,11 +208,15 @@ describe("Prompts Module - Merge Mode", () => {
 		await loadAndSelect([promptWithMergeFields], "merge-test");
 		await enterMergeMode();
 
-		const wrappers = dom.window.document.querySelectorAll(".merge-input-wrapper");
+		const wrappers = dom.window.document.querySelectorAll(
+			".merge-input-wrapper",
+		);
 		expect(wrappers.length).toBe(2);
 
 		const codeInput = assertElement(
-			dom.window.document.querySelector("input.merge-input[data-field='code']") as HTMLInputElement,
+			dom.window.document.querySelector(
+				"input.merge-input[data-field='code']",
+			) as HTMLInputElement,
 		);
 		expect(codeInput.placeholder).toBe("code");
 	});
@@ -195,9 +244,13 @@ describe("Prompts Module - Merge Mode", () => {
 		await enterMergeMode();
 
 		const codeInput = assertElement(
-			dom.window.document.querySelector("input.merge-input[data-field='code']") as HTMLInputElement,
+			dom.window.document.querySelector(
+				"input.merge-input[data-field='code']",
+			) as HTMLInputElement,
 		);
-		const codeWrapper = assertElement(codeInput.closest(".merge-input-wrapper"));
+		const codeWrapper = assertElement(
+			codeInput.closest(".merge-input-wrapper"),
+		);
 		expect(codeWrapper.classList.contains("filled")).toBe(false);
 
 		input(codeInput, "console.log(1)");
@@ -218,13 +271,17 @@ describe("Prompts Module - Merge Mode", () => {
 
 		input(
 			assertElement(
-				dom.window.document.querySelector("input.merge-input[data-field='code']") as HTMLInputElement,
+				dom.window.document.querySelector(
+					"input.merge-input[data-field='code']",
+				) as HTMLInputElement,
 			),
 			"console.log(1)",
 		);
 		input(
 			assertElement(
-				dom.window.document.querySelector("input.merge-input[data-field='language']") as HTMLInputElement,
+				dom.window.document.querySelector(
+					"input.merge-input[data-field='language']",
+				) as HTMLInputElement,
 			),
 			"JavaScript",
 		);
@@ -232,7 +289,9 @@ describe("Prompts Module - Merge Mode", () => {
 		click(assertElement(dom.window.document.getElementById("copy-btn")));
 		await waitForAsync(120);
 
-		expect(clipboard.writeText).toHaveBeenCalledWith("Write console.log(1) in JavaScript");
+		expect(clipboard.writeText).toHaveBeenCalledWith(
+			"Write console.log(1) in JavaScript",
+		);
 	});
 
 	it("TC-3.3b: partial copy preserves unfilled fields", async () => {
@@ -249,7 +308,9 @@ describe("Prompts Module - Merge Mode", () => {
 
 		input(
 			assertElement(
-				dom.window.document.querySelector("input.merge-input[data-field='code']") as HTMLInputElement,
+				dom.window.document.querySelector(
+					"input.merge-input[data-field='code']",
+				) as HTMLInputElement,
 			),
 			"console.log(1)",
 		);
@@ -257,7 +318,9 @@ describe("Prompts Module - Merge Mode", () => {
 		click(assertElement(dom.window.document.getElementById("copy-btn")));
 		await waitForAsync(120);
 
-		expect(clipboard.writeText).toHaveBeenCalledWith("Write console.log(1) in {{language}}");
+		expect(clipboard.writeText).toHaveBeenCalledWith(
+			"Write console.log(1) in {{language}}",
+		);
 	});
 
 	it("TC-3.4a: unfilled field warning on copy", async () => {
@@ -274,14 +337,18 @@ describe("Prompts Module - Merge Mode", () => {
 
 		input(
 			assertElement(
-				dom.window.document.querySelector("input.merge-input[data-field='code']") as HTMLInputElement,
+				dom.window.document.querySelector(
+					"input.merge-input[data-field='code']",
+				) as HTMLInputElement,
 			),
 			"console.log(1)",
 		);
 		click(assertElement(dom.window.document.getElementById("copy-btn")));
 		await waitForAsync(120);
 
-		const toast = assertElement(dom.window.document.querySelector(".toast-warning .toast-message"));
+		const toast = assertElement(
+			dom.window.document.querySelector(".toast-warning .toast-message"),
+		);
 		expect(toast.textContent).toContain("unfilled fields: language");
 	});
 
@@ -299,7 +366,9 @@ describe("Prompts Module - Merge Mode", () => {
 
 		input(
 			assertElement(
-				dom.window.document.querySelector("input.merge-input[data-field='code']") as HTMLInputElement,
+				dom.window.document.querySelector(
+					"input.merge-input[data-field='code']",
+				) as HTMLInputElement,
 			),
 			"console.log(1)",
 		);
@@ -313,8 +382,14 @@ describe("Prompts Module - Merge Mode", () => {
 		await loadAndSelect([promptWithMergeFields], "merge-test");
 		await enterMergeMode();
 
-		expect(assertElement(dom.window.document.getElementById("edit-btn")).style.display).toBe("none");
-		expect(assertElement(dom.window.document.getElementById("line-edit-toggle")).style.display).toBe("none");
+		expect(
+			assertElement(dom.window.document.getElementById("edit-btn")).style
+				.display,
+		).toBe("none");
+		expect(
+			assertElement(dom.window.document.getElementById("line-edit-toggle"))
+				.style.display,
+		).toBe("none");
 	});
 
 	it("TC-3.5b: authoring controls restored on exit", async () => {
@@ -323,22 +398,34 @@ describe("Prompts Module - Merge Mode", () => {
 		click(assertElement(dom.window.document.getElementById("merge-toggle")));
 		await waitForAsync(120);
 
-		expect(assertElement(dom.window.document.getElementById("edit-btn")).style.display).toBe("");
-		expect(assertElement(dom.window.document.getElementById("line-edit-toggle")).style.display).toBe("");
+		expect(
+			assertElement(dom.window.document.getElementById("edit-btn")).style
+				.display,
+		).toBe("");
+		expect(
+			assertElement(dom.window.document.getElementById("line-edit-toggle"))
+				.style.display,
+		).toBe("");
 	});
 
 	it("TC-3.6a: line edit resumes if it was on", async () => {
 		await loadAndSelect([promptWithMergeFields], "merge-test");
-		click(assertElement(dom.window.document.getElementById("line-edit-toggle")));
+		click(
+			assertElement(dom.window.document.getElementById("line-edit-toggle")),
+		);
 		await waitForAsync(80);
 
 		await enterMergeMode();
 		click(assertElement(dom.window.document.getElementById("merge-toggle")));
 		await waitForAsync(120);
 
-		const viewer = assertElement(dom.window.document.getElementById("promptViewer"));
+		const viewer = assertElement(
+			dom.window.document.getElementById("promptViewer"),
+		);
 		expect(viewer.classList.contains("line-edit-mode")).toBe(true);
-		expect(dom.window.document.querySelectorAll(".editable-line").length).toBeGreaterThan(0);
+		expect(
+			dom.window.document.querySelectorAll(".editable-line").length,
+		).toBeGreaterThan(0);
 	});
 
 	it("TC-3.6b: plain view if line edit was off", async () => {
@@ -347,15 +434,21 @@ describe("Prompts Module - Merge Mode", () => {
 		click(assertElement(dom.window.document.getElementById("merge-toggle")));
 		await waitForAsync(120);
 
-		const viewer = assertElement(dom.window.document.getElementById("promptViewer"));
+		const viewer = assertElement(
+			dom.window.document.getElementById("promptViewer"),
+		);
 		expect(viewer.classList.contains("line-edit-mode")).toBe(false);
-		expect(dom.window.document.querySelectorAll(".editable-line").length).toBe(0);
+		expect(dom.window.document.querySelectorAll(".editable-line").length).toBe(
+			0,
+		);
 	});
 
 	it("TC-3.6c: line edit localStorage preference unchanged", async () => {
 		await loadAndSelect([promptWithMergeFields], "merge-test");
 
-		click(assertElement(dom.window.document.getElementById("line-edit-toggle")));
+		click(
+			assertElement(dom.window.document.getElementById("line-edit-toggle")),
+		);
 		await waitForAsync(80);
 		expect(dom.window.localStorage.getItem("lineEditEnabled")).toBe("true");
 
@@ -372,7 +465,9 @@ describe("Prompts Module - Merge Mode", () => {
 
 		input(
 			assertElement(
-				dom.window.document.querySelector("input.merge-input[data-field='code']") as HTMLInputElement,
+				dom.window.document.querySelector(
+					"input.merge-input[data-field='code']",
+				) as HTMLInputElement,
 			),
 			"console.log(1)",
 		);
@@ -384,7 +479,11 @@ describe("Prompts Module - Merge Mode", () => {
 		await waitForAsync(80);
 
 		expect(confirmMock).toHaveBeenCalledTimes(1);
-		expect(assertElement(dom.window.document.getElementById("promptViewer")).classList.contains("merge-mode")).toBe(true);
+		expect(
+			assertElement(
+				dom.window.document.getElementById("promptViewer"),
+			).classList.contains("merge-mode"),
+		).toBe(true);
 	});
 
 	it("TC-3.7b: no confirm when no fields touched", async () => {
@@ -397,7 +496,11 @@ describe("Prompts Module - Merge Mode", () => {
 		await waitForAsync(80);
 
 		expect(confirmMock).not.toHaveBeenCalled();
-		expect(assertElement(dom.window.document.getElementById("promptViewer")).classList.contains("merge-mode")).toBe(false);
+		expect(
+			assertElement(
+				dom.window.document.getElementById("promptViewer"),
+			).classList.contains("merge-mode"),
+		).toBe(false);
 	});
 
 	it("TC-3.7c: no confirm after successful copy", async () => {
@@ -414,7 +517,9 @@ describe("Prompts Module - Merge Mode", () => {
 
 		input(
 			assertElement(
-				dom.window.document.querySelector("input.merge-input[data-field='code']") as HTMLInputElement,
+				dom.window.document.querySelector(
+					"input.merge-input[data-field='code']",
+				) as HTMLInputElement,
 			),
 			"console.log(1)",
 		);
@@ -442,7 +547,9 @@ describe("Prompts Module - Merge Mode", () => {
 		await enterMergeMode();
 
 		const codeInput = assertElement(
-			dom.window.document.querySelector("input.merge-input[data-field='code']") as HTMLInputElement,
+			dom.window.document.querySelector(
+				"input.merge-input[data-field='code']",
+			) as HTMLInputElement,
 		);
 		input(codeInput, "console.log(1)");
 		click(assertElement(dom.window.document.getElementById("copy-btn")));
@@ -458,12 +565,17 @@ describe("Prompts Module - Merge Mode", () => {
 	});
 
 	it("TC-3.7e: confirm on prompt navigation with dirty fields", async () => {
-		await loadAndSelect([promptWithMergeFields, promptWithDuplicates], "merge-test");
+		await loadAndSelect(
+			[promptWithMergeFields, promptWithDuplicates],
+			"merge-test",
+		);
 		await enterMergeMode();
 
 		input(
 			assertElement(
-				dom.window.document.querySelector("input.merge-input[data-field='code']") as HTMLInputElement,
+				dom.window.document.querySelector(
+					"input.merge-input[data-field='code']",
+				) as HTMLInputElement,
 			),
 			"console.log(1)",
 		);
@@ -477,23 +589,36 @@ describe("Prompts Module - Merge Mode", () => {
 		await waitForAsync(100);
 
 		expect(confirmMock).toHaveBeenCalledTimes(1);
-		expect(assertElement(dom.window.document.getElementById("prompt-slug")).textContent).toBe("merge-test");
+		expect(
+			assertElement(dom.window.document.getElementById("prompt-slug"))
+				.textContent,
+		).toBe("merge-test");
 	});
 
 	it("TC-3.8a: active line edit saved before mode switch", async () => {
-		const fetchMock = await loadAndSelect([promptWithMergeFields], "merge-test", {
-			"/api/prompts/merge-test": { data: promptWithMergeFields },
-		});
+		const fetchMock = await loadAndSelect(
+			[promptWithMergeFields],
+			"merge-test",
+			{
+				"/api/prompts/merge-test": { data: promptWithMergeFields },
+			},
+		);
 
-		click(assertElement(dom.window.document.getElementById("line-edit-toggle")));
+		click(
+			assertElement(dom.window.document.getElementById("line-edit-toggle")),
+		);
 		await waitForAsync(80);
 
-		const editable = assertElement(dom.window.document.querySelector(".editable-line"));
+		const editable = assertElement(
+			dom.window.document.querySelector(".editable-line"),
+		);
 		click(editable);
 		await waitForAsync(80);
 
 		const lineInput = assertElement(
-			dom.window.document.querySelector(".line-edit-input") as HTMLTextAreaElement,
+			dom.window.document.querySelector(
+				".line-edit-input",
+			) as HTMLTextAreaElement,
 		);
 		input(lineInput, "Updated line content");
 
@@ -508,7 +633,11 @@ describe("Prompts Module - Merge Mode", () => {
 			);
 		});
 		expect(saveCalls.length).toBeGreaterThan(0);
-		expect(assertElement(dom.window.document.getElementById("promptViewer")).classList.contains("merge-mode")).toBe(true);
+		expect(
+			assertElement(
+				dom.window.document.getElementById("promptViewer"),
+			).classList.contains("merge-mode"),
+		).toBe(true);
 	});
 
 	it("TC-3.8b: line edit save failure blocks mode switch", async () => {
@@ -520,47 +649,63 @@ describe("Prompts Module - Merge Mode", () => {
 			},
 		});
 
-		click(assertElement(dom.window.document.getElementById("line-edit-toggle")));
+		click(
+			assertElement(dom.window.document.getElementById("line-edit-toggle")),
+		);
 		await waitForAsync(80);
 
-		const editable = assertElement(dom.window.document.querySelector(".editable-line"));
+		const editable = assertElement(
+			dom.window.document.querySelector(".editable-line"),
+		);
 		click(editable);
 		await waitForAsync(80);
 
 		const lineInput = assertElement(
-			dom.window.document.querySelector(".line-edit-input") as HTMLTextAreaElement,
+			dom.window.document.querySelector(
+				".line-edit-input",
+			) as HTMLTextAreaElement,
 		);
 		input(lineInput, "Will fail");
 
 		click(assertElement(dom.window.document.getElementById("merge-toggle")));
 		await waitForAsync(220);
 
-		const viewer = assertElement(dom.window.document.getElementById("promptViewer"));
+		const viewer = assertElement(
+			dom.window.document.getElementById("promptViewer"),
+		);
 		expect(viewer.classList.contains("merge-mode")).toBe(false);
 		expect(viewer.classList.contains("line-edit-mode")).toBe(true);
 	});
 
 	it("TC-3.9a: full copy increments usage count (fetch called)", async () => {
-		const fetchMock = await loadAndSelect([promptWithMergeFields], "merge-test", {
-			"/api/prompts/merge-test/merge": {
-				data: {
-					content: "Write console.log(1) in JavaScript",
-					mergeFields: ["code", "language"],
-					unfilledFields: [],
+		const fetchMock = await loadAndSelect(
+			[promptWithMergeFields],
+			"merge-test",
+			{
+				"/api/prompts/merge-test/merge": {
+					data: {
+						content: "Write console.log(1) in JavaScript",
+						mergeFields: ["code", "language"],
+						unfilledFields: [],
+					},
 				},
 			},
-		});
+		);
 		await enterMergeMode();
 
 		input(
 			assertElement(
-				dom.window.document.querySelector("input.merge-input[data-field='code']") as HTMLInputElement,
+				dom.window.document.querySelector(
+					"input.merge-input[data-field='code']",
+				) as HTMLInputElement,
 			),
 			"console.log(1)",
 		);
 		input(
 			assertElement(
-				dom.window.document.querySelector("input.merge-input[data-field='language']") as HTMLInputElement,
+				dom.window.document.querySelector(
+					"input.merge-input[data-field='language']",
+				) as HTMLInputElement,
 			),
 			"JavaScript",
 		);
@@ -568,26 +713,34 @@ describe("Prompts Module - Merge Mode", () => {
 		await waitForAsync(120);
 
 		const mergeCalls = fetchMock.mock.calls.filter(([url]: unknown[]) =>
-			typeof url === "string" ? url.includes("/api/prompts/merge-test/merge") : false,
+			typeof url === "string"
+				? url.includes("/api/prompts/merge-test/merge")
+				: false,
 		);
 		expect(mergeCalls.length).toBe(1);
 	});
 
 	it("TC-3.9b: partial copy increments usage count", async () => {
-		const fetchMock = await loadAndSelect([promptWithMergeFields], "merge-test", {
-			"/api/prompts/merge-test/merge": {
-				data: {
-					content: "Write console.log(1) in {{language}}",
-					mergeFields: ["code", "language"],
-					unfilledFields: ["language"],
+		const fetchMock = await loadAndSelect(
+			[promptWithMergeFields],
+			"merge-test",
+			{
+				"/api/prompts/merge-test/merge": {
+					data: {
+						content: "Write console.log(1) in {{language}}",
+						mergeFields: ["code", "language"],
+						unfilledFields: ["language"],
+					},
 				},
 			},
-		});
+		);
 		await enterMergeMode();
 
 		input(
 			assertElement(
-				dom.window.document.querySelector("input.merge-input[data-field='code']") as HTMLInputElement,
+				dom.window.document.querySelector(
+					"input.merge-input[data-field='code']",
+				) as HTMLInputElement,
 			),
 			"console.log(1)",
 		);
@@ -595,26 +748,34 @@ describe("Prompts Module - Merge Mode", () => {
 		await waitForAsync(120);
 
 		const mergeCalls = fetchMock.mock.calls.filter(([url]: unknown[]) =>
-			typeof url === "string" ? url.includes("/api/prompts/merge-test/merge") : false,
+			typeof url === "string"
+				? url.includes("/api/prompts/merge-test/merge")
+				: false,
 		);
 		expect(mergeCalls.length).toBe(1);
 	});
 
 	it("TC-3.9c: repeated copies increment each time", async () => {
-		const fetchMock = await loadAndSelect([promptWithMergeFields], "merge-test", {
-			"/api/prompts/merge-test/merge": {
-				data: {
-					content: "Write console.log(1) in JavaScript",
-					mergeFields: ["code", "language"],
-					unfilledFields: [],
+		const fetchMock = await loadAndSelect(
+			[promptWithMergeFields],
+			"merge-test",
+			{
+				"/api/prompts/merge-test/merge": {
+					data: {
+						content: "Write console.log(1) in JavaScript",
+						mergeFields: ["code", "language"],
+						unfilledFields: [],
+					},
 				},
 			},
-		});
+		);
 		await enterMergeMode();
 
 		input(
 			assertElement(
-				dom.window.document.querySelector("input.merge-input[data-field='code']") as HTMLInputElement,
+				dom.window.document.querySelector(
+					"input.merge-input[data-field='code']",
+				) as HTMLInputElement,
 			),
 			"console.log(1)",
 		);
@@ -624,7 +785,9 @@ describe("Prompts Module - Merge Mode", () => {
 		await waitForAsync(120);
 
 		const mergeCalls = fetchMock.mock.calls.filter(([url]: unknown[]) =>
-			typeof url === "string" ? url.includes("/api/prompts/merge-test/merge") : false,
+			typeof url === "string"
+				? url.includes("/api/prompts/merge-test/merge")
+				: false,
 		);
 		expect(mergeCalls.length).toBe(2);
 	});
@@ -633,7 +796,9 @@ describe("Prompts Module - Merge Mode", () => {
 		await loadAndSelect([promptWithMergeFields], "merge-test");
 		await enterMergeMode();
 
-		const inputs = dom.window.document.querySelectorAll("input.merge-input") as NodeListOf<HTMLInputElement>;
+		const inputs = dom.window.document.querySelectorAll(
+			"input.merge-input",
+		) as NodeListOf<HTMLInputElement>;
 		expect(inputs.length).toBe(2);
 		expect(assertElement(inputs[0]).getAttribute("tabindex")).toBeNull();
 		expect(assertElement(inputs[1]).getAttribute("tabindex")).toBeNull();
@@ -648,12 +813,16 @@ describe("Prompts Module - Merge Mode", () => {
 
 		const payload = "<script>alert(1)</script>";
 		const codeInput = assertElement(
-			dom.window.document.querySelector("input.merge-input[data-field='code']") as HTMLInputElement,
+			dom.window.document.querySelector(
+				"input.merge-input[data-field='code']",
+			) as HTMLInputElement,
 		);
 		input(codeInput, payload);
 
 		expect(codeInput.value).toBe(payload);
-		expect(dom.window.document.querySelector("#promptContent script")).toBeNull();
+		expect(
+			dom.window.document.querySelector("#promptContent script"),
+		).toBeNull();
 	});
 
 	it("TC-3.12a: values cleared on re-entry", async () => {
@@ -661,7 +830,9 @@ describe("Prompts Module - Merge Mode", () => {
 		await enterMergeMode();
 
 		const codeInput = assertElement(
-			dom.window.document.querySelector("input.merge-input[data-field='code']") as HTMLInputElement,
+			dom.window.document.querySelector(
+				"input.merge-input[data-field='code']",
+			) as HTMLInputElement,
 		);
 		input(codeInput, "console.log(1)");
 
@@ -671,7 +842,9 @@ describe("Prompts Module - Merge Mode", () => {
 		await enterMergeMode();
 
 		const codeInputAgain = assertElement(
-			dom.window.document.querySelector("input.merge-input[data-field='code']") as HTMLInputElement,
+			dom.window.document.querySelector(
+				"input.merge-input[data-field='code']",
+			) as HTMLInputElement,
 		);
 		expect(codeInputAgain.value).toBe("");
 	});
@@ -689,8 +862,14 @@ describe("Prompts Module - Merge Mode", () => {
 		await loadAndSelect([literalPrompt], "literal-test");
 		await enterMergeMode();
 
-		const contentText = assertElement(dom.window.document.getElementById("promptContent")).textContent || "";
+		const contentText =
+			assertElement(dom.window.document.getElementById("promptContent"))
+				.textContent || "";
 		expect(contentText).toContain("%%%MERGE_0_name%%%");
-		expect(dom.window.document.querySelectorAll("input.merge-input[data-field='name']").length).toBe(1);
+		expect(
+			dom.window.document.querySelectorAll(
+				"input.merge-input[data-field='name']",
+			).length,
+		).toBe(1);
 	});
 });

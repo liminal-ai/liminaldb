@@ -2,7 +2,6 @@ import { describe, test, expect } from "vitest";
 import { ConvexError } from "convex/values";
 import {
 	rlsRules,
-	assertRLS,
 	assertCanRead,
 	assertCanInsert,
 	assertCanModify,

@@ -1447,19 +1447,29 @@ bun run prompts:sync</code></pre>
      * Save a line edit and update the prompt
      */
     async function saveLineEdit(lineIndex, newValue) {
+      const targetSlug = selectedSlug;
+      if (!targetSlug) return false;
+
       const lines = rawPrompt.split('\n');
       const oldValue = lines[lineIndex] || '';
       const contentEl = document.getElementById('promptContent');
       const lineEl = contentEl?.querySelector(`.editable-line[data-line="${lineIndex}"]`);
+      const shouldMutateActiveView = () => (
+        selectedSlug === targetSlug &&
+        currentMode === 'view' &&
+        !mergeActive
+      );
 
       // No change, just re-render
       if (newValue === oldValue) {
-        editingLineIndex = null;
-        if (lineEl) {
-          lineEl.classList.remove('editing');
-          lineEl.textContent = oldValue;
-        } else {
-          displayPromptContent(rawPrompt);
+        if (shouldMutateActiveView()) {
+          editingLineIndex = null;
+          if (lineEl) {
+            lineEl.classList.remove('editing');
+            lineEl.textContent = oldValue;
+          } else {
+            displayPromptContent(rawPrompt);
+          }
         }
         return true;
       }
@@ -1469,27 +1479,31 @@ bun run prompts:sync</code></pre>
       const newContent = lines.join('\n');
 
       // Get current prompt data
-      const prompt = prompts.find(p => p.slug === selectedSlug);
+      const prompt = prompts.find(p => p.slug === targetSlug);
       if (!prompt) {
-        showToast('Failed to save line edit', { type: 'error' });
-        editingLineIndex = null;
-        if (lineEl) {
-          lineEl.classList.remove('editing');
-          lineEl.textContent = oldValue;
-        } else {
-          displayPromptContent(rawPrompt);
+        if (selectedSlug === targetSlug) {
+          showToast('Failed to save line edit', { type: 'error' });
+        }
+        if (shouldMutateActiveView()) {
+          editingLineIndex = null;
+          if (lineEl) {
+            lineEl.classList.remove('editing');
+            lineEl.textContent = oldValue;
+          } else {
+            displayPromptContent(rawPrompt);
+          }
         }
         return false;
       }
 
       // Persist to Convex immediately via PUT /api/prompts/:slug
       try {
-        const response = await fetch('/api/prompts/' + selectedSlug, {
+        const response = await fetch('/api/prompts/' + targetSlug, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
           body: JSON.stringify({
-            slug: selectedSlug,
+            slug: targetSlug,
             name: prompt.name,
             description: prompt.description,
             content: newContent,
@@ -1503,26 +1517,30 @@ bun run prompts:sync</code></pre>
 
         // Success: update local state
         prompt.content = newContent;
-        rawPrompt = newContent;
-        editingLineIndex = null;
 
         // Re-extract merge fields from updated content
         const fieldMatches = newContent.match(/\{\{([a-zA-Z_][a-zA-Z0-9_]*)\}\}/g) || [];
         prompt.mergeFields = [...new Set(fieldMatches.map(m => m.slice(2, -2)))];
-        const mergeToggle = document.getElementById('merge-toggle');
-        if (mergeToggle) {
-          mergeToggle.style.display = prompt.mergeFields.length > 0 ? '' : 'none';
-        }
 
-        if (lineEl) {
-          lineEl.classList.remove('editing');
-          lineEl.textContent = newValue;
-        } else {
-          displayPromptContent(newContent);
+        if (shouldMutateActiveView()) {
+          rawPrompt = newContent;
+          editingLineIndex = null;
+
+          const mergeToggle = document.getElementById('merge-toggle');
+          if (mergeToggle) {
+            mergeToggle.style.display = prompt.mergeFields.length > 0 ? '' : 'none';
+          }
+
+          if (lineEl) {
+            lineEl.classList.remove('editing');
+            lineEl.textContent = newValue;
+          } else {
+            displayPromptContent(newContent);
+          }
         }
 
         // Clear any existing draft for this slug (fire-and-forget)
-        const draftId = 'edit:' + selectedSlug;
+        const draftId = 'edit:' + targetSlug;
         fetch('/api/drafts/' + draftId, {
           method: 'DELETE',
           credentials: 'same-origin',
@@ -1531,14 +1549,18 @@ bun run prompts:sync</code></pre>
         return true;
       } catch (err) {
         // Failure: show error toast, restore previous content
-        showToast('Failed to save line edit', { type: 'error' });
+        if (selectedSlug === targetSlug) {
+          showToast('Failed to save line edit', { type: 'error' });
+        }
 
-        editingLineIndex = null;
-        if (lineEl) {
-          lineEl.classList.remove('editing');
-          lineEl.textContent = oldValue;
-        } else {
-          displayPromptContent(rawPrompt);
+        if (shouldMutateActiveView()) {
+          editingLineIndex = null;
+          if (lineEl) {
+            lineEl.classList.remove('editing');
+            lineEl.textContent = oldValue;
+          } else {
+            displayPromptContent(rawPrompt);
+          }
         }
 
         return false;
@@ -1804,6 +1826,17 @@ bun run prompts:sync</code></pre>
         if (!saved) return false;
       }
 
+      const prompt = prompts.find(p => p.slug === selectedSlug);
+      const hasMergeMode = !!window.mergeMode;
+      const hasRenderMarkdown =
+        !!window.promptViewer &&
+        typeof window.promptViewer.renderMarkdown === 'function';
+
+      if (!prompt || !hasMergeMode || !hasRenderMarkdown) {
+        showToast('Merge mode is temporarily unavailable', { type: 'error' });
+        return false;
+      }
+
       // Store pre-merge line edit state
       preMergeLineEdit = lineEditEnabled;
       mergeActive = true;
@@ -1825,15 +1858,12 @@ bun run prompts:sync</code></pre>
       }
 
       // Enter merge mode renderer
-      const prompt = prompts.find(p => p.slug === selectedSlug);
-      if (prompt && window.mergeMode && window.promptViewer && window.promptViewer.renderMarkdown) {
-        window.mergeMode.enterMergeMode(
-          selectedSlug,
-          rawPrompt,
-          prompt.mergeFields || [],
-          window.promptViewer.renderMarkdown,
-        );
-      }
+      window.mergeMode.enterMergeMode(
+        selectedSlug,
+        rawPrompt,
+        prompt.mergeFields || [],
+        window.promptViewer.renderMarkdown,
+      );
 
       return true;
     }

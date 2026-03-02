@@ -1104,6 +1104,87 @@ describe("Prompts Module", () => {
 			expect(putBody.content).toContain("Updated line");
 		});
 
+		test("line save resolves after navigation without clobbering current view", async () => {
+			const prompts = [
+				{ ...mockPrompts[0], content: "First line\nSecond line" },
+				{ ...mockPrompts[1], content: "Second prompt stable content" },
+			];
+			const baseFetch = mockFetch({
+				"/api/prompts/tags": { data: { purpose: [], domain: [], task: [] } },
+				"/api/prompts": { data: prompts },
+				"/api/drafts/edit:code-review": { data: {} },
+			});
+
+			let resolvePut:
+				| ((value: Response | PromiseLike<Response>) => void)
+				| undefined;
+			const fetchMock = vi.fn((url: string | URL | Request, options?: RequestInit) => {
+				const urlString = typeof url === "string" ? url : url.toString();
+				if (
+					urlString.includes("/api/prompts/code-review") &&
+					options?.method === "PUT"
+				) {
+					return new Promise<Response>((resolve) => {
+						resolvePut = resolve;
+					});
+				}
+				return baseFetch(url, options);
+			});
+			dom.window.fetch = fetchMock as unknown as typeof fetch;
+
+			dom.window.loadPrompts();
+			await waitForAsync(120);
+
+			const firstItem = dom.window.document.querySelector(
+				".prompt-item[data-slug='code-review']",
+			);
+			if (!firstItem) throw new Error("First prompt item not found");
+			click(firstItem);
+			await waitForAsync(80);
+
+			const toggle = dom.window.document.getElementById("line-edit-toggle");
+			if (!toggle) throw new Error("Line edit toggle not found");
+			click(toggle);
+			await waitForAsync(80);
+
+			const editable = dom.window.document.querySelector(".editable-line");
+			if (!editable) throw new Error("Editable line not found");
+			click(editable);
+			await waitForAsync(80);
+
+			const lineInput = dom.window.document.querySelector(
+				".line-edit-input",
+			) as HTMLTextAreaElement | null;
+			if (!lineInput) throw new Error("Line edit input not found");
+			input(lineInput, "Updated first line");
+			blur(lineInput);
+			await waitForAsync(50);
+
+			const secondItem = dom.window.document.querySelector(
+				".prompt-item[data-slug='meeting-notes']",
+			);
+			if (!secondItem) throw new Error("Second prompt item not found");
+			click(secondItem);
+			await waitForAsync(120);
+
+			const beforeResolveSlug = dom.window.document.getElementById("prompt-slug");
+			expect(beforeResolveSlug?.textContent).toBe("meeting-notes");
+
+			const putResolver = resolvePut;
+			if (!putResolver) throw new Error("Expected pending line-save PUT request");
+			putResolver({
+				ok: true,
+				status: 200,
+				json: () => Promise.resolve({}),
+			} as Response);
+			await waitForAsync(180);
+
+			const currentSlug = dom.window.document.getElementById("prompt-slug");
+			const contentEl = dom.window.document.getElementById("promptContent");
+			expect(currentSlug?.textContent).toBe("meeting-notes");
+			expect(contentEl?.textContent).toContain("Second prompt stable content");
+		});
+
 		test("TC-29: multiple line edits accumulate in same draft", async () => {
 			dom.window.fetch = mockFetch({
 				"/api/prompts": {

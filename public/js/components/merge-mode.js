@@ -2,10 +2,9 @@
  * Merge Mode component for prompt viewer.
  * Converts strict {{fieldName}} tokens into synchronized inline inputs.
  */
-(function () {
+(() => {
 	const STRICT_MERGE_FIELD_REGEX = /\{\{([a-zA-Z_][a-zA-Z0-9_]*)\}\}/g;
 
-	let currentSlug = null;
 	let mergeDirty = false;
 	let mergeValues = {};
 	let activeFields = [];
@@ -79,8 +78,9 @@
 	function renderMergeHtml(content, mergeFields, renderMarkdownFn) {
 		const fieldSet = new Set(Array.isArray(mergeFields) ? mergeFields : []);
 		const placeholders = [];
-		const nonce =
-			Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+		const nonce = `${Date.now().toString(36)}_${Math.random()
+			.toString(36)
+			.slice(2, 8)}`;
 		let index = 0;
 
 		const preprocessed = (content || "").replace(
@@ -126,8 +126,7 @@
 		return values;
 	}
 
-	function enterMergeMode(slug, content, mergeFields, renderMarkdownFn) {
-		currentSlug = slug;
+	function enterMergeMode(_slug, content, mergeFields, renderMarkdownFn) {
 		mergeDirty = false;
 		mergeValues = {};
 		activeFields = Array.isArray(mergeFields) ? [...mergeFields] : [];
@@ -147,7 +146,6 @@
 	}
 
 	function exitMergeMode() {
-		currentSlug = null;
 		mergeDirty = false;
 		mergeValues = {};
 		activeFields = [];

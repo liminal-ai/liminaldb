@@ -183,10 +183,11 @@ async function importPromptsHandler(
 	// Parse and validate YAML content
 	const parsed = parseAndValidateYamlImport(body.yaml);
 	const errors = parsed.errors;
+	const selectedSlugs = body.slugs;
 
 	// Filter to selected slugs if provided
-	const valid = body.slugs
-		? parsed.valid.filter((p) => body.slugs!.includes(p.slug))
+	const valid = selectedSlugs
+		? parsed.valid.filter((p) => selectedSlugs.includes(p.slug))
 		: parsed.valid;
 
 	if (valid.length === 0) {
