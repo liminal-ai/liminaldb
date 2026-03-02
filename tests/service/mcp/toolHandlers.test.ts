@@ -245,6 +245,7 @@ describe("MCP Tool Handlers - get_prompt", () => {
 			name: "Test Prompt",
 			description: "A test",
 			content: "Content here",
+			mergeFields: [],
 			tags: ["tag1"],
 		};
 		mockConvex.query.mockResolvedValue(promptData);

@@ -80,6 +80,7 @@ export async function loadTemplate(templateName: string): Promise<JSDOM> {
 		await injectToast(dom);
 		await injectTagSelector(dom);
 		await injectPromptViewer(dom);
+		await injectMergeMode(dom);
 		await injectPromptEditor(dom);
 	}
 
@@ -122,6 +123,7 @@ export const mockPrompts = [
 		name: "Code Review",
 		description: "Reviews code for issues",
 		content: "You are a code reviewer. Analyze the following code...",
+		mergeFields: [],
 		tags: ["code", "review"],
 		parameters: [],
 		pinned: false,
@@ -134,6 +136,7 @@ export const mockPrompts = [
 		name: "Meeting Notes",
 		description: "Summarizes meetings",
 		content: "Summarize the following meeting transcript...",
+		mergeFields: [],
 		tags: ["meetings"],
 		parameters: [],
 		pinned: false,
@@ -152,6 +155,7 @@ export const mockPromptsWithTiers = [
 		name: "Pinned Prompt",
 		description: "A pinned prompt",
 		content: "Pinned content",
+		mergeFields: [],
 		tags: ["code"],
 		parameters: [],
 		pinned: true,
@@ -164,6 +168,7 @@ export const mockPromptsWithTiers = [
 		name: "Favorited Prompt",
 		description: "A favorited prompt",
 		content: "Favorited content",
+		mergeFields: [],
 		tags: ["review"],
 		parameters: [],
 		pinned: false,
@@ -176,6 +181,7 @@ export const mockPromptsWithTiers = [
 		name: "Regular Prompt",
 		description: "A regular prompt",
 		content: "Regular content",
+		mergeFields: [],
 		tags: ["code"],
 		parameters: [],
 		pinned: false,
@@ -455,6 +461,19 @@ export async function injectPromptViewer(dom: JSDOM): Promise<void> {
 	);
 	const viewerContent = await readFile(viewerPath, "utf8");
 	dom.window.eval(viewerContent);
+}
+
+/**
+ * Load merge-mode.js into jsdom for testing.
+ * @param dom - The JSDOM instance
+ */
+export async function injectMergeMode(dom: JSDOM): Promise<void> {
+	const path = resolve(
+		__dirname,
+		"../../../public/js/components/merge-mode.js",
+	);
+	const content = await readFile(path, "utf8");
+	dom.window.eval(content);
 }
 
 /**

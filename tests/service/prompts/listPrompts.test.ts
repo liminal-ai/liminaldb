@@ -45,6 +45,7 @@ describe("GET /api/prompts", () => {
 					name: "Prompt 1",
 					description: "...",
 					content: "...",
+					mergeFields: [],
 					tags: [],
 				},
 			]);
@@ -71,6 +72,7 @@ describe("GET /api/prompts", () => {
 					name: "Prompt 1",
 					description: "...",
 					content: "...",
+					mergeFields: [],
 					tags: ["a"],
 				},
 				{
@@ -78,6 +80,7 @@ describe("GET /api/prompts", () => {
 					name: "Prompt 2",
 					description: "...",
 					content: "...",
+					mergeFields: [],
 					tags: ["b"],
 				},
 			]);
@@ -92,6 +95,37 @@ describe("GET /api/prompts", () => {
 			const body = response.json();
 			expect(body).toHaveLength(2);
 			expect(body[0].slug).toBe("prompt-1");
+		});
+
+		test("list response items include mergeFields array", async () => {
+			mockConvex.query.mockResolvedValue([
+				{
+					slug: "prompt-1",
+					name: "Prompt 1",
+					description: "...",
+					content: "Hello {{name}}",
+					tags: [],
+					mergeFields: ["name"],
+				},
+				{
+					slug: "prompt-2",
+					name: "Prompt 2",
+					description: "...",
+					content: "Plain content",
+					tags: [],
+					mergeFields: [],
+				},
+			]);
+
+			const response = await app.inject({
+				method: "GET",
+				url: "/api/prompts",
+				headers: { authorization: `Bearer ${createTestJwt()}` },
+			});
+
+			const body = response.json();
+			expect(body[0].mergeFields).toEqual(["name"]);
+			expect(body[1].mergeFields).toEqual([]);
 		});
 	});
 

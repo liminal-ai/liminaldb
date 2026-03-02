@@ -46,6 +46,7 @@ function mockPromptDTO(slug: string) {
 		name: `Prompt ${slug}`,
 		description: `Description for ${slug}`,
 		content: `Content for ${slug}`,
+		mergeFields: [],
 		tags: ["code"],
 		pinned: false,
 		favorited: true,
@@ -468,11 +469,18 @@ describe("POST /api/prompts/import", () => {
 		const result = response.json();
 		expect(result.created).toBe(1);
 		// Only "keep-me" should have been sent to mutation
-		const mutationCall = mockConvex.mutation.mock.calls[0]!;
+		const mutationCall = mockConvex.mutation.mock.calls[0];
+		if (!mutationCall) {
+			throw new Error("Expected mutation call to be present");
+		}
 		const prompts = (mutationCall[1] as { prompts: { slug: string }[] })
 			.prompts;
 		expect(prompts).toHaveLength(1);
-		expect(prompts[0]!.slug).toBe("keep-me");
+		const firstPrompt = prompts[0];
+		if (!firstPrompt) {
+			throw new Error("Expected a first prompt in mutation payload");
+		}
+		expect(firstPrompt.slug).toBe("keep-me");
 	});
 
 	test("body.slugs filter combined with duplicate detection", async () => {
@@ -560,7 +568,11 @@ describe("GET /api/prompts/export with slug filter", () => {
 			prompts: { slug: string }[];
 		};
 		expect(doc.prompts).toHaveLength(1);
-		expect(doc.prompts[0]!.slug).toBe("alpha");
+		const firstPrompt = doc.prompts[0];
+		if (!firstPrompt) {
+			throw new Error("Expected one exported prompt");
+		}
+		expect(firstPrompt.slug).toBe("alpha");
 	});
 
 	test("exports all prompts when no slugs param", async () => {

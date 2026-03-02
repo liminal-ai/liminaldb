@@ -113,6 +113,7 @@ export const PromptDTOSchema = z.object({
 	name: z.string(),
 	description: z.string(),
 	content: z.string(),
+	mergeFields: z.array(z.string()),
 	tags: z.array(z.string()),
 	parameters: z.array(ParameterSchema).optional(),
 });
@@ -135,6 +136,7 @@ export const PromptMetaSchema = z.object({
 export type PromptMeta = z.infer<typeof PromptMetaSchema>;
 
 export const PromptDTOv2Schema = PromptInputSchema.extend({
+	mergeFields: z.array(z.string()),
 	pinned: z.boolean(),
 	favorited: z.boolean(),
 	usageCount: z.number(),
@@ -166,3 +168,19 @@ export const FlagsPatchSchema = z.object({
 });
 
 export type FlagsPatch = z.infer<typeof FlagsPatchSchema>;
+
+// Epic 03: Template Merge additions
+
+export const MergeRequestSchema = z.object({
+	values: z.record(z.string(), z.string()),
+});
+
+export type MergeRequest = z.infer<typeof MergeRequestSchema>;
+
+export const MergeResponseSchema = z.object({
+	content: z.string(),
+	mergeFields: z.array(z.string()),
+	unfilledFields: z.array(z.string()),
+});
+
+export type MergeResponse = z.infer<typeof MergeResponseSchema>;

@@ -334,3 +334,57 @@
   color: var(--text-muted);
   opacity: 0.3;
 }
+
+/* ============================================
+   MERGE MODE
+   ============================================ */
+
+.merge-mode .prompt-viewer-content {
+  font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+  line-height: 1.7;
+}
+
+.merge-mode .merge-input-wrapper {
+  display: inline;
+  position: relative;
+}
+
+.merge-mode .merge-input-wrapper::before {
+  content: "{{";
+  color: var(--accent);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.merge-mode .merge-input-wrapper::after {
+  content: " }}";
+  color: var(--accent);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.merge-mode .merge-input-wrapper input.merge-input {
+  width: auto;
+  min-width: 80px;
+  max-width: 300px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--accent);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.9em;
+  outline: none;
+  padding: 0.12em 0.35em;
+}
+
+.merge-mode .merge-input-wrapper.filled input.merge-input {
+  border-color: var(--success);
+}
+
+.merge-mode .merge-input-wrapper input.merge-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-dim, rgba(255, 167, 89, 0.2));
+}
+
+.merge-mode .merge-input-wrapper input.merge-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
+}

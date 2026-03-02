@@ -149,6 +149,39 @@ describe("PUT /api/prompts/:slug", () => {
 			expect(response.json()).toEqual({ updated: true });
 		});
 
+		test("line-edit save without parameters does not erase existing parameters", async () => {
+			mockConvex.mutation.mockResolvedValue(true);
+
+			// Simulate saveLineEdit() payload: no parameters field
+			const lineEditBody = {
+				slug: "has-params",
+				name: "Prompt With Params",
+				description: "Has parameters defined",
+				content: "Updated line content",
+				tags: ["code"],
+				// parameters intentionally omitted — mirrors saveLineEdit()
+			};
+
+			const response = await app.inject({
+				method: "PUT",
+				url: "/api/prompts/has-params",
+				headers: {
+					authorization: `Bearer ${createTestJwt({ sub: "user_456" })}`,
+				},
+				payload: lineEditBody,
+			});
+
+			expect(response.statusCode).toBe(200);
+
+			// Verify the Convex mutation was called
+			const callArgs = mockConvex.mutation.mock.calls[0]?.[1] as {
+				updates: Record<string, unknown>;
+			};
+			expect(callArgs).toBeDefined();
+
+			expect(callArgs.updates).not.toHaveProperty("parameters");
+		});
+
 		test("allows slug rename in body", async () => {
 			mockConvex.mutation.mockResolvedValue(true);
 

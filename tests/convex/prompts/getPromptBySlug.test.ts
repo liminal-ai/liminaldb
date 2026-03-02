@@ -34,6 +34,7 @@ describe("getPromptBySlug", () => {
 				name: "Meta Cognitive Check",
 				description: "Use when you want AI to introspect",
 				content: "As you process this...",
+				mergeFields: [],
 				tags: ["introspection", "claude"], // DTO field (mapped)
 				parameters: undefined,
 			});
@@ -75,6 +76,7 @@ describe("getPromptBySlug", () => {
 					required: true,
 				},
 			]);
+			expect(result?.mergeFields).toEqual(["name"]);
 		});
 	});
 

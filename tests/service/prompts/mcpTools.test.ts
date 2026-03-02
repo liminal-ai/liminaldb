@@ -208,6 +208,7 @@ describe("MCP Tools - get_prompt", () => {
 			name: "Test",
 			description: "...",
 			content: "...",
+			mergeFields: [],
 			tags: [],
 		});
 
@@ -285,7 +286,7 @@ describe("MCP Tools - list_prompts", () => {
 	});
 
 	test("TC-41: returns ranked prompts", async () => {
-		mockConvex.query.mockResolvedValue([{ slug: "a" }]);
+		mockConvex.query.mockResolvedValue([{ slug: "a", mergeFields: [] }]);
 
 		const response = await callTool(
 			app,
@@ -304,7 +305,7 @@ describe("MCP Tools - list_prompts", () => {
 		);
 
 		const result = readToolResult(response) as { prompts?: unknown[] } | null;
-		expect(result?.prompts).toEqual([{ slug: "a" }]);
+		expect(result?.prompts).toEqual([{ slug: "a", mergeFields: [] }]);
 	});
 
 	test("TC-42: respects limit parameter", async () => {
@@ -350,7 +351,7 @@ describe("MCP Tools - search_prompts", () => {
 	});
 
 	test("TC-43: returns matching prompts for query", async () => {
-		mockConvex.query.mockResolvedValue([{ slug: "sql" }]);
+		mockConvex.query.mockResolvedValue([{ slug: "sql", mergeFields: [] }]);
 
 		const response = await callTool(
 			app,
@@ -370,7 +371,7 @@ describe("MCP Tools - search_prompts", () => {
 		);
 
 		const result = readToolResult(response) as { prompts?: unknown[] } | null;
-		expect(result?.prompts).toEqual([{ slug: "sql" }]);
+		expect(result?.prompts).toEqual([{ slug: "sql", mergeFields: [] }]);
 	});
 
 	test("TC-44: filters by tags", async () => {
@@ -483,6 +484,7 @@ describe("MCP Tools - update_prompt", () => {
 			name: "Old",
 			description: "Old",
 			content: "Old",
+			mergeFields: [],
 			tags: [],
 		});
 
@@ -586,5 +588,128 @@ describe("MCP Tools - track_prompt_use", () => {
 
 		const result = readToolResult(response) as { tracked?: boolean } | null;
 		expect(result?.tracked).toBe(true);
+	});
+});
+
+describe("MCP Tools - merge_prompt", () => {
+	let app: Awaited<ReturnType<typeof createApp>>;
+
+	beforeEach(async () => {
+		mockConvex.query.mockClear();
+		mockConvex.mutation.mockClear();
+		app = await createApp();
+	});
+
+	afterEach(async () => {
+		await app.close();
+	});
+
+	test("TC-5.1a: full merge returns merged content with unfilledFields: []", async () => {
+		mockConvex.query.mockResolvedValue({
+			slug: "code-review",
+			name: "Code Review",
+			description: "Review code",
+			content: "Review this {{language}} code:\n{{code}}",
+			mergeFields: ["language", "code"],
+			tags: ["code"],
+		});
+		mockConvex.mutation.mockResolvedValue(true);
+
+		const response = await callTool(
+			app,
+			"merge_prompt",
+			{
+				slug: "code-review",
+				values: { language: "TypeScript", code: "const x = 1;" },
+			},
+			createTestJwt({ sub: "user_123" }),
+		);
+
+		expect(response.statusCode).toBe(200);
+
+		const result = readToolResult(response) as {
+			content?: string;
+			mergeFields?: string[];
+			unfilledFields?: string[];
+		} | null;
+		expect(result?.content).toBe("Review this TypeScript code:\nconst x = 1;");
+		expect(result?.mergeFields).toEqual(["language", "code"]);
+		expect(result?.unfilledFields).toEqual([]);
+	});
+
+	test("TC-5.1b: partial merge returns unfilledFields listing missing fields", async () => {
+		mockConvex.query.mockResolvedValue({
+			slug: "code-review",
+			name: "Code Review",
+			description: "Review code",
+			content: "Review this {{language}} code:\n{{code}}",
+			mergeFields: ["language", "code"],
+			tags: ["code"],
+		});
+		mockConvex.mutation.mockResolvedValue(true);
+
+		const response = await callTool(
+			app,
+			"merge_prompt",
+			{
+				slug: "code-review",
+				values: { language: "Python" },
+			},
+			createTestJwt({ sub: "user_123" }),
+		);
+
+		expect(response.statusCode).toBe(200);
+
+		const result = readToolResult(response) as {
+			content?: string;
+			mergeFields?: string[];
+			unfilledFields?: string[];
+		} | null;
+		expect(result?.content).toBe("Review this Python code:\n{{code}}");
+		expect(result?.mergeFields).toEqual(["language", "code"]);
+		expect(result?.unfilledFields).toEqual(["code"]);
+	});
+
+	test("TC-5.1c: prompt not found returns isError: true", async () => {
+		mockConvex.query.mockResolvedValue(null);
+
+		const response = await callTool(
+			app,
+			"merge_prompt",
+			{
+				slug: "nonexistent",
+				values: { language: "Go" },
+			},
+			createTestJwt({ sub: "user_123" }),
+		);
+
+		expect(response.statusCode).toBe(200);
+		expect(response.body).toContain("Prompt not found");
+		expect(response.body).toContain("isError");
+	});
+
+	test("TC-5.2a: get_prompt response includes mergeFields array", async () => {
+		mockConvex.query.mockResolvedValue({
+			slug: "template",
+			name: "Template",
+			description: "A template",
+			content: "Hello {{language}} and {{code}}",
+			mergeFields: ["language", "code"],
+			tags: [],
+		});
+
+		const response = await callTool(
+			app,
+			"get_prompt",
+			{ slug: "template" },
+			createTestJwt({ sub: "user_123" }),
+		);
+
+		expect(response.statusCode).toBe(200);
+
+		const result = readToolResult(response) as {
+			mergeFields?: string[];
+		} | null;
+		expect(result?.mergeFields).toEqual(["language", "code"]);
 	});
 });

@@ -392,6 +392,12 @@ function wrapLinesForEdit(rawInput, _renderedHtml, view) {
 	}
 }
 
+// Expose renderMarkdown for merge-mode usage in browser
+if (typeof window !== "undefined") {
+	window.promptViewer = window.promptViewer || {};
+	window.promptViewer.renderMarkdown = renderMarkdown;
+}
+
 // Export for module usage
 if (typeof module !== "undefined" && module.exports) {
 	module.exports = { renderPrompt, SemanticParser, renderMarkdown };

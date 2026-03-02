@@ -54,6 +54,7 @@ describe("GET /api/prompts/:slug", () => {
 				name: "Test",
 				description: "Desc",
 				content: "Content",
+				mergeFields: [],
 				tags: ["tag1"],
 			});
 
@@ -81,6 +82,7 @@ describe("GET /api/prompts/:slug", () => {
 				name: "Test Prompt",
 				description: "A test prompt",
 				content: "The content",
+				mergeFields: [],
 				tags: ["introspection", "claude"],
 				parameters: undefined,
 			});
@@ -97,6 +99,7 @@ describe("GET /api/prompts/:slug", () => {
 				name: "Test Prompt",
 				description: "A test prompt",
 				content: "The content",
+				mergeFields: [],
 				tags: ["introspection", "claude"],
 			});
 		});
@@ -107,6 +110,7 @@ describe("GET /api/prompts/:slug", () => {
 				name: "Template",
 				description: "Has params",
 				content: "Hello {{name}}",
+				mergeFields: ["name"],
 				tags: [],
 				parameters: [
 					{
@@ -132,6 +136,44 @@ describe("GET /api/prompts/:slug", () => {
 					description: "The name",
 				},
 			]);
+		});
+
+		test("response includes mergeFields array from content", async () => {
+			mockConvex.query.mockResolvedValue({
+				slug: "template-prompt",
+				name: "Template",
+				description: "Has fields",
+				content: "Write {{code}} in {{language}}",
+				tags: ["code"],
+				mergeFields: ["code", "language"],
+			});
+
+			const response = await app.inject({
+				method: "GET",
+				url: "/api/prompts/template-prompt",
+				headers: { authorization: `Bearer ${createTestJwt()}` },
+			});
+
+			expect(response.json().mergeFields).toEqual(["code", "language"]);
+		});
+
+		test("response includes empty mergeFields when no fields in content", async () => {
+			mockConvex.query.mockResolvedValue({
+				slug: "plain-prompt",
+				name: "Plain",
+				description: "No fields",
+				content: "Just plain content",
+				tags: [],
+				mergeFields: [],
+			});
+
+			const response = await app.inject({
+				method: "GET",
+				url: "/api/prompts/plain-prompt",
+				headers: { authorization: `Bearer ${createTestJwt()}` },
+			});
+
+			expect(response.json().mergeFields).toEqual([]);
 		});
 	});
 
