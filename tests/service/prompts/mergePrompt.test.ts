@@ -47,6 +47,7 @@ describe("POST /api/prompts/:slug/merge", () => {
 		mockConvex.query.mockResolvedValue({
 			content: "Write in {{language}}",
 			slug: "test",
+			mergeFields: ["language"],
 		});
 		mockConvex.mutation.mockResolvedValue(true);
 
@@ -70,6 +71,7 @@ describe("POST /api/prompts/:slug/merge", () => {
 			content:
 				"Use {{language}} because {{language}} is great. {{language}} rocks!",
 			slug: "test",
+			mergeFields: ["language"],
 		});
 		mockConvex.mutation.mockResolvedValue(true);
 
@@ -93,6 +95,7 @@ describe("POST /api/prompts/:slug/merge", () => {
 		mockConvex.query.mockResolvedValue({
 			content: "Write {{code}} in {{language}}",
 			slug: "test",
+			mergeFields: ["code", "language"],
 		});
 		mockConvex.mutation.mockResolvedValue(true);
 
@@ -115,6 +118,7 @@ describe("POST /api/prompts/:slug/merge", () => {
 		mockConvex.query.mockResolvedValue({
 			content: "Write in {{language}}",
 			slug: "test",
+			mergeFields: ["language"],
 		});
 		mockConvex.mutation.mockResolvedValue(true);
 
@@ -136,6 +140,7 @@ describe("POST /api/prompts/:slug/merge", () => {
 		mockConvex.query.mockResolvedValue({
 			content: "{{a}} and {{b}}",
 			slug: "test",
+			mergeFields: ["a", "b"],
 		});
 		mockConvex.mutation.mockResolvedValue(true);
 
@@ -156,6 +161,7 @@ describe("POST /api/prompts/:slug/merge", () => {
 		mockConvex.query.mockResolvedValue({
 			content: "{{a}} and {{b}}",
 			slug: "test",
+			mergeFields: ["a", "b"],
 		});
 		mockConvex.mutation.mockResolvedValue(true);
 
@@ -176,6 +182,7 @@ describe("POST /api/prompts/:slug/merge", () => {
 		mockConvex.query.mockResolvedValue({
 			content: "{{a}} and {{b}}",
 			slug: "test",
+			mergeFields: ["a", "b"],
 		});
 		mockConvex.mutation.mockResolvedValue(true);
 
@@ -196,6 +203,7 @@ describe("POST /api/prompts/:slug/merge", () => {
 		mockConvex.query.mockResolvedValue({
 			content: "{{greeting}} in {{language}}",
 			slug: "test",
+			mergeFields: ["greeting", "language"],
 		});
 		mockConvex.mutation.mockResolvedValue(true);
 
@@ -216,6 +224,7 @@ describe("POST /api/prompts/:slug/merge", () => {
 		mockConvex.query.mockResolvedValue({
 			content: "Just a plain prompt",
 			slug: "test",
+			mergeFields: [],
 		});
 		mockConvex.mutation.mockResolvedValue(true);
 
@@ -238,6 +247,7 @@ describe("POST /api/prompts/:slug/merge", () => {
 		mockConvex.query.mockResolvedValue({
 			content: "",
 			slug: "test",
+			mergeFields: [],
 		});
 		mockConvex.mutation.mockResolvedValue(true);
 
@@ -260,6 +270,7 @@ describe("POST /api/prompts/:slug/merge", () => {
 		mockConvex.query.mockResolvedValue({
 			content: "Hello {{name}}",
 			slug: "test",
+			mergeFields: ["name"],
 		});
 		mockConvex.mutation.mockResolvedValue(true);
 
@@ -287,6 +298,7 @@ describe("POST /api/prompts/:slug/merge", () => {
 		mockConvex.query.mockResolvedValue({
 			content: "Hello {{a}}",
 			slug: "test",
+			mergeFields: ["a"],
 		});
 		mockConvex.mutation.mockResolvedValue(true);
 
@@ -308,6 +320,7 @@ describe("POST /api/prompts/:slug/merge", () => {
 		mockConvex.query.mockResolvedValue({
 			content: "Hello {{name}}",
 			slug: "test",
+			mergeFields: ["name"],
 		});
 		mockConvex.mutation.mockResolvedValue(true);
 
@@ -328,6 +341,7 @@ describe("POST /api/prompts/:slug/merge", () => {
 		mockConvex.query.mockResolvedValue({
 			content: "Code: {{code}}",
 			slug: "test",
+			mergeFields: ["code"],
 		});
 		mockConvex.mutation.mockResolvedValue(true);
 
@@ -348,6 +362,7 @@ describe("POST /api/prompts/:slug/merge", () => {
 		mockConvex.query.mockResolvedValue({
 			content: "Hello {{name}}",
 			slug: "test",
+			mergeFields: ["name"],
 		});
 		mockConvex.mutation.mockResolvedValue(true);
 
