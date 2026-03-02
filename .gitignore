@@ -34,3 +34,6 @@ data-load/
 
 # Research outputs (local only)
 .research/
+
+# Local spec workspace (separate repo)
+liminal-spec/
