@@ -42,9 +42,7 @@ describe("merge field regex consistency", () => {
 		const first = regexes[0]!;
 		for (let i = 1; i < regexes.length; i++) {
 			const entry = regexes[i]!;
-			expect(entry.source, `${entry.label} (${entry.file})`).toBe(
-				first.source,
-			);
+			expect(entry.source, `${entry.label} (${entry.file})`).toBe(first.source);
 		}
 	});
 });

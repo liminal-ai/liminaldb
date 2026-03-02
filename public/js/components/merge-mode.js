@@ -2,7 +2,7 @@
  * Merge Mode component for prompt viewer.
  * Converts strict {{fieldName}} tokens into synchronized inline inputs.
  */
-(function () {
+(() => {
 	const STRICT_MERGE_FIELD_REGEX = /\{\{([a-zA-Z_][a-zA-Z0-9_]*)\}\}/g;
 
 	let currentSlug = null;

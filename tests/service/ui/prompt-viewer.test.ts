@@ -336,7 +336,9 @@ describe("Prompts Module - Prompt Viewer", () => {
 			blur(textarea);
 			await waitForAsync(200);
 
-			const toastEl = dom.window.document.querySelector(".toast-error, .toast.error");
+			const toastEl = dom.window.document.querySelector(
+				".toast-error, .toast.error",
+			);
 			expect(toastEl).not.toBeNull();
 
 			const updatedLine = contentEl?.querySelector(".editable-line");

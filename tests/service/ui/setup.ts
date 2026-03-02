@@ -468,7 +468,10 @@ export async function injectPromptViewer(dom: JSDOM): Promise<void> {
  * @param dom - The JSDOM instance
  */
 export async function injectMergeMode(dom: JSDOM): Promise<void> {
-	const path = resolve(__dirname, "../../../public/js/components/merge-mode.js");
+	const path = resolve(
+		__dirname,
+		"../../../public/js/components/merge-mode.js",
+	);
 	const content = await readFile(path, "utf8");
 	dom.window.eval(content);
 }

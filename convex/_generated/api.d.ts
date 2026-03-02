@@ -19,6 +19,7 @@ import type * as migrations_backfillSearchText from "../migrations/backfillSearc
 import type * as migrations_migrationStatus from "../migrations/migrationStatus.js";
 import type * as migrations_seedGlobalTags from "../migrations/seedGlobalTags.js";
 import type * as migrations_seedRankingConfig from "../migrations/seedRankingConfig.js";
+import type * as model_merge from "../model/merge.js";
 import type * as model_prompts from "../model/prompts.js";
 import type * as model_ranking from "../model/ranking.js";
 import type * as model_tagConstants from "../model/tagConstants.js";
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   "migrations/migrationStatus": typeof migrations_migrationStatus;
   "migrations/seedGlobalTags": typeof migrations_seedGlobalTags;
   "migrations/seedRankingConfig": typeof migrations_seedRankingConfig;
+  "model/merge": typeof model_merge;
   "model/prompts": typeof model_prompts;
   "model/ranking": typeof model_ranking;
   "model/tagConstants": typeof model_tagConstants;
