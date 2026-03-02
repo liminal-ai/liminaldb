@@ -427,7 +427,7 @@ intact. Merge mode's copy produces the merged content with filled values substit
 The CLI provides a merge command that accepts a prompt slug and field values as flags,
 calls the merge API, and outputs the merged content.
 
-```
+```bash
 liminaldb merge <slug> --<fieldName> <value> [--<fieldName> <value> ...]
 ```
 

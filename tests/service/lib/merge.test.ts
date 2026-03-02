@@ -10,16 +10,24 @@ const ROOT = resolve(import.meta.dirname, "../../..");
  * Extract the merge-field regex literal from a source file.
  * Matches lines like: `const MERGE_FIELD_REGEX = /…/g;`
  * or `const STRICT_MERGE_FIELD_REGEX = /…/g;`
+ * Also supports inline usage in `.match(/…/g)` calls.
  */
 function extractRegexSource(filePath: string): string {
 	const src = readFileSync(resolve(ROOT, filePath), "utf-8");
-	const match = src.match(
+	const assignmentMatch = src.match(
 		/(?:MERGE_FIELD_REGEX|STRICT_MERGE_FIELD_REGEX)\s*=\s*(\/.*\/[gimsuy]*)\s*;/,
 	);
-	if (!match?.[1]) {
+	if (assignmentMatch?.[1]) {
+		return assignmentMatch[1];
+	}
+
+	const inlineMatch = src.match(
+		/\.match\(\s*(\/(?:\\.|[^/\\\n])+\/[gimsuy]*)\s*\)/,
+	);
+	if (!inlineMatch?.[1]) {
 		throw new Error(`Could not find merge field regex in ${filePath}`);
 	}
-	return match[1];
+	return inlineMatch[1];
 }
 
 describe("merge field regex consistency", () => {
@@ -30,6 +38,10 @@ describe("merge field regex consistency", () => {
 			file: "public/js/components/merge-mode.js",
 			label: "UI component",
 		},
+		{
+			file: "src/ui/templates/prompts.html",
+			label: "line edit inline extraction",
+		},
 	] as const;
 
 	const regexes = locations.map(({ file, label }) => ({
@@ -38,7 +50,7 @@ describe("merge field regex consistency", () => {
 		source: extractRegexSource(file),
 	}));
 
-	test("all 3 locations define the same regex", () => {
+	test("all 4 locations define the same regex", () => {
 		const [first, ...rest] = regexes;
 		if (!first) {
 			throw new Error("Expected at least one regex source");

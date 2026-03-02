@@ -55,18 +55,16 @@ Tests decided in the tech design that aren't 1:1 with a TC:
 
 ## Dependency Graph
 
-```
-Story 0 (Foundation) ─────────────────────────────────
-    |
-    +──→ Story 1 (mergeFields on reads) ──────────────
-    |       |
-    |       +──→ Story 3 (MCP merge tool)
-    |       |
-    +──→ Story 2 (REST merge endpoint) ──→ Story 4 (CLI, external)
-    |       |
-    |       +──────────────────────────────────────────
-    |                                                  |
-Story 5 (line edit fix, independent) ──────────────────+──→ Story 6 (Web UI merge mode)
+```mermaid
+graph TD
+    S0["Story 0 (Foundation)"] --> S1["Story 1 (mergeFields on reads)"]
+    S0 --> S2["Story 2 (REST merge endpoint)"]
+    S0 --> S5["Story 5 (line edit fix, independent)"]
+    S1 --> S3["Story 3 (MCP merge tool)"]
+    S2 --> S4["Story 4 (CLI, external)"]
+    S1 --> S6["Story 6 (Web UI merge mode)"]
+    S2 --> S6
+    S5 --> S6
 ```
 
 After Story 0: Stories 1, 2, and 5 can run in parallel. After Story 1: Story 3 can start. Story 6 is the convergence point (requires Story 1 + Story 2 + Story 5). Story 4 (external) can start after Story 2.

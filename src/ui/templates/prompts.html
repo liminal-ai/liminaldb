@@ -727,6 +727,7 @@ bun run prompts:sync</code></pre>
     }
     let rawPrompt = '';
     let editingLineIndex = null; // Currently editing line index
+    let pendingSave = null; // Tracks an in-flight line save by slug+line
 
     // Filter state tracking
     let currentQuery = '';
@@ -1450,121 +1451,151 @@ bun run prompts:sync</code></pre>
       const targetSlug = selectedSlug;
       if (!targetSlug) return false;
 
-      const lines = rawPrompt.split('\n');
-      const oldValue = lines[lineIndex] || '';
-      const contentEl = document.getElementById('promptContent');
-      const lineEl = contentEl?.querySelector(`.editable-line[data-line="${lineIndex}"]`);
-      const shouldMutateActiveView = () => (
-        selectedSlug === targetSlug &&
-        currentMode === 'view' &&
-        !mergeActive
-      );
-
-      // No change, just re-render
-      if (newValue === oldValue) {
-        if (shouldMutateActiveView()) {
-          editingLineIndex = null;
-          if (lineEl) {
-            lineEl.classList.remove('editing');
-            lineEl.textContent = oldValue;
-          } else {
-            displayPromptContent(rawPrompt);
-          }
-        }
-        return true;
+      if (
+        pendingSave &&
+        pendingSave.slug === targetSlug &&
+        pendingSave.lineIndex === lineIndex
+      ) {
+        return pendingSave.promise;
       }
 
-      // Update local content
-      lines[lineIndex] = newValue;
-      const newContent = lines.join('\n');
+      const savePromise = (async () => {
+        const lines = rawPrompt.split('\n');
+        const oldValue = lines[lineIndex] || '';
+        const contentEl = document.getElementById('promptContent');
+        const lineEl = contentEl?.querySelector(`.editable-line[data-line="${lineIndex}"]`);
+        const shouldMutateActiveView = () => (
+          selectedSlug === targetSlug &&
+          currentMode === 'view' &&
+          !mergeActive
+        );
 
-      // Get current prompt data
-      const prompt = prompts.find(p => p.slug === targetSlug);
-      if (!prompt) {
-        if (selectedSlug === targetSlug) {
-          showToast('Failed to save line edit', { type: 'error' });
-        }
-        if (shouldMutateActiveView()) {
-          editingLineIndex = null;
-          if (lineEl) {
-            lineEl.classList.remove('editing');
-            lineEl.textContent = oldValue;
-          } else {
-            displayPromptContent(rawPrompt);
+        // No change, just re-render
+        if (newValue === oldValue) {
+          if (shouldMutateActiveView()) {
+            editingLineIndex = null;
+            if (lineEl) {
+              lineEl.classList.remove('editing');
+              lineEl.textContent = oldValue;
+            } else {
+              displayPromptContent(rawPrompt);
+            }
           }
-        }
-        return false;
-      }
-
-      // Persist to Convex immediately via PUT /api/prompts/:slug
-      try {
-        const response = await fetch('/api/prompts/' + targetSlug, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
-          body: JSON.stringify({
-            slug: targetSlug,
-            name: prompt.name,
-            description: prompt.description,
-            content: newContent,
-            tags: prompt.tags || [],
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to save');
+          return true;
         }
 
-        // Success: update local state
-        prompt.content = newContent;
+        // Update local content
+        lines[lineIndex] = newValue;
+        const newContent = lines.join('\n');
 
-        // Re-extract merge fields from updated content
-        const fieldMatches = newContent.match(/\{\{([a-zA-Z_][a-zA-Z0-9_]*)\}\}/g) || [];
-        prompt.mergeFields = [...new Set(fieldMatches.map(m => m.slice(2, -2)))];
+        // Get current prompt data
+        const prompt = prompts.find(p => p.slug === targetSlug);
+        if (!prompt) {
+          if (selectedSlug === targetSlug) {
+            showToast('Failed to save line edit', { type: 'error' });
+          }
+          if (shouldMutateActiveView()) {
+            editingLineIndex = null;
+            if (lineEl) {
+              lineEl.classList.remove('editing');
+              lineEl.textContent = oldValue;
+            } else {
+              displayPromptContent(rawPrompt);
+            }
+          }
+          return false;
+        }
 
-        if (shouldMutateActiveView()) {
-          rawPrompt = newContent;
-          editingLineIndex = null;
+        // Persist to Convex immediately via PUT /api/prompts/:slug
+        try {
+          const response = await fetch('/api/prompts/' + targetSlug, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+              slug: targetSlug,
+              name: prompt.name,
+              description: prompt.description,
+              content: newContent,
+              tags: prompt.tags || [],
+              parameters: prompt.parameters,
+            }),
+          });
 
-          const mergeToggle = document.getElementById('merge-toggle');
-          if (mergeToggle) {
-            mergeToggle.style.display = prompt.mergeFields.length > 0 ? '' : 'none';
+          if (!response.ok) {
+            throw new Error('Failed to save');
           }
 
-          if (lineEl) {
-            lineEl.classList.remove('editing');
-            lineEl.textContent = newValue;
-          } else {
-            displayPromptContent(newContent);
+          // Success: update local state
+          prompt.content = newContent;
+
+          // Re-extract merge fields from updated content
+          const fieldMatches = newContent.match(/\{\{([a-zA-Z_][a-zA-Z0-9_]*)\}\}/g) || [];
+          prompt.mergeFields = [...new Set(fieldMatches.map(m => m.slice(2, -2)))];
+
+          if (shouldMutateActiveView()) {
+            rawPrompt = newContent;
+            editingLineIndex = null;
+
+            const mergeToggle = document.getElementById('merge-toggle');
+            if (mergeToggle) {
+              mergeToggle.style.display = prompt.mergeFields.length > 0 ? '' : 'none';
+            }
+
+            if (lineEl) {
+              lineEl.classList.remove('editing');
+              lineEl.textContent = newValue;
+            } else {
+              displayPromptContent(newContent);
+            }
           }
-        }
 
-        // Clear any existing draft for this slug (fire-and-forget)
-        const draftId = 'edit:' + targetSlug;
-        fetch('/api/drafts/' + draftId, {
-          method: 'DELETE',
-          credentials: 'same-origin',
-        }).catch(function() {});
+          // Clear any existing draft for this slug (fire-and-forget)
+          const draftId = 'edit:' + targetSlug;
+          fetch('/api/drafts/' + draftId, {
+            method: 'DELETE',
+            credentials: 'same-origin',
+          }).catch(function(err) {
+            console.warn('Draft cleanup failed:', err);
+          });
 
-        return true;
-      } catch (err) {
-        // Failure: show error toast, restore previous content
-        if (selectedSlug === targetSlug) {
-          showToast('Failed to save line edit', { type: 'error' });
-        }
-
-        if (shouldMutateActiveView()) {
-          editingLineIndex = null;
-          if (lineEl) {
-            lineEl.classList.remove('editing');
-            lineEl.textContent = oldValue;
-          } else {
-            displayPromptContent(rawPrompt);
+          return true;
+        } catch (err) {
+          // Failure: show error toast, restore previous content
+          if (selectedSlug === targetSlug) {
+            showToast('Failed to save line edit', { type: 'error' });
           }
-        }
 
-        return false;
-      }
+          if (shouldMutateActiveView()) {
+            editingLineIndex = null;
+            if (lineEl) {
+              lineEl.classList.remove('editing');
+              lineEl.textContent = oldValue;
+            } else {
+              displayPromptContent(rawPrompt);
+            }
+          }
+
+          return false;
+        }
+      })();
+
+      pendingSave = {
+        slug: targetSlug,
+        lineIndex,
+        promise: savePromise,
+      };
+
+      return savePromise.finally(function() {
+        if (
+          pendingSave &&
+          pendingSave.slug === targetSlug &&
+          pendingSave.lineIndex === lineIndex &&
+          pendingSave.promise === savePromise
+        ) {
+          pendingSave = null;
+        }
+      });
     }
 
     // Load prompts on init

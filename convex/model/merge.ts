@@ -7,6 +7,7 @@
  * NOTE: Duplicated in src/lib/merge.ts — Convex edge runtime boundary
  * prevents sharing imports between convex/ and src/ at runtime.
  */
+// @see tests/service/lib/merge.test.ts "merge field regex consistency"
 const MERGE_FIELD_REGEX = /\{\{([a-zA-Z_][a-zA-Z0-9_]*)\}\}/g;
 
 /**
@@ -28,6 +29,7 @@ export function extractMergeFields(content: string): string[] {
 		}
 
 		const name = match[1];
+		// Defensive: capture group always matches with current regex, but guards against future changes
 		if (name === undefined) {
 			continue;
 		}

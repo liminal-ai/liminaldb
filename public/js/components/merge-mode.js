@@ -4,9 +4,10 @@
  */
 (() => {
 	const STRICT_MERGE_FIELD_REGEX = /\{\{([a-zA-Z_][a-zA-Z0-9_]*)\}\}/g;
+	// @see tests/service/lib/merge.test.ts "merge field regex consistency"
 
 	let mergeDirty = false;
-	let mergeValues = {};
+	let mergeValues = Object.create(null);
 	let activeFields = [];
 
 	function safeHtml(value) {
@@ -86,6 +87,7 @@
 		const preprocessed = (content || "").replace(
 			STRICT_MERGE_FIELD_REGEX,
 			(_match, fieldName) => {
+				// When mergeFields is empty, fall back to extracting all fields from content
 				if (fieldSet.size > 0 && !fieldSet.has(fieldName)) {
 					return `{{${fieldName}}}`;
 				}
@@ -110,7 +112,7 @@
 	}
 
 	function collectCurrentValues() {
-		const values = {};
+		const values = Object.create(null);
 		const contentEl = document.getElementById("promptContent");
 		if (!contentEl) return values;
 
@@ -128,7 +130,7 @@
 
 	function enterMergeMode(_slug, content, mergeFields, renderMarkdownFn) {
 		mergeDirty = false;
-		mergeValues = {};
+		mergeValues = Object.create(null);
 		activeFields = Array.isArray(mergeFields) ? [...mergeFields] : [];
 
 		const contentEl = document.getElementById("promptContent");
@@ -147,7 +149,7 @@
 
 	function exitMergeMode() {
 		mergeDirty = false;
-		mergeValues = {};
+		mergeValues = Object.create(null);
 		activeFields = [];
 	}
 

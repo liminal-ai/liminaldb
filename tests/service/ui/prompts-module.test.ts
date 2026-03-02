@@ -1118,18 +1118,20 @@ describe("Prompts Module", () => {
 			let resolvePut:
 				| ((value: Response | PromiseLike<Response>) => void)
 				| undefined;
-			const fetchMock = vi.fn((url: string | URL | Request, options?: RequestInit) => {
-				const urlString = typeof url === "string" ? url : url.toString();
-				if (
-					urlString.includes("/api/prompts/code-review") &&
-					options?.method === "PUT"
-				) {
-					return new Promise<Response>((resolve) => {
-						resolvePut = resolve;
-					});
-				}
-				return baseFetch(url, options);
-			});
+			const fetchMock = vi.fn(
+				(url: string | URL | Request, options?: RequestInit) => {
+					const urlString = typeof url === "string" ? url : url.toString();
+					if (
+						urlString.includes("/api/prompts/code-review") &&
+						options?.method === "PUT"
+					) {
+						return new Promise<Response>((resolve) => {
+							resolvePut = resolve;
+						});
+					}
+					return baseFetch(url, options);
+				},
+			);
 			dom.window.fetch = fetchMock as unknown as typeof fetch;
 
 			dom.window.loadPrompts();
@@ -1167,11 +1169,13 @@ describe("Prompts Module", () => {
 			click(secondItem);
 			await waitForAsync(120);
 
-			const beforeResolveSlug = dom.window.document.getElementById("prompt-slug");
+			const beforeResolveSlug =
+				dom.window.document.getElementById("prompt-slug");
 			expect(beforeResolveSlug?.textContent).toBe("meeting-notes");
 
 			const putResolver = resolvePut;
-			if (!putResolver) throw new Error("Expected pending line-save PUT request");
+			if (!putResolver)
+				throw new Error("Expected pending line-save PUT request");
 			putResolver({
 				ok: true,
 				status: 200,

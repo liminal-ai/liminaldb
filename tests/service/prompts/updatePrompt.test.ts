@@ -179,11 +179,7 @@ describe("PUT /api/prompts/:slug", () => {
 			};
 			expect(callArgs).toBeDefined();
 
-			// The updates object must NOT have a parameters key at all,
-			// or if present, it must be undefined (stripped by JSON serialization).
-			// JSON.stringify({parameters: undefined}) === '{}' — undefined fields are dropped.
-			const serialized = JSON.parse(JSON.stringify(callArgs.updates));
-			expect(serialized).not.toHaveProperty("parameters");
+			expect(callArgs.updates).not.toHaveProperty("parameters");
 		});
 
 		test("allows slug rename in body", async () => {

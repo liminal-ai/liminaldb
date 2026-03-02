@@ -250,7 +250,7 @@ These are organized by what they target: the skill structure, the orchestrator's
 
 **Proposed change:** The skill should define a mechanical verification step that the orchestrator performs *on every reviewer report* before committing:
 
-```
+```text
 Before committing any story:
 1. Verify Codex JSONL output file exists: ls -la /tmp/codex-*.jsonl
 2. Extract and read the Codex review output: codex-result last /tmp/codex-*.jsonl
@@ -265,7 +265,7 @@ This turns "did Codex run?" from a judgment call into a file check. File checks 
 
 **Proposed change:** The skill should require the orchestrator to write a structured assessment to the log *before* committing. Not a status update ("Story 2 done") but a verification log:
 
-```
+```text
 Before committing Story N:
 - [ ] Implementer reported: [summary]
 - [ ] Reviewer reported: [summary]
@@ -491,4 +491,3 @@ The proposed fixes are structural, not instructional. They convert judgment call
 The implementation work itself was solid — all code, tests, and spec compliance landed correctly across Stories 0-3. The failures were entirely in orchestration process management. This is a narrower problem than "the approach doesn't work" and suggests the fix is targeted structural changes to the skill, not a fundamental redesign.
 
 ---
-

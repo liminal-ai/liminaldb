@@ -162,7 +162,9 @@ describe("Prompts Module - Merge Mode", () => {
 		const viewer = assertElement(
 			dom.window.document.getElementById("promptViewer"),
 		);
-		const editBtn = assertElement(dom.window.document.getElementById("edit-btn"));
+		const editBtn = assertElement(
+			dom.window.document.getElementById("edit-btn"),
+		);
 		const lineEditToggle = assertElement(
 			dom.window.document.getElementById("line-edit-toggle"),
 		);
@@ -174,7 +176,9 @@ describe("Prompts Module - Merge Mode", () => {
 		expect(mergeToggle.classList.contains("active")).toBe(false);
 		expect(editBtn.style.display).toBe("");
 		expect(lineEditToggle.style.display).toBe("");
-		expect(errorToast.textContent).toContain("Merge mode is temporarily unavailable");
+		expect(errorToast.textContent).toContain(
+			"Merge mode is temporarily unavailable",
+		);
 	});
 
 	it("TC-3.2a: content renders as markdown in merge mode", async () => {

@@ -3,6 +3,7 @@
  * Convex edge runtime boundary prevents sharing imports between
  * convex/ and src/ at runtime.
  */
+// @see tests/service/lib/merge.test.ts "merge field regex consistency"
 const MERGE_FIELD_REGEX = /\{\{([a-zA-Z_][a-zA-Z0-9_]*)\}\}/g;
 
 export interface MergeResult {
