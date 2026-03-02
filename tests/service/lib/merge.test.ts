@@ -1,6 +1,53 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, test } from "vitest";
 import { mergeContent } from "../../../src/lib/merge";
 import { MERGE_FIXTURES } from "../../fixtures/merge";
+
+const ROOT = resolve(import.meta.dirname, "../../..");
+
+/**
+ * Extract the merge-field regex literal from a source file.
+ * Matches lines like: `const MERGE_FIELD_REGEX = /…/g;`
+ * or `const STRICT_MERGE_FIELD_REGEX = /…/g;`
+ */
+function extractRegexSource(filePath: string): string {
+	const src = readFileSync(resolve(ROOT, filePath), "utf-8");
+	const match = src.match(
+		/(?:MERGE_FIELD_REGEX|STRICT_MERGE_FIELD_REGEX)\s*=\s*(\/.*\/[gimsuy]*)\s*;/,
+	);
+	if (!match?.[1]) {
+		throw new Error(`Could not find merge field regex in ${filePath}`);
+	}
+	return match[1];
+}
+
+describe("merge field regex consistency", () => {
+	const locations = [
+		{ file: "convex/model/merge.ts", label: "convex parser" },
+		{ file: "src/lib/merge.ts", label: "server merge util" },
+		{
+			file: "public/js/components/merge-mode.js",
+			label: "UI component",
+		},
+	] as const;
+
+	const regexes = locations.map(({ file, label }) => ({
+		label,
+		file,
+		source: extractRegexSource(file),
+	}));
+
+	test("all 3 locations define the same regex", () => {
+		const first = regexes[0]!;
+		for (let i = 1; i < regexes.length; i++) {
+			const entry = regexes[i]!;
+			expect(entry.source, `${entry.label} (${entry.file})`).toBe(
+				first.source,
+			);
+		}
+	});
+});
 
 describe("mergeContent", () => {
 	test("replaces a single field with one occurrence", () => {
