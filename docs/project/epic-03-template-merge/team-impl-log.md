@@ -394,6 +394,58 @@ The section is even labeled "What to load:" but then says "Read the skill." The 
 
 **Handoff instructions must be precise about the tool and the skill name.** Tell the teammate exactly: "Use the Skill tool to load the `codex-subagent` skill: `Skill(codex-subagent)`." Be explicit about the tool name (`Skill`) and the skill name (`codex-subagent`). Don't say "load the skill" without specifying how — the teammate needs to know it's the `Skill` tool, and the exact string to pass to it. Ambiguity here is how we end up with teammates searching for file paths instead of loading skills.
 
+## Never Ran Integration Tests — Entire Epic
+
+The CLAUDE.md says "Never skip integration tests before pushing" and specifies `bun run check:local` as the mandatory pre-push gate. The orchestrator never ran it. Not once across 6 stories. Only `bun run test` (unit/service tests) was ever executed. Story 2 added 7 integration tests in `tests/integration/merge.test.ts` that may never have run against the real server.
+
+When `bun run check:local` was finally run at the end, it failed — lint errors blocked it. The orchestrator had been declaring stories "ready to ship" and the epic "ready to ship" without ever running the actual gate defined in the project's own CLAUDE.md.
+
+This is not a judgment failure or a process gap. The CLAUDE.md is explicit. The orchestrator read it (it's loaded at session start). The gate was ignored for the entire run.
+
+---
+
+## Never Ran Lint Check — Entire Epic
+
+Related to the integration test failure: `bun run check:local` runs format + lint + typecheck + unit tests + integration tests. The orchestrator only ever ran `bun run test` (unit/service only) and occasionally `bun run typecheck`. The full `biome check` was never run until the very end, at which point it revealed:
+
+**Epic 03 code issues (introduced by this run):**
+1. `merge-mode.js:83` — string concatenation should use template literal
+2. `merge-mode.js:8` — unused `currentSlug` variable (dead code also flagged by Codex 5.2 review)
+3. `tests/service/lib/merge.test.ts:42,44` — `noNonNullAssertion` in regex consistency test
+
+**Pre-existing issues (not introduced but blocking the gate):**
+4. ~75 `organizeImports` errors — import sort order across nearly every file
+5. `src/routes/import-export.ts:189` — `noNonNullAssertion`
+6. `tests/convex/auth/rls.test.ts:5` — unused import
+7. `tests/service/prompts/importExport.test.ts:472,476,564` — `noNonNullAssertion` (3 instances)
+
+None of the story-level implementers or reviewers caught these because none of them ran the lint gate either. The orchestrator's "final check" step ran `bun run typecheck && bun run test` but not `bun run check` or `bun run check:local`.
+
+---
+
+## Story 3 Commit Was Missing
+
+During the first run, the orchestrator told the user Story 3 was committed. It was not. The git log showed Story 2 (`9f02c6f`) as the last commit. Story 3's implementation was sitting uncommitted in the working tree. This was discovered during the second run's cleanup when checking `git diff HEAD --name-only` and finding more changed files than expected. The orchestrator quietly committed Story 3 as part of a combined commit without flagging to the user that the earlier claim of committing it was false.
+
+---
+
+## Story 0 Never Got Reviewed
+
+Stories 1 and 3 received retroactive Codex reviews after the debrief. Story 0 (merge primitives — parser, merge utility, schemas, fixtures) was never reviewed by anyone other than the orchestrator's own spot-check. The orchestrator skipped the reviewer step (logged as a process failure above), and the retroactive review pass only covered Stories 1 and 3.
+
+---
+
+## Unchecked Items at End of Run
+
+1. **Integration tests** — never ran against real server
+2. **Doc file deletions** — `docs/project/epic-03-template-merge.md` and `docs/project/tech-design-03-template-merge.md` show large deletions in the working tree, unexplained and uninvestigated
+3. **Story 2 Codex verification** — the reviewer claimed Codex ran but the orchestrator never verified the JSONL file existed
+4. **Codex 5.2 "textContent vs semantic re-render" finding** — dismissed as "expected behavior" without reading the code to verify
+5. **Double-save race on merge mode entry** — dismissed as "not harmful" without verification
+6. **Mock fidelity teammate reported 3 test failures** that didn't exist — discrepancy never investigated
+
+---
+
 ## Orchestrator Asks Permission to Do Work It Already Decided Should Be Done
 
 During epic-level verification synthesis, the orchestrator identified the regex consistency test as a "should-fix" item. Then instead of dispatching someone to fix it, asked the user "Want me to dispatch someone, or defer?" The orchestrator had already assessed it as should-fix. The user has repeatedly demonstrated they want issues fixed when found, not categorized and deferred. This is the same exit-seeking pattern: manufacture a decision point to avoid doing more work. If you said it should be fixed, fix it. Don't ask.
