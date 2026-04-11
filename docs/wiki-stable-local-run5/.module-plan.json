@@ -1,0 +1,527 @@
+{
+  "modules": [
+    {
+      "name": "Convex Generated",
+      "description": "Auto-generated Convex framework files providing typed API, data model, and server function builders.",
+      "components": [
+        "convex/_generated/api.d.ts",
+        "convex/_generated/api.js",
+        "convex/_generated/dataModel.d.ts",
+        "convex/_generated/server.d.ts",
+        "convex/_generated/server.js"
+      ]
+    },
+    {
+      "name": "Convex Auth & Security",
+      "description": "Backend authentication, API key validation, row-level security rules, and auth types for Convex functions.",
+      "components": [
+        "convex/auth.config.ts",
+        "convex/auth/apiKey.ts",
+        "convex/auth/rls.ts",
+        "convex/auth/types.ts"
+      ]
+    },
+    {
+      "name": "Convex Data Model",
+      "description": "Domain models for prompts, tags, ranking, merge logic, schema definition, and custom function wrappers.",
+      "components": [
+        "convex/schema.ts",
+        "convex/model/prompts.ts",
+        "convex/model/ranking.ts",
+        "convex/model/tags.ts",
+        "convex/model/tagConstants.ts",
+        "convex/model/merge.ts",
+        "convex/functions.ts",
+        "convex/errors.ts",
+        "convex/triggers.ts"
+      ]
+    },
+    {
+      "name": "Convex API Endpoints",
+      "description": "Convex query/mutation endpoints for prompts, health checks, and user preferences.",
+      "components": [
+        "convex/prompts.ts",
+        "convex/health.ts",
+        "convex/healthAuth.ts",
+        "convex/userPreferences.ts"
+      ]
+    },
+    {
+      "name": "Convex Migrations",
+      "description": "Data migration scripts for backfilling search text, seeding tags, ranking config, and checking migration status.",
+      "components": [
+        "convex/migrations/backfillSearchText.ts",
+        "convex/migrations/migrationStatus.ts",
+        "convex/migrations/seedGlobalTags.ts",
+        "convex/migrations/seedRankingConfig.ts"
+      ]
+    },
+    {
+      "name": "Server Entry & Configuration",
+      "description": "Application entrypoint, configuration, Convex client setup, WorkOS integration, error codes, and Redis caching.",
+      "components": [
+        "src/index.ts",
+        "src/lib/config.ts",
+        "src/lib/convex.ts",
+        "src/lib/workos.ts",
+        "src/lib/errors.ts",
+        "src/lib/redis.ts"
+      ]
+    },
+    {
+      "name": "Server Authentication",
+      "description": "JWT decoding/validation, token extraction, auth middleware, and auth-related types for the HTTP service layer.",
+      "components": [
+        "src/lib/auth/index.ts",
+        "src/lib/auth/jwtDecoder.ts",
+        "src/lib/auth/jwtValidator.ts",
+        "src/lib/auth/tokenExtractor.ts",
+        "src/lib/auth/types.ts",
+        "src/middleware/auth.ts"
+      ]
+    },
+    {
+      "name": "Server Routes",
+      "description": "HTTP route handlers for app pages, auth flows, prompts CRUD, drafts, import/export, preferences, modules, and well-known endpoints.",
+      "components": [
+        "src/routes/app.ts",
+        "src/routes/auth.ts",
+        "src/routes/drafts.ts",
+        "src/routes/import-export.ts",
+        "src/routes/modules.ts",
+        "src/routes/preferences.ts",
+        "src/routes/prompts.ts",
+        "src/routes/well-known.ts"
+      ]
+    },
+    {
+      "name": "MCP Server",
+      "description": "Model Context Protocol server implementation, route registration, transport handling, and merge logic.",
+      "components": [
+        "src/api/mcp.ts",
+        "src/api/health.ts",
+        "src/lib/mcp.ts",
+        "src/lib/merge.ts"
+      ]
+    },
+    {
+      "name": "Validation Schemas",
+      "description": "Zod schemas and TypeScript types for prompts, drafts, import/export, and user preferences.",
+      "components": [
+        "src/schemas/prompts.ts",
+        "src/schemas/drafts.ts",
+        "src/schemas/import-export.ts",
+        "src/schemas/preferences.ts"
+      ]
+    },
+    {
+      "name": "Frontend UI Components",
+      "description": "Browser-side JavaScript components for prompt editing/viewing, merge mode, modals, toasts, tag selection, and utilities.",
+      "components": [
+        "public/js/components/merge-mode.js",
+        "public/js/components/modal.js",
+        "public/js/components/prompt-editor.js",
+        "public/js/components/prompt-viewer.js",
+        "public/js/components/tag-selector.js",
+        "public/js/components/toast.js",
+        "public/js/utils.js"
+      ]
+    },
+    {
+      "name": "Liminal Spec",
+      "description": "Specification build/validation scripts and tests for the liminal-spec package.",
+      "components": [
+        "liminal-spec/scripts/build.ts",
+        "liminal-spec/scripts/validate.ts",
+        "liminal-spec/scripts/__tests__/build.test.ts"
+      ]
+    },
+    {
+      "name": "Dev Scripts",
+      "description": "Development and debugging scripts for test users, session investigation, token debugging, and data seeding.",
+      "components": [
+        "scripts/create-test-user.ts",
+        "scripts/investigate-session.ts",
+        "scripts/investigate-tokens.ts",
+        "scripts/investigate-tokens-v2.ts",
+        "scripts/seed-prompts.ts"
+      ]
+    },
+    {
+      "name": "Test Infrastructure",
+      "description": "Test configuration, setup files, shared fixtures, and mock utilities used across test suites.",
+      "components": [
+        "vitest.config.ts",
+        "tests/setup.ts",
+        "tests/preload.ts",
+        "tests/__mocks__/redis.ts",
+        "tests/fixtures/index.ts",
+        "tests/fixtures/auth.ts",
+        "tests/fixtures/env.ts",
+        "tests/fixtures/jwt.ts",
+        "tests/fixtures/merge.ts",
+        "tests/fixtures/mockConvexClient.ts",
+        "tests/fixtures/mockConvexCtx.ts",
+        "tests/fixtures/mockWorkos.ts"
+      ]
+    },
+    {
+      "name": "Convex Unit Tests",
+      "description": "Unit tests for Convex backend logic including auth, prompts, tags, ranking, and health.",
+      "components": [
+        "tests/convex/auth/apiKey.test.ts",
+        "tests/convex/auth/rls.test.ts",
+        "tests/convex/healthAuth.test.ts",
+        "tests/convex/limitsSync.test.ts",
+        "tests/convex/prompts/deleteBySlug.test.ts",
+        "tests/convex/prompts/getPromptBySlug.test.ts",
+        "tests/convex/prompts/insertPrompts.test.ts",
+        "tests/convex/prompts/mergeFields.test.ts",
+        "tests/convex/prompts/ranking.test.ts",
+        "tests/convex/prompts/searchPrompts.test.ts",
+        "tests/convex/prompts/slugExists.test.ts",
+        "tests/convex/prompts/usageTracking.test.ts",
+        "tests/convex/prompts/validation.test.ts",
+        "tests/convex/tags/tagConstants.test.ts",
+        "tests/convex/tags/tags.test.ts"
+      ]
+    },
+    {
+      "name": "Service Unit Tests",
+      "description": "Unit tests for server-side routes, auth middleware, MCP tools, drafts, prompts, preferences, merge, and Redis caching.",
+      "components": [
+        "tests/service/auth/mcp.test.ts",
+        "tests/service/auth/middleware.test.ts",
+        "tests/service/auth/routes.test.ts",
+        "tests/service/drafts/drafts.test.ts",
+        "tests/service/lib/merge.test.ts",
+        "tests/service/mcp/auth-challenge.test.ts",
+        "tests/service/mcp/resources.test.ts",
+        "tests/service/mcp/toolHandlers.test.ts",
+        "tests/service/mcp/tools.test.ts",
+        "tests/service/mcp/well-known.test.ts",
+        "tests/service/preferences.test.ts",
+        "tests/service/prompts/createPrompts.test.ts",
+        "tests/service/prompts/deletePrompt.test.ts",
+        "tests/service/prompts/edgeCases.test.ts",
+        "tests/service/prompts/flagsUsage.test.ts",
+        "tests/service/prompts/getPrompt.test.ts",
+        "tests/service/prompts/importExport.test.ts",
+        "tests/service/prompts/listPrompts.test.ts",
+        "tests/service/prompts/mcpTools.test.ts",
+        "tests/service/prompts/mergePrompt.test.ts",
+        "tests/service/prompts/updatePrompt.test.ts",
+        "tests/service/redis-cache.test.ts"
+      ]
+    },
+    {
+      "name": "UI Unit Tests",
+      "description": "Unit tests for frontend UI components including prompt editor/viewer, merge mode, modals, tags, and themes.",
+      "components": [
+        "tests/service/ui/setup.ts",
+        "tests/service/ui/merge-mode.test.ts",
+        "tests/service/ui/modal-toast.test.ts",
+        "tests/service/ui/prompt-editor.test.ts",
+        "tests/service/ui/prompt-viewer.test.ts",
+        "tests/service/ui/prompts-module.test.ts",
+        "tests/service/ui/shell-history.test.ts",
+        "tests/service/ui/tag-selector.test.ts",
+        "tests/service/ui/theme-picker.test.ts"
+      ]
+    },
+    {
+      "name": "Integration Tests",
+      "description": "End-to-end integration tests covering auth, health, MCP, prompts API, import/export, preferences, merge, and UI flows.",
+      "components": [
+        "tests/integration/auth-api.test.ts",
+        "tests/integration/auth-cookie.test.ts",
+        "tests/integration/auth-mcp.test.ts",
+        "tests/integration/convex.test.ts",
+        "tests/integration/convex/convexCalls.test.ts",
+        "tests/integration/convex/prompts.test.ts",
+        "tests/integration/health.test.ts",
+        "tests/integration/healthAuth.test.ts",
+        "tests/integration/import-export.test.ts",
+        "tests/integration/mcp-oauth.test.ts",
+        "tests/integration/mcp.test.ts",
+        "tests/integration/merge.test.ts",
+        "tests/integration/preferences.test.ts",
+        "tests/integration/prompts-api.test.ts",
+        "tests/integration/ui/ui-auth.test.ts",
+        "tests/integration/ui/ui-prompts.test.ts"
+      ]
+    },
+    {
+      "name": "Skill Scanner Core",
+      "description": "Core scanning engine: models, loader, scanner orchestrator, exceptions, config, constants, and scan policies.",
+      "components": [
+        "vendor/skill-scanner/skill_scanner/__init__.py",
+        "vendor/skill-scanner/skill_scanner/core/__init__.py",
+        "vendor/skill-scanner/skill_scanner/core/models.py",
+        "vendor/skill-scanner/skill_scanner/core/scanner.py",
+        "vendor/skill-scanner/skill_scanner/core/loader.py",
+        "vendor/skill-scanner/skill_scanner/core/exceptions.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzer_factory.py",
+        "vendor/skill-scanner/skill_scanner/core/scan_policy.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzability.py",
+        "vendor/skill-scanner/skill_scanner/core/strict_structure.py",
+        "vendor/skill-scanner/skill_scanner/core/file_magic.py",
+        "vendor/skill-scanner/skill_scanner/core/command_safety.py",
+        "vendor/skill-scanner/skill_scanner/config/__init__.py",
+        "vendor/skill-scanner/skill_scanner/config/config.py",
+        "vendor/skill-scanner/skill_scanner/config/constants.py",
+        "vendor/skill-scanner/skill_scanner/config/yara_modes.py"
+      ]
+    },
+    {
+      "name": "Skill Scanner Analyzers",
+      "description": "Security analyzers: static, behavioral, LLM-based, bytecode, pipeline, trigger, cross-skill, meta, AIDefense, and VirusTotal.",
+      "components": [
+        "vendor/skill-scanner/skill_scanner/core/analyzers/__init__.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/base.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/static.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/behavioral_analyzer.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/behavioral/__init__.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/behavioral/alignment/__init__.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/behavioral/alignment/alignment_llm_client.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/behavioral/alignment/alignment_orchestrator.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/behavioral/alignment/alignment_prompt_builder.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/behavioral/alignment/alignment_response_validator.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/behavioral/alignment/threat_vulnerability_classifier.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/llm_analyzer.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/llm_prompt_builder.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/llm_provider_config.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/llm_request_handler.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/llm_response_parser.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/bytecode_analyzer.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/pipeline_analyzer.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/trigger_analyzer.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/cross_skill_scanner.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/meta_analyzer.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/aidefense_analyzer.py",
+        "vendor/skill-scanner/skill_scanner/core/analyzers/virustotal_analyzer.py"
+      ]
+    },
+    {
+      "name": "Skill Scanner Static Analysis",
+      "description": "Static analysis subsystem: AST parsing, CFG building, dataflow analysis, taint tracking, type analysis, and context extraction.",
+      "components": [
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/__init__.py",
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/bash_taint_tracker.py",
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/context_extractor.py",
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/cfg/__init__.py",
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/cfg/builder.py",
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/dataflow/__init__.py",
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/dataflow/forward_analysis.py",
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/interprocedural/__init__.py",
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/interprocedural/call_graph_analyzer.py",
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/interprocedural/cross_file_analyzer.py",
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/parser/__init__.py",
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/parser/python_parser.py",
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/semantic/__init__.py",
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/semantic/name_resolver.py",
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/semantic/type_analyzer.py",
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/taint/__init__.py",
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/taint/tracker.py",
+        "vendor/skill-scanner/skill_scanner/core/static_analysis/types/__init__.py"
+      ]
+    },
+    {
+      "name": "Skill Scanner Rules & Extractors",
+      "description": "Security rule definitions, YARA scanner, rule registry, content extractors, and rule pack check modules.",
+      "components": [
+        "vendor/skill-scanner/skill_scanner/core/rules/__init__.py",
+        "vendor/skill-scanner/skill_scanner/core/rules/patterns.py",
+        "vendor/skill-scanner/skill_scanner/core/rules/yara_scanner.py",
+        "vendor/skill-scanner/skill_scanner/core/rule_registry.py",
+        "vendor/skill-scanner/skill_scanner/core/extractors/__init__.py",
+        "vendor/skill-scanner/skill_scanner/core/extractors/content_extractor.py",
+        "vendor/skill-scanner/skill_scanner/data/__init__.py",
+        "vendor/skill-scanner/skill_scanner/data/packs/__init__.py",
+        "vendor/skill-scanner/skill_scanner/data/packs/core/__init__.py",
+        "vendor/skill-scanner/skill_scanner/data/packs/core/python/__init__.py",
+        "vendor/skill-scanner/skill_scanner/data/packs/core/python/_helpers.py",
+        "vendor/skill-scanner/skill_scanner/data/packs/core/python/allowed_tools_checks.py",
+        "vendor/skill-scanner/skill_scanner/data/packs/core/python/analyzability_checks.py",
+        "vendor/skill-scanner/skill_scanner/data/packs/core/python/archive_checks.py",
+        "vendor/skill-scanner/skill_scanner/data/packs/core/python/asset_checks.py",
+        "vendor/skill-scanner/skill_scanner/data/packs/core/python/binary_file_checks.py",
+        "vendor/skill-scanner/skill_scanner/data/packs/core/python/bytecode_checks.py",
+        "vendor/skill-scanner/skill_scanner/data/packs/core/python/consistency_checks.py",
+        "vendor/skill-scanner/skill_scanner/data/packs/core/python/external_tool_checks.py",
+        "vendor/skill-scanner/skill_scanner/data/packs/core/python/file_inventory_checks.py",
+        "vendor/skill-scanner/skill_scanner/data/packs/core/python/hidden_file_checks.py",
+        "vendor/skill-scanner/skill_scanner/data/packs/core/python/manifest_checks.py",
+        "vendor/skill-scanner/skill_scanner/data/packs/core/python/trigger_checks.py"
+      ]
+    },
+    {
+      "name": "Skill Scanner Reporters",
+      "description": "Output formatters for scan results in JSON, Markdown, HTML, SARIF, and table formats.",
+      "components": [
+        "vendor/skill-scanner/skill_scanner/core/reporters/__init__.py",
+        "vendor/skill-scanner/skill_scanner/core/reporters/json_reporter.py",
+        "vendor/skill-scanner/skill_scanner/core/reporters/markdown_reporter.py",
+        "vendor/skill-scanner/skill_scanner/core/reporters/html_reporter.py",
+        "vendor/skill-scanner/skill_scanner/core/reporters/sarif_reporter.py",
+        "vendor/skill-scanner/skill_scanner/core/reporters/table_reporter.py"
+      ]
+    },
+    {
+      "name": "Skill Scanner Threats & Taxonomy",
+      "description": "Threat mapping, severity classification, and Cisco AI taxonomy integration.",
+      "components": [
+        "vendor/skill-scanner/skill_scanner/threats/__init__.py",
+        "vendor/skill-scanner/skill_scanner/threats/threats.py",
+        "vendor/skill-scanner/skill_scanner/threats/cisco_ai_taxonomy.py"
+      ]
+    },
+    {
+      "name": "Skill Scanner CLI & API",
+      "description": "Command-line interface, interactive wizard, policy TUI, REST API server, and pre-commit hooks.",
+      "components": [
+        "vendor/skill-scanner/skill_scanner/cli/__init__.py",
+        "vendor/skill-scanner/skill_scanner/cli/cli.py",
+        "vendor/skill-scanner/skill_scanner/cli/wizard.py",
+        "vendor/skill-scanner/skill_scanner/cli/policy_tui.py",
+        "vendor/skill-scanner/skill_scanner/api/__init__.py",
+        "vendor/skill-scanner/skill_scanner/api/api.py",
+        "vendor/skill-scanner/skill_scanner/api/api_cli.py",
+        "vendor/skill-scanner/skill_scanner/api/api_server.py",
+        "vendor/skill-scanner/skill_scanner/api/router.py",
+        "vendor/skill-scanner/skill_scanner/hooks/__init__.py",
+        "vendor/skill-scanner/skill_scanner/hooks/pre_commit.py"
+      ]
+    },
+    {
+      "name": "Skill Scanner Utilities",
+      "description": "Shared utility modules for file handling, logging configuration, and helper functions.",
+      "components": [
+        "vendor/skill-scanner/skill_scanner/utils/__init__.py",
+        "vendor/skill-scanner/skill_scanner/utils/file_utils.py",
+        "vendor/skill-scanner/skill_scanner/utils/logging_config.py",
+        "vendor/skill-scanner/skill_scanner/utils/logging_utils.py"
+      ]
+    },
+    {
+      "name": "Skill Scanner Examples",
+      "description": "Example scripts demonstrating scanner usage: basic scans, batch scanning, API usage, and analyzer examples.",
+      "components": [
+        "vendor/skill-scanner/examples/__init__.py",
+        "vendor/skill-scanner/examples/basic_scan.py",
+        "vendor/skill-scanner/examples/advanced_scanning.py",
+        "vendor/skill-scanner/examples/api_usage.py",
+        "vendor/skill-scanner/examples/batch_scanning.py",
+        "vendor/skill-scanner/examples/behavioral_analyzer_example.py",
+        "vendor/skill-scanner/examples/integration_example.py",
+        "vendor/skill-scanner/examples/llm_analyzer_example.py",
+        "vendor/skill-scanner/examples/programmatic_usage.py"
+      ]
+    },
+    {
+      "name": "Skill Scanner Eval Skills",
+      "description": "Sample malicious and safe skills used as evaluation fixtures for scanner testing.",
+      "components": [
+        "vendor/skill-scanner/evals/__init__.py",
+        "vendor/skill-scanner/evals/skills/backdoor/magic-string-trigger/process.py",
+        "vendor/skill-scanner/evals/skills/behavioral-analysis/multi-file-exfiltration/analyze.py",
+        "vendor/skill-scanner/evals/skills/behavioral-analysis/multi-file-exfiltration/collector.py",
+        "vendor/skill-scanner/evals/skills/behavioral-analysis/multi-file-exfiltration/encoder.py",
+        "vendor/skill-scanner/evals/skills/behavioral-analysis/multi-file-exfiltration/reporter.py",
+        "vendor/skill-scanner/evals/skills/command-injection/eval-execution/calculate.py",
+        "vendor/skill-scanner/evals/skills/data-exfiltration/environment-secrets/get_info.py",
+        "vendor/skill-scanner/evals/skills/obfuscation/base64-payload/process.py",
+        "vendor/skill-scanner/evals/skills/path-traversal/file-reader/read.py",
+        "vendor/skill-scanner/evals/skills/resource-exhaustion/infinite-loop/analyze.py",
+        "vendor/skill-scanner/evals/skills/safe-skills-2/file-validator/validate.py",
+        "vendor/skill-scanner/evals/skills/safe-skills/simple-math/math_ops.py",
+        "vendor/skill-scanner/evals/skills/sql-injection/database-query/query.py",
+        "vendor/skill-scanner/evals/test_skills/malicious/exfiltrator/analyze.py",
+        "vendor/skill-scanner/evals/test_skills/safe/simple-formatter/formatter.py"
+      ]
+    },
+    {
+      "name": "Skill Scanner Eval Runners",
+      "description": "Benchmark and evaluation runners for measuring scanner accuracy and updating expected findings.",
+      "components": [
+        "vendor/skill-scanner/evals/runners/__init__.py",
+        "vendor/skill-scanner/evals/runners/benchmark_runner.py",
+        "vendor/skill-scanner/evals/runners/eval_runner.py",
+        "vendor/skill-scanner/evals/runners/policy_benchmark.py",
+        "vendor/skill-scanner/evals/runners/update_expected_findings.py"
+      ]
+    },
+    {
+      "name": "Skill Scanner Dev Scripts",
+      "description": "Development scripts for taxonomy checking, false-positive analysis, reference doc generation, and Homebrew formula updates.",
+      "components": [
+        "vendor/skill-scanner/scripts/check_taxonomy.py",
+        "vendor/skill-scanner/scripts/fp_analysis_collect.py",
+        "vendor/skill-scanner/scripts/generate_reference_docs.py",
+        "vendor/skill-scanner/scripts/update_brew_formula.py"
+      ]
+    },
+    {
+      "name": "Skill Scanner Tests",
+      "description": "Comprehensive test suite for the skill scanner covering analyzers, CLI, API, policies, reporters, models, and integrations.",
+      "components": [
+        "vendor/skill-scanner/tests/__init__.py",
+        "vendor/skill-scanner/tests/conftest.py",
+        "vendor/skill-scanner/tests/behavioral/__init__.py",
+        "vendor/skill-scanner/tests/behavioral/test_behavioral_analyzer.py",
+        "vendor/skill-scanner/tests/behavioral/test_enhanced_behavioral.py",
+        "vendor/skill-scanner/tests/static_analysis/__init__.py",
+        "vendor/skill-scanner/tests/static_analysis/test_static_analyzer.py",
+        "vendor/skill-scanner/tests/test_aidefense_analyzer.py",
+        "vendor/skill-scanner/tests/test_analyzability.py",
+        "vendor/skill-scanner/tests/test_analyzer_factory.py",
+        "vendor/skill-scanner/tests/test_api_deep.py",
+        "vendor/skill-scanner/tests/test_api_endpoints.py",
+        "vendor/skill-scanner/tests/test_api_server_config.py",
+        "vendor/skill-scanner/tests/test_bash_taint_tracker.py",
+        "vendor/skill-scanner/tests/test_bug_fixes.py",
+        "vendor/skill-scanner/tests/test_bytecode_analyzer.py",
+        "vendor/skill-scanner/tests/test_cli_custom_rules.py",
+        "vendor/skill-scanner/tests/test_cli_formats.py",
+        "vendor/skill-scanner/tests/test_cli_taxonomy_flags.py",
+        "vendor/skill-scanner/tests/test_cli_tui_api_fixes.py",
+        "vendor/skill-scanner/tests/test_command_safety.py",
+        "vendor/skill-scanner/tests/test_compound_sequences.py",
+        "vendor/skill-scanner/tests/test_config.py",
+        "vendor/skill-scanner/tests/test_cross_skill_scanner.py",
+        "vendor/skill-scanner/tests/test_e2e.py",
+        "vendor/skill-scanner/tests/test_extractors.py",
+        "vendor/skill-scanner/tests/test_file_magic.py",
+        "vendor/skill-scanner/tests/test_hidden_files.py",
+        "vendor/skill-scanner/tests/test_integration.py",
+        "vendor/skill-scanner/tests/test_issue_fixes.py",
+        "vendor/skill-scanner/tests/test_llm_analyzer.py",
+        "vendor/skill-scanner/tests/test_llm_request_handler.py",
+        "vendor/skill-scanner/tests/test_loader.py",
+        "vendor/skill-scanner/tests/test_markdown_code_blocks.py",
+        "vendor/skill-scanner/tests/test_meta_analyzer.py",
+        "vendor/skill-scanner/tests/test_models.py",
+        "vendor/skill-scanner/tests/test_new_detections.py",
+        "vendor/skill-scanner/tests/test_pipeline_analyzer.py",
+        "vendor/skill-scanner/tests/test_policy_integration.py",
+        "vendor/skill-scanner/tests/test_policy_knobs.py",
+        "vendor/skill-scanner/tests/test_reporters.py",
+        "vendor/skill-scanner/tests/test_robustness_features.py",
+        "vendor/skill-scanner/tests/test_rule_registry.py",
+        "vendor/skill-scanner/tests/test_scan_policy.py",
+        "vendor/skill-scanner/tests/test_scanner.py",
+        "vendor/skill-scanner/tests/test_static_policy_integration.py",
+        "vendor/skill-scanner/tests/test_strict_structure.py",
+        "vendor/skill-scanner/tests/test_taxonomy_customization.py",
+        "vendor/skill-scanner/tests/test_taxonomy_validation.py",
+        "vendor/skill-scanner/tests/test_threats.py",
+        "vendor/skill-scanner/tests/test_virustotal_analyzer.py",
+        "vendor/skill-scanner/tests/test_virustotal_benign.py",
+        "vendor/skill-scanner/tests/test_virustotal_upload.py",
+        "vendor/skill-scanner/tests/test_yara_modes.py",
+        "vendor/skill-scanner/tests/test_yara_true_positives.py"
+      ]
+    }
+  ],
+  "unmappedComponents": []
+}

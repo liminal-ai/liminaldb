@@ -1,0 +1,122 @@
+[
+  {
+    "name": "Convex Auth & RLS",
+    "page": "convex-auth--rls.md"
+  },
+  {
+    "name": "Convex Data Model",
+    "page": "convex-data-model.md"
+  },
+  {
+    "name": "Convex Functions",
+    "page": "convex-functions.md"
+  },
+  {
+    "name": "Convex Generated",
+    "page": "convex-generated.md"
+  },
+  {
+    "name": "Convex Migrations",
+    "page": "convex-migrations.md"
+  },
+  {
+    "name": "Convex Unit Tests",
+    "page": "convex-unit-tests.md"
+  },
+  {
+    "name": "Dev Scripts",
+    "page": "dev-scripts.md"
+  },
+  {
+    "name": "Frontend UI Components",
+    "page": "frontend-ui-components.md"
+  },
+  {
+    "name": "Integration Tests",
+    "page": "integration-tests.md"
+  },
+  {
+    "name": "Liminal Spec",
+    "page": "liminal-spec.md"
+  },
+  {
+    "name": "MCP Server",
+    "page": "mcp-server.md"
+  },
+  {
+    "name": "Server Authentication",
+    "page": "server-authentication.md"
+  },
+  {
+    "name": "Server Entry & Config",
+    "page": "server-entry--config.md"
+  },
+  {
+    "name": "Server Routes",
+    "page": "server-routes.md"
+  },
+  {
+    "name": "Server Schemas",
+    "page": "server-schemas.md"
+  },
+  {
+    "name": "Service Unit Tests",
+    "page": "service-unit-tests.md"
+  },
+  {
+    "name": "Skill Scanner Analyzers",
+    "page": "skill-scanner-analyzers.md"
+  },
+  {
+    "name": "Skill Scanner API",
+    "page": "skill-scanner-api.md"
+  },
+  {
+    "name": "Skill Scanner CLI",
+    "page": "skill-scanner-cli.md"
+  },
+  {
+    "name": "Skill Scanner Config & Utils",
+    "page": "skill-scanner-config--utils.md"
+  },
+  {
+    "name": "Skill Scanner Core",
+    "page": "skill-scanner-core.md"
+  },
+  {
+    "name": "Skill Scanner Evals",
+    "page": "skill-scanner-evals.md"
+  },
+  {
+    "name": "Skill Scanner Examples",
+    "page": "skill-scanner-examples.md"
+  },
+  {
+    "name": "Skill Scanner Reporters",
+    "page": "skill-scanner-reporters.md"
+  },
+  {
+    "name": "Skill Scanner Scripts",
+    "page": "skill-scanner-scripts.md"
+  },
+  {
+    "name": "Skill Scanner Static Analysis",
+    "page": "skill-scanner-static-analysis.md"
+  },
+  {
+    "name": "Skill Scanner Tests",
+    "page": "skill-scanner-tests.md"
+  },
+  {
+    "name": "Skill Scanner Threats & Taxonomy",
+    "page": "skill-scanner-threats--taxonomy.md"
+  },
+  {
+    "name": "Test Fixtures & Setup",
+    "page": "test-fixtures--setup.md"
+  },
+  {
+    "name": "UI Component Tests",
+    "page": "ui-component-tests.md"
+  }
+]

@@ -37,3 +37,4 @@ data-load/
 
 # Local spec workspace (separate repo)
 liminal-spec/
+vendor/skill-scanner

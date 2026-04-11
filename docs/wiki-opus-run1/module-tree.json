@@ -1,0 +1,138 @@
+[
+  {
+    "name": "Convex API Endpoints",
+    "page": "convex-api-endpoints.md"
+  },
+  {
+    "name": "Convex Auth & RLS",
+    "page": "convex-auth--rls.md"
+  },
+  {
+    "name": "Convex Generated",
+    "page": "convex-generated.md"
+  },
+  {
+    "name": "Convex Migrations",
+    "page": "convex-migrations.md"
+  },
+  {
+    "name": "Convex Prompt Model",
+    "page": "convex-prompt-model.md"
+  },
+  {
+    "name": "Convex Schema & Functions",
+    "page": "convex-schema--functions.md"
+  },
+  {
+    "name": "Dev Scripts",
+    "page": "dev-scripts.md"
+  },
+  {
+    "name": "Frontend UI Components",
+    "page": "frontend-ui-components.md"
+  },
+  {
+    "name": "Liminal Spec",
+    "page": "liminal-spec.md"
+  },
+  {
+    "name": "MCP Server",
+    "page": "mcp-server.md"
+  },
+  {
+    "name": "Schemas",
+    "page": "schemas.md"
+  },
+  {
+    "name": "Server Authentication",
+    "page": "server-authentication.md"
+  },
+  {
+    "name": "Server Entry & Config",
+    "page": "server-entry--config.md"
+  },
+  {
+    "name": "Server Libraries",
+    "page": "server-libraries.md"
+  },
+  {
+    "name": "Server Routes",
+    "page": "server-routes.md"
+  },
+  {
+    "name": "Skill Scanner: Analyzers",
+    "page": "skill-scanner-analyzers.md"
+  },
+  {
+    "name": "Skill Scanner: Behavioral Alignment",
+    "page": "skill-scanner-behavioral-alignment.md"
+  },
+  {
+    "name": "Skill Scanner: CLI & API",
+    "page": "skill-scanner-cli--api.md"
+  },
+  {
+    "name": "Skill Scanner: Core Models & Config",
+    "page": "skill-scanner-core-models--config.md"
+  },
+  {
+    "name": "Skill Scanner: Evals",
+    "page": "skill-scanner-evals.md"
+  },
+  {
+    "name": "Skill Scanner: Examples",
+    "page": "skill-scanner-examples.md"
+  },
+  {
+    "name": "Skill Scanner: Loader & Extractors",
+    "page": "skill-scanner-loader--extractors.md"
+  },
+  {
+    "name": "Skill Scanner: Rule Packs",
+    "page": "skill-scanner-rule-packs.md"
+  },
+  {
+    "name": "Skill Scanner: Rules & Threats",
+    "page": "skill-scanner-rules--threats.md"
+  },
+  {
+    "name": "Skill Scanner: Scanner & Reporters",
+    "page": "skill-scanner-scanner--reporters.md"
+  },
+  {
+    "name": "Skill Scanner: Scripts",
+    "page": "skill-scanner-scripts.md"
+  },
+  {
+    "name": "Skill Scanner: Static Analysis",
+    "page": "skill-scanner-static-analysis.md"
+  },
+  {
+    "name": "Skill Scanner: Tests",
+    "page": "skill-scanner-tests.md"
+  },
+  {
+    "name": "Skill Scanner: Utilities",
+    "page": "skill-scanner-utilities.md"
+  },
+  {
+    "name": "Test Fixtures & Setup",
+    "page": "test-fixtures--setup.md"
+  },
+  {
+    "name": "Tests: Convex Unit",
+    "page": "tests-convex-unit.md"
+  },
+  {
+    "name": "Tests: Integration",
+    "page": "tests-integration.md"
+  },
+  {
+    "name": "Tests: Service Unit",
+    "page": "tests-service-unit.md"
+  },
+  {
+    "name": "Tests: UI Unit",
+    "page": "tests-ui-unit.md"
+  }
+]

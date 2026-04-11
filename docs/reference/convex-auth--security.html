@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en" data-theme="light-default">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exported Markdown</title>
+<style>
+:root,
+html[data-theme='light-default'] {
+  --color-bg-primary: #f7f8fb;
+  --color-bg-secondary: #ffffff;
+  --color-bg-tertiary: #eef1f6;
+  --color-bg-hover: #e6ebf3;
+  --color-bg-active: #dbe4f0;
+  --color-text-primary: #152033;
+  --color-text-secondary: #41516f;
+  --color-text-muted: #6a7a96;
+  --color-border: #c9d3e3;
+  --color-border-light: #dee5f0;
+  --color-accent: #2458d6;
+  --color-accent-hover: #1d48b1;
+  --color-error: #bf1d34;
+  --color-warning: #b36900;
+  --color-success: #1f7a3f;
+  --color-badge-bg: #e8eefc;
+  --color-badge-text: #2343a6;
+  --color-menu-bg: rgba(255, 255, 255, 0.92);
+  --color-menu-border: rgba(21, 32, 51, 0.08);
+  --color-menu-hover: #edf3ff;
+  --color-scrollbar-thumb: #c0cadb;
+  --color-scrollbar-track: #edf1f7;
+  --shadow-dropdown: 0 14px 40px rgba(31, 50, 81, 0.14);
+  --shadow-context-menu: 0 18px 48px rgba(18, 31, 56, 0.18);
+}
+
+html[data-theme='light-warm'] {
+  --color-bg-primary: #fbf7f1;
+  --color-bg-secondary: #fffdf9;
+  --color-bg-tertiary: #f4ede3;
+  --color-bg-hover: #ede2d2;
+  --color-bg-active: #e4d4bf;
+  --color-text-primary: #2f2418;
+  --color-text-secondary: #625140;
+  --color-text-muted: #8b755f;
+  --color-border: #d9ccb9;
+  --color-border-light: #eadfce;
+  --color-accent: #b65a20;
+  --color-accent-hover: #944717;
+  --color-error: #b12831;
+  --color-warning: #a06b00;
+  --color-success: #4b7a2a;
+  --color-badge-bg: #f7e7d5;
+  --color-badge-text: #8b4614;
+  --color-menu-bg: rgba(255, 252, 247, 0.94);
+  --color-menu-border: rgba(47, 36, 24, 0.08);
+  --color-menu-hover: #f7ecde;
+  --color-scrollbar-thumb: #cdbda8;
+  --color-scrollbar-track: #f2eadf;
+  --shadow-dropdown: 0 14px 40px rgba(72, 46, 22, 0.14);
+  --shadow-context-menu: 0 18px 48px rgba(64, 39, 18, 0.18);
+}
+
+html[data-theme='dark-default'] {
+  --color-bg-primary: #11161d;
+  --color-bg-secondary: #18202b;
+  --color-bg-tertiary: #202a38;
+  --color-bg-hover: #273447;
+  --color-bg-active: #304057;
+  --color-text-primary: #f1f5fb;
+  --color-text-secondary: #c1cede;
+  --color-text-muted: #92a3b8;
+  --color-border: #334357;
+  --color-border-light: #415166;
+  --color-accent: #5c8dff;
+  --color-accent-hover: #7aa2ff;
+  --color-error: #ff7d88;
+  --color-warning: #f4bf4f;
+  --color-success: #7ed89b;
+  --color-badge-bg: #23314b;
+  --color-badge-text: #b7ccff;
+  --color-menu-bg: rgba(24, 32, 43, 0.92);
+  --color-menu-border: rgba(241, 245, 251, 0.08);
+  --color-menu-hover: #243246;
+  --color-scrollbar-thumb: #46576e;
+  --color-scrollbar-track: #19222f;
+  --shadow-dropdown: 0 18px 44px rgba(0, 0, 0, 0.38);
+  --shadow-context-menu: 0 22px 56px rgba(0, 0, 0, 0.48);
+}
+
+html[data-theme='dark-cool'] {
+  --color-bg-primary: #0f1720;
+  --color-bg-secondary: #152231;
+  --color-bg-tertiary: #1d2d40;
+  --color-bg-hover: #24384f;
+  --color-bg-active: #2c4460;
+  --color-text-primary: #edf7ff;
+  --color-text-secondary: #bfd4e5;
+  --color-text-muted: #88a6be;
+  --color-border: #30506a;
+  --color-border-light: #3a5d79;
+  --color-accent: #38a3ff;
+  --color-accent-hover: #65bbff;
+  --color-error: #ff8a8a;
+  --color-warning: #ffc661;
+  --color-success: #72dfa9;
+  --color-badge-bg: #18344c;
+  --color-badge-text: #9ed8ff;
+  --color-menu-bg: rgba(21, 34, 49, 0.93);
+  --color-menu-border: rgba(237, 247, 255, 0.08);
+  --color-menu-hover: #1e3348;
+  --color-scrollbar-thumb: #3e6583;
+  --color-scrollbar-track: #152433;
+  --shadow-dropdown: 0 18px 44px rgba(1, 10, 20, 0.42);
+  --shadow-context-menu: 0 22px 56px rgba(2, 10, 18, 0.5);
+}
+
+</style>
+<style>
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: linear-gradient(180deg, var(--color-bg-tertiary) 0%, var(--color-bg-primary) 100%);
+  color: var(--color-text-primary);
+  font-family: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-accent) 28%, transparent);
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border: 3px solid var(--color-scrollbar-track);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-scrollbar-track);
+}
+
+#app {
+  display: grid;
+  grid-template-rows: 3.25rem minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+#main {
+  display: grid;
+  grid-template-columns: minmax(15rem, 18rem) minmax(0, 1fr);
+  min-height: 0;
+}
+
+#workspace {
+  display: grid;
+  grid-template-rows: 3rem auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+#sidebar,
+#tab-strip,
+#content-area,
+#menu-bar {
+  min-width: 0;
+}
+
+</style>
+<style>
+.markdown-body {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2em;
+  color: var(--color-text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  margin: 1.5em 0 0.6em;
+  line-height: 1.25;
+}
+
+.markdown-body h1 {
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 2em;
+}
+
+.markdown-body h2 {
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--color-border-light);
+  font-size: 1.5em;
+}
+
+.markdown-body h3 {
+  font-size: 1.25em;
+}
+
+.markdown-body h4 {
+  font-size: 1em;
+}
+
+.markdown-body h5 {
+  font-size: 0.875em;
+}
+
+.markdown-body h6 {
+  color: var(--color-text-muted);
+  font-size: 0.85em;
+}
+
+.markdown-body code {
+  padding: 0.2em 0.4em;
+  background: var(--color-bg-tertiary);
+  border-radius: 3px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.9em;
+}
+
+.markdown-body pre {
+  overflow-x: auto;
+  padding: 1em;
+  background: var(--color-bg-tertiary);
+  border-radius: 6px;
+}
+
+.markdown-body pre code {
+  padding: 0;
+  background: none;
+}
+
+.markdown-body table {
+  display: block;
+  overflow-x: auto;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.markdown-body th {
+  background: var(--color-bg-secondary);
+  font-weight: 600;
+}
+
+.markdown-body th,
+.markdown-body td {
+  padding: 6px 13px;
+  border: 1px solid var(--color-border);
+}
+
+.markdown-body blockquote {
+  margin-left: 0;
+  padding: 0.5em 1em;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
+  border-left: 4px solid var(--color-accent);
+}
+
+.markdown-body a {
+  color: var(--color-accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.markdown-body a:hover {
+  color: var(--color-accent-hover);
+  text-decoration: underline;
+}
+
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+}
+
+.image-placeholder {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+  margin: 1em 0;
+  padding: 1em;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-tertiary);
+  border: 1px dashed var(--color-border);
+  border-radius: 4px;
+}
+
+.markdown-body .task-list-item {
+  list-style-type: none;
+}
+
+.markdown-body .task-list-item input[type='checkbox'] {
+  margin-right: 0.5em;
+  pointer-events: none;
+}
+
+.mermaid-placeholder {
+  margin: 1em 0;
+  padding: 1em;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.mermaid-placeholder__label {
+  margin-bottom: 0.5em;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.markdown-body hr {
+  margin: 2em 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Shiki highlighted code blocks */
+.markdown-body .shiki {
+  padding: 1em;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.9em;
+  line-height: 1.5;
+  tab-size: 2;
+}
+
+/* Shiki theme switching — light themes */
+:root .shiki,
+:root .shiki span,
+[data-theme^='light'] .shiki,
+[data-theme^='light'] .shiki span {
+  color: var(--shiki-light) !important;
+  background-color: var(--shiki-light-bg) !important;
+}
+
+/* Shiki theme switching — dark themes */
+[data-theme^='dark'] .shiki,
+[data-theme^='dark'] .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+}
+
+/* Override the existing pre/code styles for Shiki blocks */
+.markdown-body pre.shiki {
+  background: none;
+}
+
+.markdown-body pre.shiki code {
+  background: none;
+  padding: 0;
+}
+
+</style>
+<style>
+/* Mermaid diagram containers */
+.mermaid-diagram {
+  margin: 1em 0;
+  text-align: center;
+}
+
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Mermaid error fallback */
+.mermaid-error {
+  margin: 1em 0;
+  border: 1px solid var(--color-error);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.mermaid-error__banner {
+  padding: 0.5em 1em;
+  background: var(--color-error);
+  color: white;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.mermaid-error__source {
+  margin: 0;
+  padding: 1em;
+  background: var(--color-bg-tertiary);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.85em;
+  overflow-x: auto;
+  user-select: text;
+}
+
+.mermaid-error__source code {
+  background: none;
+  padding: 0;
+}
+
+</style>
+<style>
+
+@media print {
+  html,
+  body {
+    background: white !important;
+  }
+
+  .markdown-body {
+    max-width: none;
+    padding: 0;
+  }
+
+  [data-mdv-layout="keep-with-next"] {
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+
+  [data-mdv-layout="keep-together"] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  [data-mdv-layout="allow-split"] {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  thead { display: table-header-group; }
+  tr { break-inside: avoid; page-break-inside: avoid; }
+
+  .image-placeholder { break-inside: avoid; }
+  .mermaid-diagram { break-inside: avoid; }
+  .mermaid-error { break-inside: avoid; }
+}
+
+</style>
+</head>
+<body>
+<div class="markdown-body"><h1 id="convex-auth--security" tabindex="-1" data-mdv-layout="keep-with-next">Convex Auth &amp; Security</h1>
+<h2 id="overview" tabindex="-1" data-mdv-layout="keep-with-next">Overview</h2>
+<p>Server-side authentication and authorization layer for LiminalDB's Convex backend. This module provides API key validation, row-level security (RLS) enforcement, and shared auth type definitions consumed by all Convex mutation/query functions. It acts as the security gateway ensuring that every data operation is performed by an authenticated caller with appropriate permissions.</p>
+<h2 id="responsibilities" tabindex="-1" data-mdv-layout="keep-with-next">Responsibilities</h2>
+<ul>
+<li>Validate API keys from incoming requests against stored configuration</li>
+<li>Wrap Convex functions with API key authentication via <code>withApiKeyAuth</code></li>
+<li>Define and enforce row-level security rules per table (read, insert, modify, delete)</li>
+<li>Export shared auth type definitions (<code>ConvexAuthContext</code>, <code>ApiKeyConfig</code>, <code>RLSContext</code>) for consistent typing across the codebase</li>
+<li>Provide granular RLS assertion helpers (<code>assertCanRead</code>, <code>assertCanInsert</code>, <code>assertCanModify</code>, <code>assertCanDelete</code>) used by data-access layers</li>
+</ul>
+<h2 id="structure-diagram" tabindex="-1" data-mdv-layout="keep-with-next">Structure Diagram</h2>
+<div class="mermaid-diagram"><svg id="export-mermaid-0" width="100%" xmlns="http://www.w3.org/2000/svg" class="classDiagram" style="max-width: 736.12109375px;" viewBox="0 0 736.12109375 730" role="graphics-document document" aria-roledescription="class"><style>#export-mermaid-0{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#export-mermaid-0 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#export-mermaid-0 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#export-mermaid-0 .error-icon{fill:#552222;}#export-mermaid-0 .error-text{fill:#552222;stroke:#552222;}#export-mermaid-0 .edge-thickness-normal{stroke-width:1px;}#export-mermaid-0 .edge-thickness-thick{stroke-width:3.5px;}#export-mermaid-0 .edge-pattern-solid{stroke-dasharray:0;}#export-mermaid-0 .edge-thickness-invisible{stroke-width:0;fill:none;}#export-mermaid-0 .edge-pattern-dashed{stroke-dasharray:3;}#export-mermaid-0 .edge-pattern-dotted{stroke-dasharray:2;}#export-mermaid-0 .marker{fill:#333333;stroke:#333333;}#export-mermaid-0 .marker.cross{stroke:#333333;}#export-mermaid-0 svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#export-mermaid-0 p{margin:0;}#export-mermaid-0 g.classGroup text{fill:#9370DB;stroke:none;font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:10px;}#export-mermaid-0 g.classGroup text .title{font-weight:bolder;}#export-mermaid-0 .cluster-label text{fill:#333;}#export-mermaid-0 .cluster-label span{color:#333;}#export-mermaid-0 .cluster-label span p{background-color:transparent;}#export-mermaid-0 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#export-mermaid-0 .cluster text{fill:#333;}#export-mermaid-0 .cluster span{color:#333;}#export-mermaid-0 .nodeLabel,#export-mermaid-0 .edgeLabel{color:#131300;}#export-mermaid-0 .edgeLabel .label rect{fill:#ECECFF;}#export-mermaid-0 .label text{fill:#131300;}#export-mermaid-0 .labelBkg{background:#ECECFF;}#export-mermaid-0 .edgeLabel .label span{background:#ECECFF;}#export-mermaid-0 .classTitle{font-weight:bolder;}#export-mermaid-0 .node rect,#export-mermaid-0 .node circle,#export-mermaid-0 .node ellipse,#export-mermaid-0 .node polygon,#export-mermaid-0 .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#export-mermaid-0 .divider{stroke:#9370DB;stroke-width:1;}#export-mermaid-0 g.clickable{cursor:pointer;}#export-mermaid-0 g.classGroup rect{fill:#ECECFF;stroke:#9370DB;}#export-mermaid-0 g.classGroup line{stroke:#9370DB;stroke-width:1;}#export-mermaid-0 .classLabel .box{stroke:none;stroke-width:0;fill:#ECECFF;opacity:0.5;}#export-mermaid-0 .classLabel .label{fill:#9370DB;font-size:10px;}#export-mermaid-0 .relation{stroke:#333333;stroke-width:1;fill:none;}#export-mermaid-0 .dashed-line{stroke-dasharray:3;}#export-mermaid-0 .dotted-line{stroke-dasharray:1 2;}#export-mermaid-0 #compositionStart,#export-mermaid-0 .composition{fill:#333333!important;stroke:#333333!important;stroke-width:1;}#export-mermaid-0 #compositionEnd,#export-mermaid-0 .composition{fill:#333333!important;stroke:#333333!important;stroke-width:1;}#export-mermaid-0 #dependencyStart,#export-mermaid-0 .dependency{fill:#333333!important;stroke:#333333!important;stroke-width:1;}#export-mermaid-0 #dependencyStart,#export-mermaid-0 .dependency{fill:#333333!important;stroke:#333333!important;stroke-width:1;}#export-mermaid-0 #extensionStart,#export-mermaid-0 .extension{fill:transparent!important;stroke:#333333!important;stroke-width:1;}#export-mermaid-0 #extensionEnd,#export-mermaid-0 .extension{fill:transparent!important;stroke:#333333!important;stroke-width:1;}#export-mermaid-0 #aggregationStart,#export-mermaid-0 .aggregation{fill:transparent!important;stroke:#333333!important;stroke-width:1;}#export-mermaid-0 #aggregationEnd,#export-mermaid-0 .aggregation{fill:transparent!important;stroke:#333333!important;stroke-width:1;}#export-mermaid-0 #lollipopStart,#export-mermaid-0 .lollipop{fill:#ECECFF!important;stroke:#333333!important;stroke-width:1;}#export-mermaid-0 #lollipopEnd,#export-mermaid-0 .lollipop{fill:#ECECFF!important;stroke:#333333!important;stroke-width:1;}#export-mermaid-0 .edgeTerminals{font-size:11px;line-height:initial;}#export-mermaid-0 .classTitleText{text-anchor:middle;font-size:18px;fill:#333;}#export-mermaid-0 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#export-mermaid-0 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#export-mermaid-0 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><defs><marker id="export-mermaid-0_class-aggregationStart" class="marker aggregation class" refX="18" refY="7" markerWidth="190" markerHeight="240" orient="auto"><path d="M 18,7 L9,13 L1,7 L9,1 Z"></path></marker></defs><defs><marker id="export-mermaid-0_class-aggregationEnd" class="marker aggregation class" refX="1" refY="7" markerWidth="20" markerHeight="28" orient="auto"><path d="M 18,7 L9,13 L1,7 L9,1 Z"></path></marker></defs><defs><marker id="export-mermaid-0_class-extensionStart" class="marker extension class" refX="18" refY="7" markerWidth="190" markerHeight="240" orient="auto"><path d="M 1,7 L18,13 V 1 Z"></path></marker></defs><defs><marker id="export-mermaid-0_class-extensionEnd" class="marker extension class" refX="1" refY="7" markerWidth="20" markerHeight="28" orient="auto"><path d="M 1,1 V 13 L18,7 Z"></path></marker></defs><defs><marker id="export-mermaid-0_class-compositionStart" class="marker composition class" refX="18" refY="7" markerWidth="190" markerHeight="240" orient="auto"><path d="M 18,7 L9,13 L1,7 L9,1 Z"></path></marker></defs><defs><marker id="export-mermaid-0_class-compositionEnd" class="marker composition class" refX="1" refY="7" markerWidth="20" markerHeight="28" orient="auto"><path d="M 18,7 L9,13 L1,7 L9,1 Z"></path></marker></defs><defs><marker id="export-mermaid-0_class-dependencyStart" class="marker dependency class" refX="6" refY="7" markerWidth="190" markerHeight="240" orient="auto"><path d="M 5,7 L9,13 L1,7 L9,1 Z"></path></marker></defs><defs><marker id="export-mermaid-0_class-dependencyEnd" class="marker dependency class" refX="13" refY="7" markerWidth="20" markerHeight="28" orient="auto"><path d="M 18,7 L9,13 L14,7 L9,1 Z"></path></marker></defs><defs><marker id="export-mermaid-0_class-lollipopStart" class="marker lollipop class" refX="13" refY="7" markerWidth="190" markerHeight="240" orient="auto"><circle fill="transparent" cx="7" cy="7" r="6"></circle></marker></defs><defs><marker id="export-mermaid-0_class-lollipopEnd" class="marker lollipop class" refX="1" refY="7" markerWidth="190" markerHeight="240" orient="auto"><circle fill="transparent" cx="7" cy="7" r="6"></circle></marker></defs><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M134.197,215L127.596,224.667C120.996,234.333,107.795,253.667,101.194,266.5C94.594,279.333,94.594,285.667,94.594,288.833L94.594,292" id="id_apiKey_ConvexAuthContext_1" class="edge-thickness-normal edge-pattern-solid relation" style=";;;" data-edge="true" data-et="edge" data-id="id_apiKey_ConvexAuthContext_1" data-points="W3sieCI6MTM0LjE5Njg3NSwieSI6MjE1fSx7IngiOjk0LjU5Mzc1LCJ5IjoyNzN9LHsieCI6OTQuNTkzNzUsInkiOjI5OH1d" marker-end="url(#export-mermaid-0_class-dependencyEnd)"></path><path d="M253.006,215L259.607,224.667C266.207,234.333,279.408,253.667,286.009,266.5C292.609,279.333,292.609,285.667,292.609,288.833L292.609,292" id="id_apiKey_ApiKeyConfig_2" class="edge-thickness-normal edge-pattern-solid relation" style=";;;" data-edge="true" data-et="edge" data-id="id_apiKey_ApiKeyConfig_2" data-points="W3sieCI6MjUzLjAwNjI1LCJ5IjoyMTV9LHsieCI6MjkyLjYwOTM3NSwieSI6MjczfSx7IngiOjI5Mi42MDkzNzUsInkiOjI5OH1d" marker-end="url(#export-mermaid-0_class-dependencyEnd)"></path><path d="M476.163,248L473.292,252.167C470.421,256.333,464.679,264.667,461.808,272C458.938,279.333,458.938,285.667,458.938,288.833L458.938,292" id="id_rls_RLSContext_3" class="edge-thickness-normal edge-pattern-solid relation" style=";;;" data-edge="true" data-et="edge" data-id="id_rls_RLSContext_3" data-points="W3sieCI6NDc2LjE2MjcxNTUxNzI0MTQsInkiOjI0OH0seyJ4Ijo0NTguOTM3NSwieSI6MjczfSx7IngiOjQ1OC45Mzc1LCJ5IjoyOTh9XQ==" marker-end="url(#export-mermaid-0_class-dependencyEnd)"></path><path d="M550.568,248L550.281,252.167C549.993,256.333,549.418,264.667,549.131,282C548.844,299.333,548.844,325.667,548.844,352C548.844,378.333,548.844,404.667,548.844,431C548.844,457.333,548.844,483.667,548.844,510C548.844,536.333,548.844,562.667,550.955,579.156C553.067,595.645,557.29,602.291,559.402,605.613L561.514,608.936" id="id_rls_RLSRule_4" class="edge-thickness-normal edge-pattern-solid relation" style=";;;" data-edge="true" data-et="edge" data-id="id_rls_RLSRule_4" data-points="W3sieCI6NTUwLjU2Nzg4NzkzMTAzNDUsInkiOjI0OH0seyJ4Ijo1NDguODQzNzUsInkiOjI3M30seyJ4Ijo1NDguODQzNzUsInkiOjM1Mn0seyJ4Ijo1NDguODQzNzUsInkiOjQzMX0seyJ4Ijo1NDguODQzNzUsInkiOjUxMH0seyJ4Ijo1NDguODQzNzUsInkiOjU4OX0seyJ4Ijo1NjQuNzMyMDUxMDI4NDgxLCJ5Ijo2MTR9XQ==" marker-end="url(#export-mermaid-0_class-dependencyEnd)"></path><path d="M594.802,248L596.05,252.167C597.299,256.333,599.796,264.667,601.044,282C602.293,299.333,602.293,325.667,602.293,352C602.293,378.333,602.293,404.667,603.96,421.109C605.627,437.551,608.961,444.102,610.628,447.377L612.295,450.653" id="id_rls_TableRules_5" class="edge-thickness-normal edge-pattern-solid relation" style=";;;" data-edge="true" data-et="edge" data-id="id_rls_TableRules_5" data-points="W3sieCI6NTk0LjgwMTcyNDEzNzkzMSwieSI6MjQ4fSx7IngiOjYwMi4yOTI5Njg3NSwieSI6MjczfSx7IngiOjYwMi4yOTI5Njg3NSwieSI6MzUyfSx7IngiOjYwMi4yOTI5Njg3NSwieSI6NDMxfSx7IngiOjYxNS4wMTY3MTI4MTY0NTU3LCJ5Ijo0NTZ9XQ==" marker-end="url(#export-mermaid-0_class-dependencyEnd)"></path><path d="M643.824,227.482L650.305,235.068C656.785,242.655,669.746,257.827,676.227,268.58C682.707,279.333,682.707,285.667,682.707,288.833L682.707,292" id="id_rls_RLSRules_6" class="edge-thickness-normal edge-pattern-solid relation" style=";;;" data-edge="true" data-et="edge" data-id="id_rls_RLSRules_6" data-points="W3sieCI6NjQzLjgyNDIxODc1LCJ5IjoyMjcuNDgyMDA4MjYyNjM4Mzd9LHsieCI6NjgyLjcwNzAzMTI1LCJ5IjoyNzN9LHsieCI6NjgyLjcwNzAzMTI1LCJ5IjoyOTh9XQ==" marker-end="url(#export-mermaid-0_class-dependencyEnd)"></path><path d="M682.707,406L682.707,410.167C682.707,414.333,682.707,422.667,681.04,430.109C679.373,437.551,676.039,444.102,674.372,447.377L672.705,450.653" id="id_RLSRules_TableRules_7" class="edge-thickness-normal edge-pattern-solid relation" style=";;;" data-edge="true" data-et="edge" data-id="id_RLSRules_TableRules_7" data-points="W3sieCI6NjgyLjcwNzAzMTI1LCJ5Ijo0MDZ9LHsieCI6NjgyLjcwNzAzMTI1LCJ5Ijo0MzF9LHsieCI6NjY5Ljk4MzI4NzE4MzU0NDMsInkiOjQ1Nn1d" marker-end="url(#export-mermaid-0_class-dependencyEnd)"></path><path d="M642.5,564L642.5,568.167C642.5,572.333,642.5,580.667,640.69,588.124C638.881,595.581,635.261,602.162,633.451,605.452L631.642,608.743" id="id_TableRules_RLSRule_8" class="edge-thickness-normal edge-pattern-solid relation" style=";;;" data-edge="true" data-et="edge" data-id="id_TableRules_RLSRule_8" data-points="W3sieCI6NjQyLjUsInkiOjU2NH0seyJ4Ijo2NDIuNSwieSI6NTg5fSx7IngiOjYyOC43NTAyNDcyMzEwMTI2LCJ5Ijo2MTR9XQ==" marker-end="url(#export-mermaid-0_class-dependencyEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="id_apiKey_ConvexAuthContext_1" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="id_apiKey_ApiKeyConfig_2" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="id_rls_RLSContext_3" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="id_rls_RLSRule_4" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="id_rls_TableRules_5" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="id_rls_RLSRules_6" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="id_RLSRules_TableRules_7" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="id_TableRules_RLSRule_8" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default" id="classId-ConvexAuthContext-0" transform="translate(94.59375, 352)"><g class="basic label-container"><path d="M-86.59375 -54 L86.59375 -54 L86.59375 54 L-86.59375 54" stroke="none" stroke-width="0" fill="#ECECFF" style=""></path><path d="M-86.59375 -54 C-27.029468124040434 -54, 32.53481375191913 -54, 86.59375 -54 M-86.59375 -54 C-31.818492472538104 -54, 22.956765054923792 -54, 86.59375 -54 M86.59375 -54 C86.59375 -21.940058607321106, 86.59375 10.119882785357788, 86.59375 54 M86.59375 -54 C86.59375 -23.515407368691893, 86.59375 6.9691852626162145, 86.59375 54 M86.59375 54 C29.570550195587565 54, -27.45264960882487 54, -86.59375 54 M86.59375 54 C24.9495898072647 54, -36.6945703854706 54, -86.59375 54 M-86.59375 54 C-86.59375 29.06561856163677, -86.59375 4.131237123273543, -86.59375 -54 M-86.59375 54 C-86.59375 18.299991709021107, -86.59375 -17.400016581957786, -86.59375 -54" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g><g class="annotation-group text" transform="translate(-24.328125, -30)"><g class="label" style="" transform="translate(0,-12)"><foreignObject width="48.65625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 94px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>«type»</p></span></div></foreignObject></g></g><g class="label-group text" transform="translate(-74.59375, -6)"><g class="label" style="font-weight: bolder" transform="translate(0,-12)"><foreignObject width="149.1875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 182px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>ConvexAuthContext</p></span></div></foreignObject></g></g><g class="members-group text" transform="translate(-74.59375, 42)"></g><g class="methods-group text" transform="translate(-74.59375, 72)"></g><g class="divider" style=""><path d="M-86.59375 18 C-24.94905386308678 18, 36.69564227382644 18, 86.59375 18 M-86.59375 18 C-38.510600179758356 18, 9.572549640483288 18, 86.59375 18" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g><g class="divider" style=""><path d="M-86.59375 36 C-38.259930410353725 36, 10.07388917929255 36, 86.59375 36 M-86.59375 36 C-18.747865255407106 36, 49.09801948918579 36, 86.59375 36" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g></g><g class="node default" id="classId-ApiKeyConfig-1" transform="translate(292.609375, 352)"><g class="basic label-container"><path d="M-61.421875 -54 L61.421875 -54 L61.421875 54 L-61.421875 54" stroke="none" stroke-width="0" fill="#ECECFF" style=""></path><path d="M-61.421875 -54 C-34.838917740868354 -54, -8.255960481736707 -54, 61.421875 -54 M-61.421875 -54 C-24.22661585253273 -54, 12.968643294934537 -54, 61.421875 -54 M61.421875 -54 C61.421875 -18.536290236717683, 61.421875 16.927419526564634, 61.421875 54 M61.421875 -54 C61.421875 -28.177245165710694, 61.421875 -2.3544903314213883, 61.421875 54 M61.421875 54 C30.186210817323484 54, -1.0494533653530311 54, -61.421875 54 M61.421875 54 C29.269812447927364 54, -2.882250104145271 54, -61.421875 54 M-61.421875 54 C-61.421875 30.847087748501327, -61.421875 7.694175497002654, -61.421875 -54 M-61.421875 54 C-61.421875 21.568198605419212, -61.421875 -10.863602789161575, -61.421875 -54" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g><g class="annotation-group text" transform="translate(-24.328125, -30)"><g class="label" style="" transform="translate(0,-12)"><foreignObject width="48.65625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 94px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>«type»</p></span></div></foreignObject></g></g><g class="label-group text" transform="translate(-49.421875, -6)"><g class="label" style="font-weight: bolder" transform="translate(0,-12)"><foreignObject width="98.84375" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 144px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>ApiKeyConfig</p></span></div></foreignObject></g></g><g class="members-group text" transform="translate(-49.421875, 42)"></g><g class="methods-group text" transform="translate(-49.421875, 72)"></g><g class="divider" style=""><path d="M-61.421875 18 C-25.66797083226841 18, 10.085933335463181 18, 61.421875 18 M-61.421875 18 C-34.56317333405185 18, -7.704471668103693 18, 61.421875 18" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g><g class="divider" style=""><path d="M-61.421875 36 C-14.399292763925807 36, 32.623289472148386 36, 61.421875 36 M-61.421875 36 C-29.38773745502678 36, 2.6464000899464395 36, 61.421875 36" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g></g><g class="node default" id="classId-RLSContext-2" transform="translate(458.9375, 352)"><g class="basic label-container"><path d="M-54.90625 -54 L54.90625 -54 L54.90625 54 L-54.90625 54" stroke="none" stroke-width="0" fill="#ECECFF" style=""></path><path d="M-54.90625 -54 C-15.140595235003524 -54, 24.625059529992953 -54, 54.90625 -54 M-54.90625 -54 C-20.93959517086413 -54, 13.027059658271739 -54, 54.90625 -54 M54.90625 -54 C54.90625 -25.826612782738025, 54.90625 2.346774434523951, 54.90625 54 M54.90625 -54 C54.90625 -14.411892075214979, 54.90625 25.176215849570042, 54.90625 54 M54.90625 54 C11.16313210079695 54, -32.5799857984061 54, -54.90625 54 M54.90625 54 C16.463413363073194 54, -21.979423273853612 54, -54.90625 54 M-54.90625 54 C-54.90625 30.11000838822094, -54.90625 6.220016776441881, -54.90625 -54 M-54.90625 54 C-54.90625 10.953284111068491, -54.90625 -32.09343177786302, -54.90625 -54" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g><g class="annotation-group text" transform="translate(-24.328125, -30)"><g class="label" style="" transform="translate(0,-12)"><foreignObject width="48.65625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 94px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>«type»</p></span></div></foreignObject></g></g><g class="label-group text" transform="translate(-42.90625, -6)"><g class="label" style="font-weight: bolder" transform="translate(0,-12)"><foreignObject width="85.8125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 130px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>RLSContext</p></span></div></foreignObject></g></g><g class="members-group text" transform="translate(-42.90625, 42)"></g><g class="methods-group text" transform="translate(-42.90625, 72)"></g><g class="divider" style=""><path d="M-54.90625 18 C-17.778171597539576 18, 19.34990680492085 18, 54.90625 18 M-54.90625 18 C-15.21623565744573 18, 24.47377868510854 18, 54.90625 18" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g><g class="divider" style=""><path d="M-54.90625 36 C-11.075640775019487 36, 32.75496844996103 36, 54.90625 36 M-54.90625 36 C-31.90779069884531 36, -8.909331397690622 36, 54.90625 36" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g></g><g class="node default" id="classId-apiKey-3" transform="translate(193.6015625, 128)"><g class="basic label-container"><path d="M-93.00390625 -87 L93.00390625 -87 L93.00390625 87 L-93.00390625 87" stroke="none" stroke-width="0" fill="#ECECFF" style=""></path><path d="M-93.00390625 -87 C-35.58893049842409 -87, 21.82604525315182 -87, 93.00390625 -87 M-93.00390625 -87 C-39.696011598746296 -87, 13.611883052507409 -87, 93.00390625 -87 M93.00390625 -87 C93.00390625 -27.048374494088463, 93.00390625 32.90325101182307, 93.00390625 87 M93.00390625 -87 C93.00390625 -46.6294374676734, 93.00390625 -6.258874935346796, 93.00390625 87 M93.00390625 87 C55.678031448737 87, 18.352156647474004 87, -93.00390625 87 M93.00390625 87 C27.9237887998478 87, -37.1563286503044 87, -93.00390625 87 M-93.00390625 87 C-93.00390625 51.44750239043334, -93.00390625 15.895004780866685, -93.00390625 -87 M-93.00390625 87 C-93.00390625 26.917336835431577, -93.00390625 -33.165326329136846, -93.00390625 -87" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g><g class="annotation-group text" transform="translate(0, -63)"></g><g class="label-group text" transform="translate(-25.1171875, -63)"><g class="label" style="font-weight: bolder" transform="translate(0,-12)"><foreignObject width="50.234375" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 96px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>apiKey</p></span></div></foreignObject></g></g><g class="members-group text" transform="translate(-81.00390625, -15)"></g><g class="methods-group text" transform="translate(-81.00390625, 15)"><g class="label" style="" transform="translate(0,-12)"><foreignObject width="136.890625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 188px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>+getApiKeyConfig()</p></span></div></foreignObject></g><g class="label" style="" transform="translate(0,12)"><foreignObject width="126.296875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 176px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>+validateApiKey()</p></span></div></foreignObject></g><g class="label" style="" transform="translate(0,36)"><foreignObject width="133.203125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 186px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>+withApiKeyAuth()</p></span></div></foreignObject></g></g><g class="divider" style=""><path d="M-93.00390625 -39 C-33.121487543678676 -39, 26.76093116264265 -39, 93.00390625 -39 M-93.00390625 -39 C-51.540597574840326 -39, -10.077288899680653 -39, 93.00390625 -39" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g><g class="divider" style=""><path d="M-93.00390625 -15 C-27.00926136023044 -15, 38.98538352953912 -15, 93.00390625 -15 M-93.00390625 -15 C-28.49433498634899 -15, 36.01523627730202 -15, 93.00390625 -15" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g></g><g class="node default" id="classId-rls-4" transform="translate(558.84375, 128)"><g class="basic label-container"><path d="M-84.98046875 -120 L84.98046875 -120 L84.98046875 120 L-84.98046875 120" stroke="none" stroke-width="0" fill="#ECECFF" style=""></path><path d="M-84.98046875 -120 C-31.678705516975967 -120, 21.623057716048066 -120, 84.98046875 -120 M-84.98046875 -120 C-45.20630940488044 -120, -5.432150059760886 -120, 84.98046875 -120 M84.98046875 -120 C84.98046875 -42.2989579541169, 84.98046875 35.4020840917662, 84.98046875 120 M84.98046875 -120 C84.98046875 -54.546970722379655, 84.98046875 10.90605855524069, 84.98046875 120 M84.98046875 120 C29.981966506150158 120, -25.016535737699684 120, -84.98046875 120 M84.98046875 120 C43.20221878143879 120, 1.4239688128775754 120, -84.98046875 120 M-84.98046875 120 C-84.98046875 58.429248391142316, -84.98046875 -3.1415032177153677, -84.98046875 -120 M-84.98046875 120 C-84.98046875 30.15495335940895, -84.98046875 -59.6900932811821, -84.98046875 -120" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g><g class="annotation-group text" transform="translate(0, -96)"></g><g class="label-group text" transform="translate(-9.2265625, -96)"><g class="label" style="font-weight: bolder" transform="translate(0,-12)"><foreignObject width="18.453125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 66px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>rls</p></span></div></foreignObject></g></g><g class="members-group text" transform="translate(-72.98046875, -48)"><g class="label" style="" transform="translate(0,-12)"><foreignObject width="63.328125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 116px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>+rlsRules</p></span></div></foreignObject></g></g><g class="methods-group text" transform="translate(-72.98046875, 0)"><g class="label" style="" transform="translate(0,-12)"><foreignObject width="87.90625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 140px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>+assertRLS()</p></span></div></foreignObject></g><g class="label" style="" transform="translate(0,12)"><foreignObject width="124.21875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 170px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>+assertCanRead()</p></span></div></foreignObject></g><g class="label" style="" transform="translate(0,36)"><foreignObject width="130.46875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 173px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>+assertCanInsert()</p></span></div></foreignObject></g><g class="label" style="" transform="translate(0,60)"><foreignObject width="136.734375" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 185px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>+assertCanModify()</p></span></div></foreignObject></g><g class="label" style="" transform="translate(0,84)"><foreignObject width="136.5625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 179px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>+assertCanDelete()</p></span></div></foreignObject></g></g><g class="divider" style=""><path d="M-84.98046875 -72 C-18.55293591628896 -72, 47.87459691742208 -72, 84.98046875 -72 M-84.98046875 -72 C-41.53234491206233 -72, 1.915778925875344 -72, 84.98046875 -72" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g><g class="divider" style=""><path d="M-84.98046875 -24 C-28.367679222555637 -24, 28.245110304888726 -24, 84.98046875 -24 M-84.98046875 -24 C-28.50052143269876 -24, 27.979425884602477 -24, 84.98046875 -24" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g></g><g class="node default" id="classId-RLSRule-5" transform="translate(599.05078125, 668)"><g class="basic label-container"><path d="M-41.96875 -54 L41.96875 -54 L41.96875 54 L-41.96875 54" stroke="none" stroke-width="0" fill="#ECECFF" style=""></path><path d="M-41.96875 -54 C-16.24225638911988 -54, 9.484237221760239 -54, 41.96875 -54 M-41.96875 -54 C-16.402323908178456 -54, 9.164102183643088 -54, 41.96875 -54 M41.96875 -54 C41.96875 -12.519882011341728, 41.96875 28.960235977316543, 41.96875 54 M41.96875 -54 C41.96875 -23.942748019884952, 41.96875 6.1145039602300955, 41.96875 54 M41.96875 54 C21.296959073690253 54, 0.6251681473805064 54, -41.96875 54 M41.96875 54 C20.012451086141372 54, -1.9438478277172564 54, -41.96875 54 M-41.96875 54 C-41.96875 22.738765910698497, -41.96875 -8.522468178603006, -41.96875 -54 M-41.96875 54 C-41.96875 27.444621413365645, -41.96875 0.8892428267312908, -41.96875 -54" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g><g class="annotation-group text" transform="translate(-24.328125, -30)"><g class="label" style="" transform="translate(0,-12)"><foreignObject width="48.65625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 94px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>«type»</p></span></div></foreignObject></g></g><g class="label-group text" transform="translate(-29.96875, -6)"><g class="label" style="font-weight: bolder" transform="translate(0,-12)"><foreignObject width="59.9375" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 110px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>RLSRule</p></span></div></foreignObject></g></g><g class="members-group text" transform="translate(-29.96875, 42)"></g><g class="methods-group text" transform="translate(-29.96875, 72)"></g><g class="divider" style=""><path d="M-41.96875 18 C-9.440531613459797 18, 23.087686773080407 18, 41.96875 18 M-41.96875 18 C-19.322445817720332 18, 3.323858364559335 18, 41.96875 18" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g><g class="divider" style=""><path d="M-41.96875 36 C-13.8789355119122 36, 14.2108789761756 36, 41.96875 36 M-41.96875 36 C-9.871229953949289 36, 22.226290092101422 36, 41.96875 36" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g></g><g class="node default" id="classId-TableRules-6" transform="translate(642.5, 510)"><g class="basic label-container"><path d="M-51.8984375 -54 L51.8984375 -54 L51.8984375 54 L-51.8984375 54" stroke="none" stroke-width="0" fill="#ECECFF" style=""></path><path d="M-51.8984375 -54 C-12.66211179290093 -54, 26.57421391419814 -54, 51.8984375 -54 M-51.8984375 -54 C-22.840035416797246 -54, 6.218366666405508 -54, 51.8984375 -54 M51.8984375 -54 C51.8984375 -23.627111441654485, 51.8984375 6.7457771166910305, 51.8984375 54 M51.8984375 -54 C51.8984375 -26.675488605178383, 51.8984375 0.649022789643233, 51.8984375 54 M51.8984375 54 C25.445085313114237 54, -1.0082668737715252 54, -51.8984375 54 M51.8984375 54 C21.287800925533176 54, -9.322835648933648 54, -51.8984375 54 M-51.8984375 54 C-51.8984375 14.154579197429378, -51.8984375 -25.690841605141244, -51.8984375 -54 M-51.8984375 54 C-51.8984375 23.582830343627275, -51.8984375 -6.834339312745449, -51.8984375 -54" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g><g class="annotation-group text" transform="translate(-24.328125, -30)"><g class="label" style="" transform="translate(0,-12)"><foreignObject width="48.65625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 94px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>«type»</p></span></div></foreignObject></g></g><g class="label-group text" transform="translate(-39.8984375, -6)"><g class="label" style="font-weight: bolder" transform="translate(0,-12)"><foreignObject width="79.796875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 122px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>TableRules</p></span></div></foreignObject></g></g><g class="members-group text" transform="translate(-39.8984375, 42)"></g><g class="methods-group text" transform="translate(-39.8984375, 72)"></g><g class="divider" style=""><path d="M-51.8984375 18 C-16.24392487477035 18, 19.4105877504593 18, 51.8984375 18 M-51.8984375 18 C-28.557535101160024 18, -5.216632702320048 18, 51.8984375 18" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g><g class="divider" style=""><path d="M-51.8984375 36 C-27.50980616906937 36, -3.1211748381387423 36, 51.8984375 36 M-51.8984375 36 C-20.614764575619862 36, 10.668908348760276 36, 51.8984375 36" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g></g><g class="node default" id="classId-RLSRules-7" transform="translate(682.70703125, 352)"><g class="basic label-container"><path d="M-45.4140625 -54 L45.4140625 -54 L45.4140625 54 L-45.4140625 54" stroke="none" stroke-width="0" fill="#ECECFF" style=""></path><path d="M-45.4140625 -54 C-15.121606447052557 -54, 15.170849605894887 -54, 45.4140625 -54 M-45.4140625 -54 C-20.041663232211594 -54, 5.3307360355768125 -54, 45.4140625 -54 M45.4140625 -54 C45.4140625 -30.868816597547475, 45.4140625 -7.737633195094951, 45.4140625 54 M45.4140625 -54 C45.4140625 -15.214645454685495, 45.4140625 23.57070909062901, 45.4140625 54 M45.4140625 54 C26.9724326215029 54, 8.5308027430058 54, -45.4140625 54 M45.4140625 54 C15.411162028287084 54, -14.591738443425832 54, -45.4140625 54 M-45.4140625 54 C-45.4140625 18.271824295060284, -45.4140625 -17.45635140987943, -45.4140625 -54 M-45.4140625 54 C-45.4140625 28.990934483144205, -45.4140625 3.9818689662884097, -45.4140625 -54" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g><g class="annotation-group text" transform="translate(-24.328125, -30)"><g class="label" style="" transform="translate(0,-12)"><foreignObject width="48.65625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 94px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>«type»</p></span></div></foreignObject></g></g><g class="label-group text" transform="translate(-33.4140625, -6)"><g class="label" style="font-weight: bolder" transform="translate(0,-12)"><foreignObject width="66.828125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 116px; text-align: center;"><span class="nodeLabel markdown-node-label" style=""><p>RLSRules</p></span></div></foreignObject></g></g><g class="members-group text" transform="translate(-33.4140625, 42)"></g><g class="methods-group text" transform="translate(-33.4140625, 72)"></g><g class="divider" style=""><path d="M-45.4140625 18 C-23.128251411650847 18, -0.8424403233016946 18, 45.4140625 18 M-45.4140625 18 C-22.580938105845437 18, 0.2521862883091259 18, 45.4140625 18" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g><g class="divider" style=""><path d="M-45.4140625 36 C-21.134864443501737 36, 3.144333612996526 36, 45.4140625 36 M-45.4140625 36 C-22.21764407423568 36, 0.9787743515286422 36, 45.4140625 36" stroke="#9370DB" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g></g></g></g></g></svg></div>
+<h2 id="entity-table" tabindex="-1" data-mdv-layout="keep-with-next">Entity Table</h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Kind</th>
+<th>Role</th>
+<th>Public Entrypoints</th>
+<th>Depends On</th>
+<th>Used By</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ConvexAuthContext</td>
+<td>type</td>
+<td>Core auth context type threaded through Convex functions</td>
+<td>convex/auth/types.ts:ConvexAuthContext</td>
+<td>none</td>
+<td>convex/auth/apiKey.ts, convex/auth/rls.ts</td>
+</tr>
+<tr>
+<td>ApiKeyConfig</td>
+<td>type</td>
+<td>Shape of API key configuration data</td>
+<td>convex/auth/types.ts:ApiKeyConfig</td>
+<td>none</td>
+<td>convex/auth/apiKey.ts</td>
+</tr>
+<tr>
+<td>RLSContext</td>
+<td>type</td>
+<td>Context passed into RLS rule evaluators</td>
+<td>convex/auth/types.ts:RLSContext</td>
+<td>none</td>
+<td>convex/auth/rls.ts</td>
+</tr>
+<tr>
+<td>getApiKeyConfig</td>
+<td>function</td>
+<td>Retrieves the API key configuration from the Convex environment</td>
+<td>convex/auth/apiKey.ts:getApiKeyConfig</td>
+<td>ConvexAuthContext, ApiKeyConfig</td>
+<td>convex/prompts.ts, convex/healthAuth.ts, convex/userPreferences.ts</td>
+</tr>
+<tr>
+<td>validateApiKey</td>
+<td>function</td>
+<td>Validates an API key against stored config; rejects unauthorized callers</td>
+<td>convex/auth/apiKey.ts:validateApiKey</td>
+<td>ConvexAuthContext, ApiKeyConfig</td>
+<td>convex/prompts.ts, convex/healthAuth.ts, convex/userPreferences.ts</td>
+</tr>
+<tr>
+<td>withApiKeyAuth</td>
+<td>function</td>
+<td>Higher-order wrapper that gates a Convex function behind API key auth</td>
+<td>convex/auth/apiKey.ts:withApiKeyAuth</td>
+<td>ConvexAuthContext, ApiKeyConfig</td>
+<td>convex/prompts.ts, convex/healthAuth.ts, convex/userPreferences.ts</td>
+</tr>
+<tr>
+<td>rlsRules</td>
+<td>variable</td>
+<td>Central registry of per-table RLS rule definitions</td>
+<td>convex/auth/rls.ts:rlsRules</td>
+<td>RLSContext, RLSRules</td>
+<td>convex/model/prompts.ts, convex/userPreferences.ts</td>
+</tr>
+<tr>
+<td>assertCanRead</td>
+<td>function</td>
+<td>Asserts the caller has read permission on a given table row</td>
+<td>convex/auth/rls.ts:assertCanRead</td>
+<td>RLSContext</td>
+<td>convex/model/prompts.ts, convex/userPreferences.ts</td>
+</tr>
+<tr>
+<td>assertCanInsert</td>
+<td>function</td>
+<td>Asserts the caller has insert permission on a given table</td>
+<td>convex/auth/rls.ts:assertCanInsert</td>
+<td>RLSContext</td>
+<td>convex/model/prompts.ts, convex/userPreferences.ts</td>
+</tr>
+<tr>
+<td>assertCanModify</td>
+<td>function</td>
+<td>Asserts the caller has modify permission on a given table row</td>
+<td>convex/auth/rls.ts:assertCanModify</td>
+<td>RLSContext</td>
+<td>convex/model/prompts.ts, convex/userPreferences.ts</td>
+</tr>
+<tr>
+<td>assertCanDelete</td>
+<td>function</td>
+<td>Asserts the caller has delete permission on a given table row</td>
+<td>convex/auth/rls.ts:assertCanDelete</td>
+<td>RLSContext</td>
+<td>convex/model/prompts.ts, convex/userPreferences.ts</td>
+</tr>
+<tr>
+<td>auth.config.ts</td>
+<td>file</td>
+<td>Convex auth provider configuration (e.g., WorkOS integration)</td>
+<td>convex/auth.config.ts</td>
+<td>none</td>
+<td>none</td>
+</tr>
+</tbody>
+</table>
+<h2 id="key-flow" tabindex="-1" data-mdv-layout="keep-with-next">Key Flow</h2>
+<div class="mermaid-diagram"><svg id="export-mermaid-1" width="100%" xmlns="http://www.w3.org/2000/svg" style="max-width: 1430px;" viewBox="-50 -10 1430 877" role="graphics-document document" aria-roledescription="sequence"><g><rect x="1180" y="791" fill="#eaeaea" stroke="#666" width="150" height="65" name="DB" rx="3" ry="3" class="actor actor-bottom"></rect><text x="1255" y="823.5" dominant-baseline="central" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400;"><tspan x="1255" dy="0">Convex DB</tspan></text></g><g><rect x="971" y="791" fill="#eaeaea" stroke="#666" width="159" height="65" name="assertCanRead" rx="3" ry="3" class="actor actor-bottom"></rect><text x="1050.5" y="823.5" dominant-baseline="central" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400;"><tspan x="1050.5" dy="0">RLS (assertCanRead)</tspan></text></g><g><rect x="771" y="791" fill="#eaeaea" stroke="#666" width="150" height="65" name="validateApiKey" rx="3" ry="3" class="actor actor-bottom"></rect><text x="846" y="823.5" dominant-baseline="central" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400;"><tspan x="846" dy="0">validateApiKey</tspan></text></g><g><rect x="569" y="791" fill="#eaeaea" stroke="#666" width="150" height="65" name="withApiKeyAuth" rx="3" ry="3" class="actor actor-bottom"></rect><text x="644" y="823.5" dominant-baseline="central" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400;"><tspan x="644" dy="0">withApiKeyAuth</tspan></text></g><g><rect x="283" y="791" fill="#eaeaea" stroke="#666" width="150" height="65" name="ConvexFn" rx="3" ry="3" class="actor actor-bottom"></rect><text x="358" y="823.5" dominant-baseline="central" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400;"><tspan x="358" dy="0">Convex Function</tspan></text></g><g><rect x="0" y="791" fill="#eaeaea" stroke="#666" width="150" height="65" name="Client" rx="3" ry="3" class="actor actor-bottom"></rect><text x="75" y="823.5" dominant-baseline="central" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400;"><tspan x="75" dy="0">Client</tspan></text></g><g><line id="actor5" x1="1255" y1="65" x2="1255" y2="791" class="actor-line 200" stroke-width="0.5px" stroke="#999" name="DB"></line><g id="root-5"><rect x="1180" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" name="DB" rx="3" ry="3" class="actor actor-top"></rect><text x="1255" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400;"><tspan x="1255" dy="0">Convex DB</tspan></text></g></g><g><line id="actor4" x1="1050.5" y1="65" x2="1050.5" y2="791" class="actor-line 200" stroke-width="0.5px" stroke="#999" name="assertCanRead"></line><g id="root-4"><rect x="971" y="0" fill="#eaeaea" stroke="#666" width="159" height="65" name="assertCanRead" rx="3" ry="3" class="actor actor-top"></rect><text x="1050.5" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400;"><tspan x="1050.5" dy="0">RLS (assertCanRead)</tspan></text></g></g><g><line id="actor3" x1="846" y1="65" x2="846" y2="791" class="actor-line 200" stroke-width="0.5px" stroke="#999" name="validateApiKey"></line><g id="root-3"><rect x="771" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" name="validateApiKey" rx="3" ry="3" class="actor actor-top"></rect><text x="846" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400;"><tspan x="846" dy="0">validateApiKey</tspan></text></g></g><g><line id="actor2" x1="644" y1="65" x2="644" y2="791" class="actor-line 200" stroke-width="0.5px" stroke="#999" name="withApiKeyAuth"></line><g id="root-2"><rect x="569" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" name="withApiKeyAuth" rx="3" ry="3" class="actor actor-top"></rect><text x="644" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400;"><tspan x="644" dy="0">withApiKeyAuth</tspan></text></g></g><g><line id="actor1" x1="358" y1="65" x2="358" y2="791" class="actor-line 200" stroke-width="0.5px" stroke="#999" name="ConvexFn"></line><g id="root-1"><rect x="283" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" name="ConvexFn" rx="3" ry="3" class="actor actor-top"></rect><text x="358" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400;"><tspan x="358" dy="0">Convex Function</tspan></text></g></g><g><line id="actor0" x1="75" y1="65" x2="75" y2="791" class="actor-line 200" stroke-width="0.5px" stroke="#999" name="Client"></line><g id="root-0"><rect x="0" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" name="Client" rx="3" ry="3" class="actor actor-top"></rect><text x="75" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400;"><tspan x="75" dy="0">Client</tspan></text></g></g><style>#export-mermaid-1{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#export-mermaid-1 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#export-mermaid-1 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#export-mermaid-1 .error-icon{fill:#552222;}#export-mermaid-1 .error-text{fill:#552222;stroke:#552222;}#export-mermaid-1 .edge-thickness-normal{stroke-width:1px;}#export-mermaid-1 .edge-thickness-thick{stroke-width:3.5px;}#export-mermaid-1 .edge-pattern-solid{stroke-dasharray:0;}#export-mermaid-1 .edge-thickness-invisible{stroke-width:0;fill:none;}#export-mermaid-1 .edge-pattern-dashed{stroke-dasharray:3;}#export-mermaid-1 .edge-pattern-dotted{stroke-dasharray:2;}#export-mermaid-1 .marker{fill:#333333;stroke:#333333;}#export-mermaid-1 .marker.cross{stroke:#333333;}#export-mermaid-1 svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#export-mermaid-1 p{margin:0;}#export-mermaid-1 .actor{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:#ECECFF;}#export-mermaid-1 text.actor&gt;tspan{fill:black;stroke:none;}#export-mermaid-1 .actor-line{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);}#export-mermaid-1 .innerArc{stroke-width:1.5;stroke-dasharray:none;}#export-mermaid-1 .messageLine0{stroke-width:1.5;stroke-dasharray:none;stroke:#333;}#export-mermaid-1 .messageLine1{stroke-width:1.5;stroke-dasharray:2,2;stroke:#333;}#export-mermaid-1 #arrowhead path{fill:#333;stroke:#333;}#export-mermaid-1 .sequenceNumber{fill:white;}#export-mermaid-1 #sequencenumber{fill:#333;}#export-mermaid-1 #crosshead path{fill:#333;stroke:#333;}#export-mermaid-1 .messageText{fill:#333;stroke:none;}#export-mermaid-1 .labelBox{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:#ECECFF;}#export-mermaid-1 .labelText,#export-mermaid-1 .labelText&gt;tspan{fill:black;stroke:none;}#export-mermaid-1 .loopText,#export-mermaid-1 .loopText&gt;tspan{fill:black;stroke:none;}#export-mermaid-1 .loopLine{stroke-width:2px;stroke-dasharray:2,2;stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);}#export-mermaid-1 .note{stroke:#aaaa33;fill:#fff5ad;}#export-mermaid-1 .noteText,#export-mermaid-1 .noteText&gt;tspan{fill:black;stroke:none;}#export-mermaid-1 .activation0{fill:#f4f4f4;stroke:#666;}#export-mermaid-1 .activation1{fill:#f4f4f4;stroke:#666;}#export-mermaid-1 .activation2{fill:#f4f4f4;stroke:#666;}#export-mermaid-1 .actorPopupMenu{position:absolute;}#export-mermaid-1 .actorPopupMenuPanel{position:absolute;fill:#ECECFF;box-shadow:0px 8px 16px 0px rgba(0,0,0,0.2);filter:drop-shadow(3px 5px 2px rgb(0 0 0 / 0.4));}#export-mermaid-1 .actor-man line{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:#ECECFF;}#export-mermaid-1 .actor-man circle,#export-mermaid-1 line{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:#ECECFF;stroke-width:2px;}#export-mermaid-1 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g></g><defs><symbol id="computer" width="24" height="24"><path transform="scale(.5)" d="M2 2v13h20v-13h-20zm18 11h-16v-9h16v9zm-10.228 6l.466-1h3.524l.467 1h-4.457zm14.228 3h-24l2-6h2.104l-1.33 4h18.45l-1.297-4h2.073l2 6zm-5-10h-14v-7h14v7z"></path></symbol></defs><defs><symbol id="database" fill-rule="evenodd" clip-rule="evenodd"><path transform="scale(.5)" d="M12.258.001l.256.004.255.005.253.008.251.01.249.012.247.015.246.016.242.019.241.02.239.023.236.024.233.027.231.028.229.031.225.032.223.034.22.036.217.038.214.04.211.041.208.043.205.045.201.046.198.048.194.05.191.051.187.053.183.054.18.056.175.057.172.059.168.06.163.061.16.063.155.064.15.066.074.033.073.033.071.034.07.034.069.035.068.035.067.035.066.035.064.036.064.036.062.036.06.036.06.037.058.037.058.037.055.038.055.038.053.038.052.038.051.039.05.039.048.039.047.039.045.04.044.04.043.04.041.04.04.041.039.041.037.041.036.041.034.041.033.042.032.042.03.042.029.042.027.042.026.043.024.043.023.043.021.043.02.043.018.044.017.043.015.044.013.044.012.044.011.045.009.044.007.045.006.045.004.045.002.045.001.045v17l-.001.045-.002.045-.004.045-.006.045-.007.045-.009.044-.011.045-.012.044-.013.044-.015.044-.017.043-.018.044-.02.043-.021.043-.023.043-.024.043-.026.043-.027.042-.029.042-.03.042-.032.042-.033.042-.034.041-.036.041-.037.041-.039.041-.04.041-.041.04-.043.04-.044.04-.045.04-.047.039-.048.039-.05.039-.051.039-.052.038-.053.038-.055.038-.055.038-.058.037-.058.037-.06.037-.06.036-.062.036-.064.036-.064.036-.066.035-.067.035-.068.035-.069.035-.07.034-.071.034-.073.033-.074.033-.15.066-.155.064-.16.063-.163.061-.168.06-.172.059-.175.057-.18.056-.183.054-.187.053-.191.051-.194.05-.198.048-.201.046-.205.045-.208.043-.211.041-.214.04-.217.038-.22.036-.223.034-.225.032-.229.031-.231.028-.233.027-.236.024-.239.023-.241.02-.242.019-.246.016-.247.015-.249.012-.251.01-.253.008-.255.005-.256.004-.258.001-.258-.001-.256-.004-.255-.005-.253-.008-.251-.01-.249-.012-.247-.015-.245-.016-.243-.019-.241-.02-.238-.023-.236-.024-.234-.027-.231-.028-.228-.031-.226-.032-.223-.034-.22-.036-.217-.038-.214-.04-.211-.041-.208-.043-.204-.045-.201-.046-.198-.048-.195-.05-.19-.051-.187-.053-.184-.054-.179-.056-.176-.057-.172-.059-.167-.06-.164-.061-.159-.063-.155-.064-.151-.066-.074-.033-.072-.033-.072-.034-.07-.034-.069-.035-.068-.035-.067-.035-.066-.035-.064-.036-.063-.036-.062-.036-.061-.036-.06-.037-.058-.037-.057-.037-.056-.038-.055-.038-.053-.038-.052-.038-.051-.039-.049-.039-.049-.039-.046-.039-.046-.04-.044-.04-.043-.04-.041-.04-.04-.041-.039-.041-.037-.041-.036-.041-.034-.041-.033-.042-.032-.042-.03-.042-.029-.042-.027-.042-.026-.043-.024-.043-.023-.043-.021-.043-.02-.043-.018-.044-.017-.043-.015-.044-.013-.044-.012-.044-.011-.045-.009-.044-.007-.045-.006-.045-.004-.045-.002-.045-.001-.045v-17l.001-.045.002-.045.004-.045.006-.045.007-.045.009-.044.011-.045.012-.044.013-.044.015-.044.017-.043.018-.044.02-.043.021-.043.023-.043.024-.043.026-.043.027-.042.029-.042.03-.042.032-.042.033-.042.034-.041.036-.041.037-.041.039-.041.04-.041.041-.04.043-.04.044-.04.046-.04.046-.039.049-.039.049-.039.051-.039.052-.038.053-.038.055-.038.056-.038.057-.037.058-.037.06-.037.061-.036.062-.036.063-.036.064-.036.066-.035.067-.035.068-.035.069-.035.07-.034.072-.034.072-.033.074-.033.151-.066.155-.064.159-.063.164-.061.167-.06.172-.059.176-.057.179-.056.184-.054.187-.053.19-.051.195-.05.198-.048.201-.046.204-.045.208-.043.211-.041.214-.04.217-.038.22-.036.223-.034.226-.032.228-.031.231-.028.234-.027.236-.024.238-.023.241-.02.243-.019.245-.016.247-.015.249-.012.251-.01.253-.008.255-.005.256-.004.258-.001.258.001zm-9.258 20.499v.01l.001.021.003.021.004.022.005.021.006.022.007.022.009.023.01.022.011.023.012.023.013.023.015.023.016.024.017.023.018.024.019.024.021.024.022.025.023.024.024.025.052.049.056.05.061.051.066.051.07.051.075.051.079.052.084.052.088.052.092.052.097.052.102.051.105.052.11.052.114.051.119.051.123.051.127.05.131.05.135.05.139.048.144.049.147.047.152.047.155.047.16.045.163.045.167.043.171.043.176.041.178.041.183.039.187.039.19.037.194.035.197.035.202.033.204.031.209.03.212.029.216.027.219.025.222.024.226.021.23.02.233.018.236.016.24.015.243.012.246.01.249.008.253.005.256.004.259.001.26-.001.257-.004.254-.005.25-.008.247-.011.244-.012.241-.014.237-.016.233-.018.231-.021.226-.021.224-.024.22-.026.216-.027.212-.028.21-.031.205-.031.202-.034.198-.034.194-.036.191-.037.187-.039.183-.04.179-.04.175-.042.172-.043.168-.044.163-.045.16-.046.155-.046.152-.047.148-.048.143-.049.139-.049.136-.05.131-.05.126-.05.123-.051.118-.052.114-.051.11-.052.106-.052.101-.052.096-.052.092-.052.088-.053.083-.051.079-.052.074-.052.07-.051.065-.051.06-.051.056-.05.051-.05.023-.024.023-.025.021-.024.02-.024.019-.024.018-.024.017-.024.015-.023.014-.024.013-.023.012-.023.01-.023.01-.022.008-.022.006-.022.006-.022.004-.022.004-.021.001-.021.001-.021v-4.127l-.077.055-.08.053-.083.054-.085.053-.087.052-.09.052-.093.051-.095.05-.097.05-.1.049-.102.049-.105.048-.106.047-.109.047-.111.046-.114.045-.115.045-.118.044-.12.043-.122.042-.124.042-.126.041-.128.04-.13.04-.132.038-.134.038-.135.037-.138.037-.139.035-.142.035-.143.034-.144.033-.147.032-.148.031-.15.03-.151.03-.153.029-.154.027-.156.027-.158.026-.159.025-.161.024-.162.023-.163.022-.165.021-.166.02-.167.019-.169.018-.169.017-.171.016-.173.015-.173.014-.175.013-.175.012-.177.011-.178.01-.179.008-.179.008-.181.006-.182.005-.182.004-.184.003-.184.002h-.37l-.184-.002-.184-.003-.182-.004-.182-.005-.181-.006-.179-.008-.179-.008-.178-.01-.176-.011-.176-.012-.175-.013-.173-.014-.172-.015-.171-.016-.17-.017-.169-.018-.167-.019-.166-.02-.165-.021-.163-.022-.162-.023-.161-.024-.159-.025-.157-.026-.156-.027-.155-.027-.153-.029-.151-.03-.15-.03-.148-.031-.146-.032-.145-.033-.143-.034-.141-.035-.14-.035-.137-.037-.136-.037-.134-.038-.132-.038-.13-.04-.128-.04-.126-.041-.124-.042-.122-.042-.12-.044-.117-.043-.116-.045-.113-.045-.112-.046-.109-.047-.106-.047-.105-.048-.102-.049-.1-.049-.097-.05-.095-.05-.093-.052-.09-.051-.087-.052-.085-.053-.083-.054-.08-.054-.077-.054v4.127zm0-5.654v.011l.001.021.003.021.004.021.005.022.006.022.007.022.009.022.01.022.011.023.012.023.013.023.015.024.016.023.017.024.018.024.019.024.021.024.022.024.023.025.024.024.052.05.056.05.061.05.066.051.07.051.075.052.079.051.084.052.088.052.092.052.097.052.102.052.105.052.11.051.114.051.119.052.123.05.127.051.131.05.135.049.139.049.144.048.147.048.152.047.155.046.16.045.163.045.167.044.171.042.176.042.178.04.183.04.187.038.19.037.194.036.197.034.202.033.204.032.209.03.212.028.216.027.219.025.222.024.226.022.23.02.233.018.236.016.24.014.243.012.246.01.249.008.253.006.256.003.259.001.26-.001.257-.003.254-.006.25-.008.247-.01.244-.012.241-.015.237-.016.233-.018.231-.02.226-.022.224-.024.22-.025.216-.027.212-.029.21-.03.205-.032.202-.033.198-.035.194-.036.191-.037.187-.039.183-.039.179-.041.175-.042.172-.043.168-.044.163-.045.16-.045.155-.047.152-.047.148-.048.143-.048.139-.05.136-.049.131-.05.126-.051.123-.051.118-.051.114-.052.11-.052.106-.052.101-.052.096-.052.092-.052.088-.052.083-.052.079-.052.074-.051.07-.052.065-.051.06-.05.056-.051.051-.049.023-.025.023-.024.021-.025.02-.024.019-.024.018-.024.017-.024.015-.023.014-.023.013-.024.012-.022.01-.023.01-.023.008-.022.006-.022.006-.022.004-.021.004-.022.001-.021.001-.021v-4.139l-.077.054-.08.054-.083.054-.085.052-.087.053-.09.051-.093.051-.095.051-.097.05-.1.049-.102.049-.105.048-.106.047-.109.047-.111.046-.114.045-.115.044-.118.044-.12.044-.122.042-.124.042-.126.041-.128.04-.13.039-.132.039-.134.038-.135.037-.138.036-.139.036-.142.035-.143.033-.144.033-.147.033-.148.031-.15.03-.151.03-.153.028-.154.028-.156.027-.158.026-.159.025-.161.024-.162.023-.163.022-.165.021-.166.02-.167.019-.169.018-.169.017-.171.016-.173.015-.173.014-.175.013-.175.012-.177.011-.178.009-.179.009-.179.007-.181.007-.182.005-.182.004-.184.003-.184.002h-.37l-.184-.002-.184-.003-.182-.004-.182-.005-.181-.007-.179-.007-.179-.009-.178-.009-.176-.011-.176-.012-.175-.013-.173-.014-.172-.015-.171-.016-.17-.017-.169-.018-.167-.019-.166-.02-.165-.021-.163-.022-.162-.023-.161-.024-.159-.025-.157-.026-.156-.027-.155-.028-.153-.028-.151-.03-.15-.03-.148-.031-.146-.033-.145-.033-.143-.033-.141-.035-.14-.036-.137-.036-.136-.037-.134-.038-.132-.039-.13-.039-.128-.04-.126-.041-.124-.042-.122-.043-.12-.043-.117-.044-.116-.044-.113-.046-.112-.046-.109-.046-.106-.047-.105-.048-.102-.049-.1-.049-.097-.05-.095-.051-.093-.051-.09-.051-.087-.053-.085-.052-.083-.054-.08-.054-.077-.054v4.139zm0-5.666v.011l.001.02.003.022.004.021.005.022.006.021.007.022.009.023.01.022.011.023.012.023.013.023.015.023.016.024.017.024.018.023.019.024.021.025.022.024.023.024.024.025.052.05.056.05.061.05.066.051.07.051.075.052.079.051.084.052.088.052.092.052.097.052.102.052.105.051.11.052.114.051.119.051.123.051.127.05.131.05.135.05.139.049.144.048.147.048.152.047.155.046.16.045.163.045.167.043.171.043.176.042.178.04.183.04.187.038.19.037.194.036.197.034.202.033.204.032.209.03.212.028.216.027.219.025.222.024.226.021.23.02.233.018.236.017.24.014.243.012.246.01.249.008.253.006.256.003.259.001.26-.001.257-.003.254-.006.25-.008.247-.01.244-.013.241-.014.237-.016.233-.018.231-.02.226-.022.224-.024.22-.025.216-.027.212-.029.21-.03.205-.032.202-.033.198-.035.194-.036.191-.037.187-.039.183-.039.179-.041.175-.042.172-.043.168-.044.163-.045.16-.045.155-.047.152-.047.148-.048.143-.049.139-.049.136-.049.131-.051.126-.05.123-.051.118-.052.114-.051.11-.052.106-.052.101-.052.096-.052.092-.052.088-.052.083-.052.079-.052.074-.052.07-.051.065-.051.06-.051.056-.05.051-.049.023-.025.023-.025.021-.024.02-.024.019-.024.018-.024.017-.024.015-.023.014-.024.013-.023.012-.023.01-.022.01-.023.008-.022.006-.022.006-.022.004-.022.004-.021.001-.021.001-.021v-4.153l-.077.054-.08.054-.083.053-.085.053-.087.053-.09.051-.093.051-.095.051-.097.05-.1.049-.102.048-.105.048-.106.048-.109.046-.111.046-.114.046-.115.044-.118.044-.12.043-.122.043-.124.042-.126.041-.128.04-.13.039-.132.039-.134.038-.135.037-.138.036-.139.036-.142.034-.143.034-.144.033-.147.032-.148.032-.15.03-.151.03-.153.028-.154.028-.156.027-.158.026-.159.024-.161.024-.162.023-.163.023-.165.021-.166.02-.167.019-.169.018-.169.017-.171.016-.173.015-.173.014-.175.013-.175.012-.177.01-.178.01-.179.009-.179.007-.181.006-.182.006-.182.004-.184.003-.184.001-.185.001-.185-.001-.184-.001-.184-.003-.182-.004-.182-.006-.181-.006-.179-.007-.179-.009-.178-.01-.176-.01-.176-.012-.175-.013-.173-.014-.172-.015-.171-.016-.17-.017-.169-.018-.167-.019-.166-.02-.165-.021-.163-.023-.162-.023-.161-.024-.159-.024-.157-.026-.156-.027-.155-.028-.153-.028-.151-.03-.15-.03-.148-.032-.146-.032-.145-.033-.143-.034-.141-.034-.14-.036-.137-.036-.136-.037-.134-.038-.132-.039-.13-.039-.128-.041-.126-.041-.124-.041-.122-.043-.12-.043-.117-.044-.116-.044-.113-.046-.112-.046-.109-.046-.106-.048-.105-.048-.102-.048-.1-.05-.097-.049-.095-.051-.093-.051-.09-.052-.087-.052-.085-.053-.083-.053-.08-.054-.077-.054v4.153zm8.74-8.179l-.257.004-.254.005-.25.008-.247.011-.244.012-.241.014-.237.016-.233.018-.231.021-.226.022-.224.023-.22.026-.216.027-.212.028-.21.031-.205.032-.202.033-.198.034-.194.036-.191.038-.187.038-.183.04-.179.041-.175.042-.172.043-.168.043-.163.045-.16.046-.155.046-.152.048-.148.048-.143.048-.139.049-.136.05-.131.05-.126.051-.123.051-.118.051-.114.052-.11.052-.106.052-.101.052-.096.052-.092.052-.088.052-.083.052-.079.052-.074.051-.07.052-.065.051-.06.05-.056.05-.051.05-.023.025-.023.024-.021.024-.02.025-.019.024-.018.024-.017.023-.015.024-.014.023-.013.023-.012.023-.01.023-.01.022-.008.022-.006.023-.006.021-.004.022-.004.021-.001.021-.001.021.001.021.001.021.004.021.004.022.006.021.006.023.008.022.01.022.01.023.012.023.013.023.014.023.015.024.017.023.018.024.019.024.02.025.021.024.023.024.023.025.051.05.056.05.06.05.065.051.07.052.074.051.079.052.083.052.088.052.092.052.096.052.101.052.106.052.11.052.114.052.118.051.123.051.126.051.131.05.136.05.139.049.143.048.148.048.152.048.155.046.16.046.163.045.168.043.172.043.175.042.179.041.183.04.187.038.191.038.194.036.198.034.202.033.205.032.21.031.212.028.216.027.22.026.224.023.226.022.231.021.233.018.237.016.241.014.244.012.247.011.25.008.254.005.257.004.26.001.26-.001.257-.004.254-.005.25-.008.247-.011.244-.012.241-.014.237-.016.233-.018.231-.021.226-.022.224-.023.22-.026.216-.027.212-.028.21-.031.205-.032.202-.033.198-.034.194-.036.191-.038.187-.038.183-.04.179-.041.175-.042.172-.043.168-.043.163-.045.16-.046.155-.046.152-.048.148-.048.143-.048.139-.049.136-.05.131-.05.126-.051.123-.051.118-.051.114-.052.11-.052.106-.052.101-.052.096-.052.092-.052.088-.052.083-.052.079-.052.074-.051.07-.052.065-.051.06-.05.056-.05.051-.05.023-.025.023-.024.021-.024.02-.025.019-.024.018-.024.017-.023.015-.024.014-.023.013-.023.012-.023.01-.023.01-.022.008-.022.006-.023.006-.021.004-.022.004-.021.001-.021.001-.021-.001-.021-.001-.021-.004-.021-.004-.022-.006-.021-.006-.023-.008-.022-.01-.022-.01-.023-.012-.023-.013-.023-.014-.023-.015-.024-.017-.023-.018-.024-.019-.024-.02-.025-.021-.024-.023-.024-.023-.025-.051-.05-.056-.05-.06-.05-.065-.051-.07-.052-.074-.051-.079-.052-.083-.052-.088-.052-.092-.052-.096-.052-.101-.052-.106-.052-.11-.052-.114-.052-.118-.051-.123-.051-.126-.051-.131-.05-.136-.05-.139-.049-.143-.048-.148-.048-.152-.048-.155-.046-.16-.046-.163-.045-.168-.043-.172-.043-.175-.042-.179-.041-.183-.04-.187-.038-.191-.038-.194-.036-.198-.034-.202-.033-.205-.032-.21-.031-.212-.028-.216-.027-.22-.026-.224-.023-.226-.022-.231-.021-.233-.018-.237-.016-.241-.014-.244-.012-.247-.011-.25-.008-.254-.005-.257-.004-.26-.001-.26.001z"></path></symbol></defs><defs><symbol id="clock" width="24" height="24"><path transform="scale(.5)" d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm0-2c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm5.848 12.459c.202.038.202.333.001.372-1.907.361-6.045 1.111-6.547 1.111-.719 0-1.301-.582-1.301-1.301 0-.512.77-5.447 1.125-7.445.034-.192.312-.181.343.014l.985 6.238 5.394 1.011z"></path></symbol></defs><defs><marker id="arrowhead" refX="7.9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M -1 0 L 10 5 L 0 10 z"></path></marker></defs><defs><marker id="crosshead" markerWidth="15" markerHeight="8" orient="auto" refX="4" refY="4.5"><path fill="none" stroke="#000000" stroke-width="1pt" d="M 1,2 L 6,7 M 6,2 L 1,7" style="stroke-dasharray: 0, 0;"></path></marker></defs><defs><marker id="filled-head" refX="15.5" refY="7" markerWidth="20" markerHeight="28" orient="auto"><path d="M 18,7 L9,13 L14,7 L9,1 Z"></path></marker></defs><defs><marker id="sequencenumber" refX="15" refY="15" markerWidth="60" markerHeight="40" orient="auto"><circle cx="15" cy="15" r="6"></circle></marker></defs><defs><marker id="solidTopArrowHead" refX="7.9" refY="7.25" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M 0 0 L 10 8 L 0 8 z"></path></marker></defs><defs><marker id="solidBottomArrowHead" refX="7.9" refY="0.75" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M 0 0 L 10 0 L 0 8 z"></path></marker></defs><defs><marker id="stickTopArrowHead" refX="7.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M 0 0 L 7 7" stroke="black" stroke-width="1.5" fill="none"></path></marker></defs><defs><marker id="stickBottomArrowHead" refX="7.5" refY="0" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M 0 7 L 7 0" stroke="black" stroke-width="1.5" fill="none"></path></marker></defs><g><line x1="64" y1="487" x2="1266" y2="487" class="loopLine"></line><line x1="1266" y1="487" x2="1266" y2="761" class="loopLine"></line><line x1="64" y1="761" x2="1266" y2="761" class="loopLine"></line><line x1="64" y1="487" x2="64" y2="761" class="loopLine"></line><line x1="64" y1="583" x2="1266" y2="583" class="loopLine" style="stroke-dasharray: 3, 3;"></line><polygon points="64,487 114,487 114,500 105.6,507 64,507" class="labelBox"></polygon><text x="89" y="500" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" class="labelText" style="font-size: 16px; font-weight: 400;">alt</text><text x="690" y="505" text-anchor="middle" class="loopText" style="font-size: 16px; font-weight: 400;"><tspan x="690">[Denied]</tspan></text><text x="665" y="601" text-anchor="middle" class="loopText" style="font-size: 16px; font-weight: 400;">[Allowed]</text></g><g><line x1="54" y1="213" x2="1276" y2="213" class="loopLine"></line><line x1="1276" y1="213" x2="1276" y2="771" class="loopLine"></line><line x1="54" y1="771" x2="1276" y2="771" class="loopLine"></line><line x1="54" y1="213" x2="54" y2="771" class="loopLine"></line><line x1="54" y1="309" x2="1276" y2="309" class="loopLine" style="stroke-dasharray: 3, 3;"></line><polygon points="54,213 104,213 104,226 95.6,233 54,233" class="labelBox"></polygon><text x="79" y="226" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" class="labelText" style="font-size: 16px; font-weight: 400;">alt</text><text x="690" y="231" text-anchor="middle" class="loopText" style="font-size: 16px; font-weight: 400;"><tspan x="690">[Invalid key]</tspan></text><text x="665" y="327" text-anchor="middle" class="loopText" style="font-size: 16px; font-weight: 400;">[Valid key]</text></g><text x="215" y="80" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400;">call mutation/query with API key</text><line x1="76" y1="111" x2="354" y2="111" class="messageLine0" stroke-width="2" stroke="none" marker-end="url(#arrowhead)" style="fill: none;"></line><text x="500" y="126" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400;">wrap handler</text><line x1="359" y1="157" x2="640" y2="157" class="messageLine0" stroke-width="2" stroke="none" marker-end="url(#arrowhead)" style="fill: none;"></line><text x="744" y="172" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400;">check API key</text><line x1="645" y1="203" x2="842" y2="203" class="messageLine0" stroke-width="2" stroke="none" marker-end="url(#arrowhead)" style="fill: none;"></line><text x="462" y="263" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400;">401 Unauthorized</text><line x1="845" y1="294" x2="79" y2="294" class="messageLine1" stroke-width="2" stroke="none" marker-end="url(#arrowhead)" style="stroke-dasharray: 3, 3; fill: none;"></line><text x="747" y="354" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400;">ConvexAuthContext</text><line x1="845" y1="385" x2="648" y2="385" class="messageLine1" stroke-width="2" stroke="none" marker-end="url(#arrowhead)" style="stroke-dasharray: 3, 3; fill: none;"></line><text x="503" y="400" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400;">execute handler with auth context</text><line x1="643" y1="431" x2="362" y2="431" class="messageLine0" stroke-width="2" stroke="none" marker-end="url(#arrowhead)" style="fill: none;"></line><text x="703" y="446" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400;">check RLS for table/row</text><line x1="359" y1="477" x2="1046.5" y2="477" class="messageLine0" stroke-width="2" stroke="none" marker-end="url(#arrowhead)" style="fill: none;"></line><text x="564" y="537" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400;">403 Forbidden</text><line x1="1049.5" y1="568" x2="79" y2="568" class="messageLine1" stroke-width="2" stroke="none" marker-end="url(#arrowhead)" style="stroke-dasharray: 3, 3; fill: none;"></line><text x="706" y="628" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400;">OK</text><line x1="1049.5" y1="659" x2="362" y2="659" class="messageLine1" stroke-width="2" stroke="none" marker-end="url(#arrowhead)" style="stroke-dasharray: 3, 3; fill: none;"></line><text x="805" y="674" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400;">read/write data</text><line x1="359" y1="705" x2="1251" y2="705" class="messageLine0" stroke-width="2" stroke="none" marker-end="url(#arrowhead)" style="fill: none;"></line><text x="667" y="720" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400;">result</text><line x1="1254" y1="751" x2="79" y2="751" class="messageLine1" stroke-width="2" stroke="none" marker-end="url(#arrowhead)" style="stroke-dasharray: 3, 3; fill: none;"></line></svg></div>
+<h2 id="flow-notes" tabindex="-1" data-mdv-layout="keep-with-next">Flow Notes</h2>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Actor/Component</th>
+<th>Action</th>
+<th>Output / Side Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Client</td>
+<td>Sends a Convex query or mutation with an API key in the request</td>
+<td>Raw request reaches the Convex function endpoint</td>
+</tr>
+<tr>
+<td>2</td>
+<td>withApiKeyAuth</td>
+<td>Intercepts the call and delegates to <code>validateApiKey</code> to verify the key against stored config</td>
+<td>Returns 401 if invalid; otherwise produces a <code>ConvexAuthContext</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Convex Function</td>
+<td>Executes business logic and calls an RLS assertion (e.g., <code>assertCanRead</code>) before data access</td>
+<td>Returns 403 if the RLS rule denies access</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Convex DB</td>
+<td>Performs the authorized read or write operation</td>
+<td>Returns the result to the client</td>
+</tr>
+</tbody>
+</table>
+<h2 id="source-coverage" tabindex="-1" data-mdv-layout="keep-with-next">Source Coverage</h2>
+<ul>
+<li>convex/auth.config.ts</li>
+<li>convex/auth/apiKey.ts</li>
+<li>convex/auth/rls.ts</li>
+<li>convex/auth/types.ts</li>
+</ul>
+<h2 id="cross-module-context" tabindex="-1" data-mdv-layout="keep-with-next">Cross-Module Context</h2>
+<ul>
+<li>convex/auth/apiKey.ts -&gt; convex/_generated/server.d.ts (import)</li>
+<li>convex/healthAuth.ts -&gt; convex/auth/apiKey.ts (import)</li>
+<li>convex/model/prompts.ts -&gt; convex/auth/rls.ts (import)</li>
+<li>convex/prompts.ts -&gt; convex/auth/apiKey.ts (import)</li>
+<li>convex/userPreferences.ts -&gt; convex/auth/apiKey.ts (import)</li>
+<li>convex/userPreferences.ts -&gt; convex/auth/rls.ts (import)</li>
+<li>tests/convex/auth/apiKey.test.ts -&gt; convex/auth/apiKey.ts (usage)</li>
+<li>tests/convex/auth/rls.test.ts -&gt; convex/auth/rls.ts (usage)</li>
+<li>tests/convex/healthAuth.test.ts -&gt; convex/auth/apiKey.ts (usage)</li>
+<li>tests/convex/healthAuth.test.ts -&gt; convex/auth/types.ts (usage)</li>
+</ul>
+</div>
+</body>
+</html>
